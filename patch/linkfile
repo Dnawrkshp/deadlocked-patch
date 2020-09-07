@@ -1,0 +1,75 @@
+/*
+# _____     ___ ____     ___ ____
+#  ____|   |    ____|   |        | |____|
+# |     ___|   |____ ___|    ____| |    \    PS2DEV Open Source Project.
+#-----------------------------------------------------------------------
+# Copyright 2001-2004, ps2dev - http://www.ps2dev.org
+# Licenced under Academic Free License version 2.0
+# Review ps2sdk README & LICENSE files for further details.
+#
+# $Id: linkfile 798 2005-02-07 06:21:37Z herben $
+# Linkfile script for ee-ld
+*/
+
+OUTPUT_FORMAT(binary);
+ENTRY(_start);
+
+SECTIONS {
+	.text 0x000D0000: {
+		_ftext = . ;
+		*(.text)
+		*(.text.*)
+		*(.gnu.linkonce.t*)
+		QUAD(0)
+	}
+
+
+	PROVIDE(_etext = .);
+	PROVIDE(etext = .);
+
+	.reginfo : { *(.reginfo) }
+
+	/* Static data.  */
+	.rodata ALIGN(128): {
+		*(.rodata)
+		*(.rodata.*)
+		*(.gnu.linkonce.r*)
+	}
+
+	.data ALIGN(128): {
+		_fdata = . ;
+		*(.data)
+		*(.data.*)
+		*(.gnu.linkonce.d*)
+		SORT(CONSTRUCTORS)
+	}
+
+	.sdata ALIGN(128): {
+		*(.sdata)
+		*(.sdata.*)
+		*(.gnu.linkonce.s*)
+	}
+
+	_edata = .;
+	PROVIDE(edata = .);
+
+	/* Uninitialized data.  */
+	.sbss ALIGN(128) : {
+		_fbss = . ;
+		*(.sbss)
+		*(.sbss.*)
+		*(.gnu.linkonce.sb*)
+		*(.scommon)
+	}
+
+	.bss ALIGN(128) : {
+		*(.bss)
+		*(.bss.*)
+		*(.gnu.linkonce.b*)
+		*(COMMON)
+	}
+	_end_bss = .;
+
+	_end = . ;
+	PROVIDE(end = .);
+}
