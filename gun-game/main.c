@@ -544,12 +544,12 @@ void gameStart(void)
 	GAME_SCOREBOARD_TARGET = GUN_INDEX_END;
 
 	// Set winner
-	setWinner(WinningTeam);
+	setWinner(WinningTeam, 0);
 
 	// End game
 	if (GameOver && !GAME_HAS_ENDED)
 	{
-		endGame(WinningTeam, 1);
+		endGame(2);
 		ScoreboardChanged = 1;
 	}
 

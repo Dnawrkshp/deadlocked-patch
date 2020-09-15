@@ -2,7 +2,7 @@
  * FILENAME :		deadlocked.c
  * 
  * DESCRIPTION :
- * 		Implements all functions declared in include/*.h
+ * 		Implements all functions declared in include\*.h
  * 
  * NOTES :
  * 		Each offset is determined per app id.
@@ -131,18 +131,16 @@ int isLocal(Player * player)
  * ------------------------------------------------
  */
 
-void setWinner(int teamOrPlayerId)
+void setWinner(int teamOrPlayerId, int isTeam)
 {
-    GAME_WINNER = teamOrPlayerId;
+    GAME_WINNER_TEAM_ID = teamOrPlayerId;
+    GAME_WINNER_PLAYER_ID = isTeam ? -1 : teamOrPlayerId;
 }
 
-
-void endGame(int winner, int isPlayer)
+void endGame(int reason)
 {
-    GAME_WINNER = winner;
     if (!GAME_HAS_ENDED)
-        forceGameEnd(isPlayer);
-    GAME_WINNER = winner;
+        forceGameEnd(reason);
 }
 
 int isInGame(void)

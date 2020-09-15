@@ -228,6 +228,7 @@ void initialize(void)
 		Initialized = 1;
 }
 
+
 /*
  * NAME :		gameStart
  * 
@@ -288,7 +289,7 @@ void gameStart(void)
 	}
 
 	// 
-	setWinner(WinningTeam);
+	setWinner(WinningTeam, 1);
 
 	if (!GAME_HAS_ENDED)
 	{
@@ -296,7 +297,7 @@ void gameStart(void)
 		if (playerCount == infectedCount && GAME_TIME_LIMIT > 0)
 		{
 			// End game
-			endGame(WinningTeam, 0);
+			endGame(2);
 		}
 		else if (infectedCount == 0)
 		{

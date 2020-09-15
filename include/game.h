@@ -43,6 +43,16 @@
 #define GAME_START_TIME                     (*(int*)0x0036D604)
 
 /*
+ * Game winner team id.
+ */
+#define GAME_WINNER_TEAM_ID                 (*(int*)0x0036D610)
+
+/*
+ * Player id of the winner. Set to -1 for team win.
+ */
+#define GAME_WINNER_PLAYER_ID               (*(int*)0x0036D614)
+
+/*
  * Time (ms) that the game ended.
  */
 #define GAME_TIME_ENDGAME                   (*(u32*)0x0036D664)
@@ -66,12 +76,6 @@
  *
  */
 #define PLAYER_SUICIDES_START               ((short*)0x0036DA40)
-
-/*
- *
- */
-#define GAME_WINNER                         (*(u32*)0x001E0D94)
-
 
 /*
  *
@@ -149,13 +153,14 @@ extern void (* showPopup)(int localPlayerIndex, const char * message);
  * NOTES :
  * 
  * ARGS : 
- *      teamOrPlayerId    :             Team/player id to set
+ *      teamOrPlayerId      :               Team/player id to set
+ *      isTeam              :               Indicates if the given the winner is a team or player.
  * 
  * RETURN :
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-extern void setWinner(int teamOrPlayerId);
+extern void setWinner(int teamOrPlayerId, int isTeam);
 
 /*
  * NAME :		endGame
@@ -166,15 +171,13 @@ extern void setWinner(int teamOrPlayerId);
  * NOTES :
  * 
  * ARGS : 
- *      winner :        Winning team/player.
- *      isPlayer :      Whether or not a player or team won.
+ *      reason :      Why the game ended.
  * 
  * RETURN :
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-extern void endGame(int winner, int isPlayer);
-
+extern void endGame(int reason);
 /*
  * NAME :		forceGameEnd
  * 
