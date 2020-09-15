@@ -216,7 +216,7 @@ typedef struct Player
     
     char UNK22[0xCC];
 
-    // Points to the player moby
+    // Points to the player moby (0x2EF0)
     Moby * PlayerMoby;
 
     char UNK23[0x0C];

@@ -28,6 +28,11 @@
  * ------------------------------------------------
  */
 
+/*
+ * 
+ */
+#define GAME_ACTIVE                         (*(int*)0x0021E1EC)
+
 
 /*
  * How many milliseconds for the game to last.
@@ -141,5 +146,10 @@ extern void (* ForceGameEnd)(int);
  * 
  */
 extern void GameDisableRanked(void);
+
+/*
+ *
+ */
+extern int IsInGame(void);
 
 #endif // _GAME_H_

@@ -186,3 +186,22 @@ void EndGame(int winner, int isPlayer)
         ForceGameEnd(isPlayer);
     GAME_WINNER = winner;
 }
+
+/*
+ * NAME :		IsInGame
+ * 
+ * DESCRIPTION :
+ * 			Whether the client is currently in a game.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+int IsInGame(void)
+{
+    return GAME_ACTIVE;
+}

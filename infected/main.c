@@ -2,7 +2,7 @@
  * FILENAME :		main.c
  * 
  * DESCRIPTION :
- * 		Manages and applies all Deadlocked patches.
+ * 		Infected entrypoint and logic.
  * 
  * NOTES :
  * 		Each offset is determined per app id.
@@ -13,7 +13,7 @@
 
 #include <tamtypes.h>
 
-#include "stdio.h"
+#include "common.h"
 #include "time.h"
 #include "module.h"
 #include "game.h"
@@ -267,7 +267,7 @@ void gameStart(void)
 	Player ** players = PLAYER_STRUCT_ARRAY;
 
 	// Ensure in game
-	if (!gameSettings)
+	if (!gameSettings || !IsInGame())
 		return;
 
 	if (!Initialized)
@@ -308,7 +308,7 @@ void gameStart(void)
 	if (!GAME_HAS_ENDED)
 	{
 		// If no survivors then end game
-		if (playerCount == infectedCount)
+		if (playerCount == infectedCount && GAME_TIME_LIMIT > 0)
 		{
 			// End game
 			EndGame(WinningTeam, 0);
@@ -320,7 +320,9 @@ void gameStart(void)
 			{
 				Player * survivor = GetRandomSurvivor(gameSettings->GameStartTime);
 				if (survivor)
+				{
 					Infect(survivor->PlayerId);
+				}
 			}
 		}
 	}
