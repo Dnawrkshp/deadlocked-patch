@@ -19,9 +19,9 @@
 #include "game.h"
 #include "gamesettings.h"
 #include "player.h"
-#include "infected.h"
 #include "weapon.h"
 #include "hud.h"
+#include "cheats.h"
 
 /*
  * 
@@ -100,7 +100,7 @@ int Initialized = 0;
 
 
 /*
- * NAME :		SortScoreboard
+ * NAME :		sortScoreboard
  * 
  * DESCRIPTION :
  * 			Sorts the scoreboard by value.
@@ -116,7 +116,7 @@ int Initialized = 0;
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void SortScoreboard()
+void sortScoreboard(void)
 {
 	int i = 0;
 	int j = 0;
@@ -143,34 +143,34 @@ void SortScoreboard()
 }
 
 /*
- * NAME :		ProcessPlayer
+ * NAME :		setWeapon
  * 
  * DESCRIPTION :
- * 			Demotes a given player.
+ * 			Gives a player the given weapon and sets the appropriate alpha mods.
  * 
  * NOTES :
  * 
  * ARGS : 
  * 		player			:		Target player's player object.
- * 		playerState 	:		Target player's gun game state.
- * 		playerWepStats 	:		Target player's weapon stats.
+ * 		wepData 		:		Target player's weapon data.
+ * 		weaponId 		:		Target weapon id to set.
  * 
  * RETURN :
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void SetWeapon(Player * player, PlayerWeaponData * wepData, int weaponId)
+void setWeapon(Player * player, PlayerWeaponData * wepData, int weaponId)
 {
 	// Give
 	if (wepData[weaponId].Level < 0)
-		GiveWeapon(player, weaponId, 0);
+		giveWeapon(player, weaponId, 0);
 
 	// Set alpha mods
 	memcpy(&wepData[weaponId].AlphaMods, &WeaponModStates[weaponId].Alpha, 10 * sizeof(int));
 }
 
 /*
- * NAME :		ProcessPlayer
+ * NAME :		demotePlayer
  * 
  * DESCRIPTION :
  * 			Demotes a given player.
@@ -186,7 +186,7 @@ void SetWeapon(Player * player, PlayerWeaponData * wepData, int weaponId)
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void DemotePlayer(Player * player, struct GunGameState * playerState, PlayerWeaponStats * playerWepStats)
+void demotePlayer(Player * player, struct GunGameState * playerState, PlayerWeaponStats * playerWepStats)
 {
 	if (!player || !playerState || !playerWepStats)
 		return;
@@ -206,12 +206,12 @@ void DemotePlayer(Player * player, struct GunGameState * playerState, PlayerWeap
 	playerState->LastGunKills = playerWepStats->WeaponKills[playerId][(int)GunGameWeaponIds[playerState->GunIndex]];
 
 	// Show popup
-	if (IsLocal(player))
-		ShowPopup(player->LocalPlayerIndex, "You've been demoted!");
+	if (isLocal(player))
+		showPopup(player->LocalPlayerIndex, "You've been demoted!");
 }
 
 /*
- * NAME :		PromotePlayer
+ * NAME :		promotePlayer
  * 
  * DESCRIPTION :
  * 			Promotes a given player.
@@ -227,7 +227,7 @@ void DemotePlayer(Player * player, struct GunGameState * playerState, PlayerWeap
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void PromotePlayer(Player * player, struct GunGameState * playerState, PlayerWeaponStats * playerWepStats)
+void promotePlayer(Player * player, struct GunGameState * playerState, PlayerWeaponStats * playerWepStats)
 {
 	if (!player || !playerState || !playerWepStats)
 		return;
@@ -248,12 +248,12 @@ void PromotePlayer(Player * player, struct GunGameState * playerState, PlayerWea
 	playerState->LastSuicides = PLAYER_SUICIDES_START[playerId];
 
 	// Show popup
-	if (IsLocal(player))
-		ShowPopup(player->LocalPlayerIndex, "You've promoted to the next weapon!");
+	if (isLocal(player))
+		showPopup(player->LocalPlayerIndex, "You've promoted to the next weapon!");
 }
 
 /*
- * NAME :		ProcessPlayer
+ * NAME :		processPlayer
  * 
  * DESCRIPTION :
  * 			Process player.
@@ -267,7 +267,7 @@ void PromotePlayer(Player * player, struct GunGameState * playerState, PlayerWea
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void ProcessPlayer(Player * player)
+void processPlayer(Player * player)
 {
 	if (!player)
 		return;
@@ -275,7 +275,7 @@ void ProcessPlayer(Player * player)
 	int playerId = player->PlayerId;
 	struct GunGameState * playerState = &PlayerGunGameStates[player->PlayerId];
 	char activeGunSlotId = GunGameWeaponIds[playerState->GunIndex];
-	char activeGunId = WeaponSlotToId(activeGunSlotId);
+	char activeGunId = weaponSlotToId(activeGunSlotId);
 	PlayerWeaponStats * playerWepStats = PLAYER_WEAPON_STATS_ARRAY;
 	PlayerWeaponData * playerWeaponData = NULL;
 
@@ -292,39 +292,39 @@ void ProcessPlayer(Player * player)
 		playerState->GunIndex = 0;
 
 	// Enable all weapons
-	playerWeaponData = GetPlayerWeaponData(playerId);
-	SetWeapon(player, playerWeaponData, WEAPON_ID_VIPERS);
-	SetWeapon(player, playerWeaponData, WEAPON_ID_MAGMA_CANNON);
-	SetWeapon(player, playerWeaponData, WEAPON_ID_ARBITER);
-	SetWeapon(player, playerWeaponData, WEAPON_ID_FUSION_RIFLE);
-	SetWeapon(player, playerWeaponData, WEAPON_ID_MINE_LAUNCHER);
-	SetWeapon(player, playerWeaponData, WEAPON_ID_B6);
-	SetWeapon(player, playerWeaponData, WEAPON_ID_OMNI_SHIELD);
-	SetWeapon(player, playerWeaponData, WEAPON_ID_FLAIL);
+	playerWeaponData = getPlayerWeaponData(playerId);
+	setWeapon(player, playerWeaponData, WEAPON_ID_VIPERS);
+	setWeapon(player, playerWeaponData, WEAPON_ID_MAGMA_CANNON);
+	setWeapon(player, playerWeaponData, WEAPON_ID_ARBITER);
+	setWeapon(player, playerWeaponData, WEAPON_ID_FUSION_RIFLE);
+	setWeapon(player, playerWeaponData, WEAPON_ID_MINE_LAUNCHER);
+	setWeapon(player, playerWeaponData, WEAPON_ID_B6);
+	setWeapon(player, playerWeaponData, WEAPON_ID_OMNI_SHIELD);
+	setWeapon(player, playerWeaponData, WEAPON_ID_FLAIL);
 
 	// Only allow swingshot, wrench and active gun
 	if (player->WeaponHeldId != WEAPON_ID_WRENCH &&
 		player->WeaponHeldId != WEAPON_ID_SWINGSHOT &&
 		player->WeaponHeldId != activeGunId)
 	{
-		if (IsLocal(player))
+		if (isLocal(player))
 		{
-			SetPlayerEquipslot(player->LocalPlayerIndex, 0, activeGunId);
-			SetPlayerEquipslot(player->LocalPlayerIndex, 1, WEAPON_ID_EMPTY);
-			SetPlayerEquipslot(player->LocalPlayerIndex, 2, WEAPON_ID_EMPTY);
+			setLocalPlayerEquipslot(player->LocalPlayerIndex, 0, activeGunId);
+			setLocalPlayerEquipslot(player->LocalPlayerIndex, 1, WEAPON_ID_EMPTY);
+			setLocalPlayerEquipslot(player->LocalPlayerIndex, 2, WEAPON_ID_EMPTY);
 		}
 
-		ChangeWeapon(player, activeGunId);
+		changeWeapon(player, activeGunId);
 	}
 	
 	// Check for demotion
 	if (playerWepStats->WeaponDeaths[playerId][WEAPON_SLOT_WRENCH] > playerState->LastWrenchDeaths ||
 		PLAYER_SUICIDES_START[playerId] > playerState->LastSuicides)
-		DemotePlayer(player, playerState, playerWepStats);
+		demotePlayer(player, playerState, playerWepStats);
 
 	// Check for promotion
 	else if (playerWepStats->WeaponKills[playerId][(int)activeGunSlotId] > playerState->LastGunKills)
-		PromotePlayer(player, playerState, playerWepStats);
+		promotePlayer(player, playerState, playerWepStats);
 
 #if DEBUG
 	if (playerState->PadReset == 1 && (player->Paddata->btns & PAD_L3))
@@ -356,13 +356,14 @@ void ProcessPlayer(Player * player)
 }
 
 /*
- * NAME :		main
+ * NAME :		initialize
  * 
  * DESCRIPTION :
- * 			Infected game logic entrypoint.
+ * 			Initializes the game mode.
+ * 			Resets states, generates random weapon ordering, generates random alpha mods.
  * 
  * NOTES :
- * 			This is called only when in game.
+ * 			This is called once at start.
  * 
  * ARGS : 
  * 
@@ -370,7 +371,7 @@ void ProcessPlayer(Player * player)
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void Initialize(void)
+void initialize(void)
 {
 	int i = 0;
 	int j = 0;
@@ -435,7 +436,7 @@ void Initialize(void)
 	{
 		Player * p = PLAYER_STRUCT_ARRAY[i];
 		PlayerScores[i].TeamId = p ? i : 0;
-		PlayerScores[i].UNK = IsLocal(p);
+		PlayerScores[i].UNK = isLocal(p);
 		PlayerScores[i].Value = 0;
 		GAME_SCOREBOARD_ARRAY[i] = p ? &PlayerScores[i] : 0;
 		
@@ -443,8 +444,7 @@ void Initialize(void)
 	}
 
 	// No packs
-	*(u32*)0x00414660 = 0x03E00008;
-	*(u32*)0x00414664 = 0x00000000;
+	cheatsApplyNoPacks();
 
 	// Set respawn time to 2
 	GAME_RESPAWN_TIME = 2;
@@ -487,7 +487,7 @@ void gameStart(void)
 		return;
 
 	if (!Initialized)
-		Initialize();
+		initialize();
 
 	if (!GAME_HAS_ENDED && !GameOver)
 	{
@@ -515,7 +515,7 @@ void gameStart(void)
 			PlayerScores[i].TeamId = players[i]->PlayerId;
 
 			// Process
-			ProcessPlayer(players[i]);
+			processPlayer(players[i]);
 		}
 	}
 	else
@@ -535,7 +535,7 @@ void gameStart(void)
 	// Update scoreboard on change
 	if (ScoreboardChanged)
 	{
-		SortScoreboard();
+		sortScoreboard();
 		GAME_SCOREBOARD_REFRESH_FLAG = 1;
 		ScoreboardChanged = 0;
 	}
@@ -544,12 +544,12 @@ void gameStart(void)
 	GAME_SCOREBOARD_TARGET = GUN_INDEX_END;
 
 	// Set winner
-	SetWinner(WinningTeam);
+	setWinner(WinningTeam);
 
 	// End game
 	if (GameOver && !GAME_HAS_ENDED)
 	{
-		EndGame(WinningTeam, 1);
+		endGame(WinningTeam, 1);
 		ScoreboardChanged = 1;
 	}
 

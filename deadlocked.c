@@ -2,7 +2,7 @@
  * FILENAME :		deadlocked.c
  * 
  * DESCRIPTION :
- * 		Manages and applies all Deadlocked patches.
+ * 		Implements all functions declared in include/*.h
  * 
  * NOTES :
  * 		Each offset is determined per app id.
@@ -21,6 +21,7 @@
 #include "gamesettings.h"
 #include "player.h"
 #include "team.h"
+#include "cheats.h"
 
 
 const u32 TEAM_COLORS[] =
@@ -40,9 +41,9 @@ const u32 TEAM_COLORS[] =
 
 #if APPID == DL_APPID
 
-void (* ForceGameEnd)(int) = (void(*)(int))0x006228C8;
+void (* forceGameEnd)(int) = (void(*)(int))0x006228C8;
 
-void (* ShowPopup)(int, const char *) = (void(*)(int, const char *))0x00540170;
+void (* showPopup)(int, const char *) = (void(*)(int, const char *))0x00540170;
 
 int (*sprintf)(char *, const char *, ...) = (int(*)(char *, const char *, ...))0x0011D920;
 
@@ -52,14 +53,15 @@ void (*memcpy)(void *, const void *, int) = (void(*)(void *, const void *, int))
 
 int (*sha1)(const void *, int, void *, int) = (int(*)(const void *, int, void *, int))0x01EB30C8;
 
-int IsLocal(Player * player)
-{
-    return (int)player >= 0x00300000 && (int)player <= 0x00400000;
-}
-
 #endif
 
-int WeaponSlotToId(int slotId)
+/*
+ * ------------------------------------------------
+ * ----------------- START WEAPON -----------------
+ * ------------------------------------------------
+ */
+
+int weaponSlotToId(int slotId)
 {
     switch (slotId)
     {
@@ -76,41 +78,31 @@ int WeaponSlotToId(int slotId)
     }
 }
 
-PlayerWeaponData * GetPlayerWeaponData(int playerId)
+/*
+ * ------------------------------------------------
+ * ----------------- START PLAYER -----------------
+ * ------------------------------------------------
+ */
+
+PlayerWeaponData * getPlayerWeaponData(int playerId)
 {
     return (PlayerWeaponData *)(WEAPON_DATA_START + (WEAPON_DATA_SIZE * playerId));
 }
 
-void SetPlayerEquipslot(int playerId, int slot, int weaponId)
+void setLocalPlayerEquipslot(int localPlayerId, int slot, int weaponId)
 {
     int * equipslots = WEAPON_EQUIPSLOT;
-    equipslots[slot + (playerId * 3)] = weaponId;
+    equipslots[slot + (localPlayerId * 3)] = weaponId;
 }
 
-void GiveWeapon(Player * player, int weaponId, int weaponLevel)
+void giveWeapon(Player * player, int weaponId, int weaponLevel)
 {
-    void (* giveWeapon)(u32, int, int, int) = (void (*)(u32, int, int, int))PLAYER_GIVEWEP_FUNCADD;
+    void (* _giveWeapon)(u32, int, int, int) = (void (*)(u32, int, int, int))PLAYER_GIVEWEP_FUNCADD;
 
-    giveWeapon(player->WeaponHeldDataPointer, weaponId, weaponLevel, 1);
+    _giveWeapon(player->WeaponHeldDataPointer, weaponId, weaponLevel, 1);
 }
 
-/*
- * NAME :		ChangeWeapon
- * 
- * DESCRIPTION :
- * 			Change player's equipped weapon.
- * 
- * NOTES :
- * 
- * ARGS : 
- *      player      :           Pointer to player data struct
- *      weaponId    :           Weapon id to set
- * 
- * RETURN :
- * 
- * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
- */
-void ChangeWeapon(Player * player, int weaponId)
+void changeWeapon(Player * player, int weaponId)
 {
     if (!player)
         return;
@@ -118,23 +110,7 @@ void ChangeWeapon(Player * player, int weaponId)
     player->ChangeWeaponHeldId = weaponId;
 }
 
-/*
- * NAME :		ChangeTeam
- * 
- * DESCRIPTION :
- * 			Change player's equipped weapon.
- * 
- * NOTES :
- * 
- * ARGS : 
- *      player      :           Pointer to player data struct
- *      teamId    :             Team id to set
- * 
- * RETURN :
- * 
- * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
- */
-void ChangeTeam(Player * player, int teamId)
+void changeTeam(Player * player, int teamId)
 {
     if (!player)
         return;
@@ -144,64 +120,109 @@ void ChangeTeam(Player * player, int teamId)
     player->PlayerMoby->SecondaryColor = TEAM_COLORS[teamId];
 }
 
+int isLocal(Player * player)
+{
+    return (int)player >= 0x00300000 && (int)player <= 0x00400000;
+}
+
 /*
- * NAME :		SetWinner
- * 
- * DESCRIPTION :
- * 			Set the winning team/player
- * 
- * NOTES :
- * 
- * ARGS : 
- *      teamOrPlayerId    :             Team/player id to set
- * 
- * RETURN :
- * 
- * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ * ------------------------------------------------
+ * ------------------ START GAME ------------------
+ * ------------------------------------------------
  */
-void SetWinner(int teamOrPlayerId)
+
+void setWinner(int teamOrPlayerId)
 {
     GAME_WINNER = teamOrPlayerId;
 }
 
-/*
- * NAME :		EndGame
- * 
- * DESCRIPTION :
- * 			End game.
- * 
- * NOTES :
- * 
- * ARGS : 
- *      winner :        Winning team/player.
- *      isPlayer :      Whether or not a player or team won.
- * RETURN :
- * 
- * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
- */
-void EndGame(int winner, int isPlayer)
+
+void endGame(int winner, int isPlayer)
 {
     GAME_WINNER = winner;
     if (!GAME_HAS_ENDED)
-        ForceGameEnd(isPlayer);
+        forceGameEnd(isPlayer);
     GAME_WINNER = winner;
 }
 
-/*
- * NAME :		IsInGame
- * 
- * DESCRIPTION :
- * 			Whether the client is currently in a game.
- * 
- * NOTES :
- * 
- * ARGS : 
- * 
- * RETURN :
- * 
- * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
- */
-int IsInGame(void)
+int isInGame(void)
 {
     return GAME_ACTIVE;
 }
+
+
+/*
+ * ------------------------------------------------
+ * ----------------- START CHEATS -----------------
+ * ------------------------------------------------
+ */
+
+void cheatsApplyNoPacks(void)
+{
+    *CHEAT_NO_PACKS_START = 0x03E00008;
+    *(CHEAT_NO_PACKS_START+1) = 0x00000000;
+}
+
+void cheatsApplyNoV2s(void)
+{
+    // Nop function call
+    CHEAT_NO_V2S_JAL = 0;
+}
+
+int cheatsDisableHealthboxes(void)
+{
+    int count = 0;
+
+    // Iterate through mobys and disable healthboxes
+	Moby ** mobiesArray = MOBY_ARRAY;
+	Moby * currentMoby;
+	while ((currentMoby = *mobiesArray))
+	{
+		if (currentMoby->MobyId == MOBY_ID_HEALTH_BOX_MULT)
+		{
+			currentMoby->PositionX = 0;
+			currentMoby->PositionY = 0;
+			currentMoby->PositionZ = 0;
+
+			if (currentMoby->PropertiesPointer)
+			{
+				void * subPtr = (void*)(*(u32*)(currentMoby->PropertiesPointer));
+				if (subPtr)
+				{
+					Moby * orb = (Moby*)(*(u32*)(subPtr + 0x98));
+					if (orb)
+					{
+						orb->PositionX = 0;
+						orb->PositionY = 0;
+						orb->PositionZ = 0;
+
+						
+						++count;
+					}
+				}
+				// 
+			}
+		}
+
+		++mobiesArray;
+	}
+
+    return count;
+}
+
+
+void cheatsApplyMirrorWorld(int isOn)
+{
+    CHEAT_MIRROR_WORLD = isOn ? 1 : 0;
+}
+
+void cheatsApplyColorblindMode(u8 mode)
+{
+    CHEAT_COLORBLIND_MODE = mode;
+}
+
+void cheatsApplyWeather(u8 weatherId)
+{
+    CHEAT_WEATHER_MODE = weatherId;
+}
+

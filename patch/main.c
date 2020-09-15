@@ -116,7 +116,7 @@ void ProcessGameModules()
 					{
 						// Invoke module
 						if (module->GameEntrypoint)
-							module->GameEntrypoint(module->Arg0);
+							module->GameEntrypoint(&module->Arg0);
 					}
 					// Game has ended so turn off if temporarily on
 					else if (module->State == GAMEMODULE_TEMP_ON)
@@ -128,19 +128,15 @@ void ProcessGameModules()
 				{
 					// If the game has started and we're no longer in game
 					// Then it must have ended
-					if (gamesettings->GameStartTime > 0)
-					{
-						if (module->State == GAMEMODULE_TEMP_ON)
-						{
-							module->State = GAMEMODULE_OFF;
-						}
-					}
-					// Invoke module if in staging
-					else if (module->LobbyEntrypoint)
-					{
-						module->LobbyEntrypoint(module->Arg0);
-					}
+					if (gamesettings->GameStartTime > 0 && GAME_TIME > gamesettings->GameStartTime && GAME_HAS_ENDED && module->State == GAMEMODULE_TEMP_ON)
+						module->State = GAMEMODULE_OFF;
 				}
+			}
+
+			// Invoke lobby module if still active
+			if (!GAME_ACTIVE && module->State > GAMEMODULE_OFF && module->LobbyEntrypoint)
+			{
+				module->LobbyEntrypoint(&module->Arg0);
 			}
 		}
 		// If we aren't in a game then try to turn the module off
@@ -148,6 +144,14 @@ void ProcessGameModules()
 		else if (module->State == GAMEMODULE_TEMP_ON)
 		{
 			module->State = GAMEMODULE_OFF;
+		}
+		else if (module->State == GAMEMODULE_ALWAYS_ON)
+		{
+			// Invoke lobby module if still active
+			if (!GAME_ACTIVE && module->LobbyEntrypoint)
+			{
+				module->LobbyEntrypoint(&module->Arg0);
+			}
 		}
 
 		++module;

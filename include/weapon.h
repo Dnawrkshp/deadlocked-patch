@@ -158,40 +158,8 @@ enum OMEGA_MOD_IDS
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-int WeaponSlotToId(int slotId);
+int weaponSlotToId(int slotId);
 
-/*
- * NAME :		GetPlayerWeaponData
- * 
- * DESCRIPTION :
- * 			Converts a WEAPON_SLOT_INDEX to the respective WEAPON_IDS
- * 
- * NOTES :
- * 
- * ARGS : 
- *      slotId      :           Slot index.
- * 
- * RETURN :
- * 
- * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
- */
-PlayerWeaponData * GetPlayerWeaponData(int playerId);
 
-/*
- * NAME :		WeaponSlotToId
- * 
- * DESCRIPTION :
- * 			Converts a WEAPON_SLOT_INDEX to the respective WEAPON_IDS
- * 
- * NOTES :
- * 
- * ARGS : 
- *      slotId      :           Slot index.
- * 
- * RETURN :
- * 
- * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
- */
-void SetPlayerEquipslot(int playerId, int slot, int weaponId);
 
 #endif // _WEAPON_H_

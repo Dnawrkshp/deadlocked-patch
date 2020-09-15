@@ -57,7 +57,7 @@
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-typedef void (*ModuleStart)(u32 arg0);
+typedef void (*ModuleStart)(u32 * arg0);
 
 
 /*
@@ -118,7 +118,7 @@ typedef struct GameModule
     ModuleStart GameEntrypoint;
 
     /*
-     * Entrypoint of module to be invoked when in staging.
+     * Entrypoint of module to be invoked when in staging or menus.
      */
     ModuleStart LobbyEntrypoint;
 

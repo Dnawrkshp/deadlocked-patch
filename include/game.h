@@ -122,34 +122,90 @@ typedef struct ScoreboardItem
 } ScoreboardItem;
 
 /*
- *
- */
-extern void (* ShowPopup)(int, const char *);
-
-
-/*
- *
- */
-extern void SetWinner(int teamOrPlayerId);
-
-/*
- *
- */
-extern void EndGame(int winner, int isPlayer);
-
-/*
- *
- */
-extern void (* ForceGameEnd)(int);
-
-/*
+ * NAME :		showPopup
  * 
+ * DESCRIPTION :
+ * 			Shows a popup with the given text to the given local player.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *      localPlayerIndex    :               Local player to show popup for.
+ *      message             :               Message to show.
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-extern void GameDisableRanked(void);
+extern void (* showPopup)(int localPlayerIndex, const char * message);
+
 
 /*
- *
+ * NAME :		setWinner
+ * 
+ * DESCRIPTION :
+ * 			Set the winning team/player
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *      teamOrPlayerId    :             Team/player id to set
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-extern int IsInGame(void);
+extern void setWinner(int teamOrPlayerId);
+
+/*
+ * NAME :		endGame
+ * 
+ * DESCRIPTION :
+ * 			End game.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *      winner :        Winning team/player.
+ *      isPlayer :      Whether or not a player or team won.
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+extern void endGame(int winner, int isPlayer);
+
+/*
+ * NAME :		forceGameEnd
+ * 
+ * DESCRIPTION :
+ * 			End the game and indicate if a player or team has won.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *      isPlayerWinner  :        Indicates if the winner is a player or a team.
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+extern void (* ForceGameEnd)(int isPlayerWinner);
+
+/*
+ * NAME :		isInGame
+ * 
+ * DESCRIPTION :
+ * 			Whether the client is currently in a game.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+extern int isInGame(void);
 
 #endif // _GAME_H_

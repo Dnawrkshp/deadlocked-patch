@@ -19,6 +19,7 @@
 #include "game.h"
 #include "gamesettings.h"
 #include "player.h"
+#include "cheats.h"
 
 /*
  * Infected team.
@@ -51,7 +52,7 @@ char InfectedPopupBuffer[64];
 const char * InfectedPopupFormat = "%s has been infected!";
 
 /*
- * NAME :		IsInfected
+ * NAME :		isInfected
  * 
  * DESCRIPTION :
  * 			Returns true if the given player is infected.
@@ -65,12 +66,27 @@ const char * InfectedPopupFormat = "%s has been infected!";
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-inline int IsInfected(int playerId)
+inline int isInfected(int playerId)
 {
 	return InfectedMask & (1 << playerId);
 }
 
-void Infect(int playerId)
+/*
+ * NAME :		infect
+ * 
+ * DESCRIPTION :
+ * 			Infects the given player.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 		playerId:	Player index
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void infect(int playerId)
 {
 	InfectedMask |= (1 << playerId);
 
@@ -82,12 +98,12 @@ void Infect(int playerId)
 	sprintf(InfectedPopupBuffer, InfectedPopupFormat, gameSettings->PlayerNames[playerId]);
 	InfectedPopupBuffer[63] = 0;
 
-	ShowPopup(0, InfectedPopupBuffer);
-	ShowPopup(1, InfectedPopupBuffer);
+	showPopup(0, InfectedPopupBuffer);
+	showPopup(1, InfectedPopupBuffer);
 }
 
 /*
- * NAME :		ProcessPlayer
+ * NAME :		processPlayer
  * 
  * DESCRIPTION :
  * 			Process player.
@@ -101,12 +117,11 @@ void Infect(int playerId)
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void ProcessPlayer(Player * player)
+void processPlayer(Player * player)
 {
 	if (!player)
 		return;
 
-	int isInfected = IsInfected(player->PlayerId);
 	int teamId = player->Team;
 	short deaths = PLAYER_DEATHS_START[player->PlayerId];
 
@@ -115,11 +130,11 @@ void ProcessPlayer(Player * player)
 
 	// 
 
-	if (isInfected)
+	if (isInfected(player->PlayerId))
 	{
 		// If not on the right team then set it
 		if (teamId != INFECTED_TEAM)
-			ChangeTeam(player, INFECTED_TEAM);
+			changeTeam(player, INFECTED_TEAM);
 
 		player->Speed = 4.0;
 		player->DamageMultiplier = 1.001;
@@ -128,14 +143,14 @@ void ProcessPlayer(Player * player)
 		// Force wrench
 		if (player->WeaponHeldId != WEAPON_ID_WRENCH &&
 			player->WeaponHeldId != WEAPON_ID_SWINGSHOT)
-			ChangeWeapon(player, WEAPON_ID_WRENCH);
+			changeWeapon(player, WEAPON_ID_WRENCH);
 	}
 	// If the player is already on the infected team
 	// or if they've died
 	// then infect them
 	else if (teamId == INFECTED_TEAM || deaths > 0)
 	{
-		Infect(player->PlayerId);
+		infect(player->PlayerId);
 	}
 	// Process survivor logic
 	else
@@ -145,7 +160,7 @@ void ProcessPlayer(Player * player)
 }
 
 /*
- * NAME :		GetRandomSurvivor
+ * NAME :		getRandomSurvivor
  * 
  * DESCRIPTION :
  * 			Returns a random survivor.
@@ -159,7 +174,7 @@ void ProcessPlayer(Player * player)
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-Player * GetRandomSurvivor(u32 seed)
+Player * getRandomSurvivor(u32 seed)
 {
 	Player ** playerObjects = PLAYER_STRUCT_ARRAY;
 
@@ -171,7 +186,7 @@ Player * GetRandomSurvivor(u32 seed)
 	{
 		for (i = 0; i < GAME_MAX_PLAYERS; ++i)
 		{
-			if (playerObjects[i] && !IsInfected(playerObjects[i]->PlayerId))
+			if (playerObjects[i] && !isInfected(playerObjects[i]->PlayerId))
 			{
 				++counter;
 
@@ -189,13 +204,13 @@ Player * GetRandomSurvivor(u32 seed)
 }
 
 /*
- * NAME :		main
+ * NAME :		initialize
  * 
  * DESCRIPTION :
- * 			Infected game logic entrypoint.
+ * 			Initializes the gamemode.
  * 
  * NOTES :
- * 			This is called only when in game.
+ * 			This is called only once at the start.
  * 
  * ARGS : 
  * 
@@ -203,46 +218,14 @@ Player * GetRandomSurvivor(u32 seed)
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void Initialize(void)
+void initialize(void)
 {
 	// No packs
-	*(u32*)0x00414660 = 0x03E00008;
-	*(u32*)0x00414664 = 0x00000000;
+	cheatsApplyNoPacks();
 
-	// Iterate through mobys and disable healthboxes
-	Moby ** mobiesArray = MOBY_ARRAY;
-	Moby * currentMoby;
-	while ((currentMoby = *mobiesArray))
-	{
-		if (currentMoby->MobyId == MOBY_ID_HEALTH_BOX_MULT)
-		{
-			currentMoby->PositionX = 0;
-			currentMoby->PositionY = 0;
-			currentMoby->PositionZ = 0;
-
-			if (currentMoby->PropertiesPointer)
-			{
-				void * subPtr = (void*)(*(u32*)(currentMoby->PropertiesPointer));
-				if (subPtr)
-				{
-					Moby * orb = (Moby*)(*(u32*)(subPtr + 0x98));
-					if (orb)
-					{
-						orb->PositionX = 0;
-						orb->PositionY = 0;
-						orb->PositionZ = 0;
-
-						
-						Initialized = 1;
-					}
-				}
-				// 
-			}
-		}
-
-		++mobiesArray;
-	}
-
+	// Disable health boxes
+	if (cheatsDisableHealthboxes())
+		Initialized = 1;
 }
 
 /*
@@ -269,11 +252,11 @@ void gameStart(void)
 	Player ** players = PLAYER_STRUCT_ARRAY;
 
 	// Ensure in game
-	if (!gameSettings || !IsInGame())
+	if (!gameSettings || !isInGame())
 		return;
 
 	if (!Initialized)
-		Initialize();
+		initialize();
 
 	if (!GAME_HAS_ENDED)
 	{
@@ -289,11 +272,11 @@ void gameStart(void)
 				continue;
 			
 			// Process
-			ProcessPlayer(players[i]);
+			processPlayer(players[i]);
 
 			// Count
 			++playerCount;
-			if (IsInfected(players[i]->PlayerId))
+			if (isInfected(players[i]->PlayerId))
 			{
 				++infectedCount;
 			}
@@ -305,7 +288,7 @@ void gameStart(void)
 	}
 
 	// 
-	SetWinner(WinningTeam);
+	setWinner(WinningTeam);
 
 	if (!GAME_HAS_ENDED)
 	{
@@ -313,17 +296,17 @@ void gameStart(void)
 		if (playerCount == infectedCount && GAME_TIME_LIMIT > 0)
 		{
 			// End game
-			EndGame(WinningTeam, 0);
+			endGame(WinningTeam, 0);
 		}
 		else if (infectedCount == 0)
 		{
 			// Infect first player after 10 seconds
 			if ((GAME_TIME - gameSettings->GameStartTime) > (10 * TIME_SECOND))
 			{
-				Player * survivor = GetRandomSurvivor(gameSettings->GameStartTime);
+				Player * survivor = getRandomSurvivor(gameSettings->GameStartTime);
 				if (survivor)
 				{
-					Infect(survivor->PlayerId);
+					infect(survivor->PlayerId);
 				}
 			}
 		}
