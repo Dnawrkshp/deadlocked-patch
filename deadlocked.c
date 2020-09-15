@@ -78,6 +78,44 @@ int weaponSlotToId(int slotId)
     }
 }
 
+void setWeaponDamage(int weaponId, int level, float damage)
+{
+    switch (weaponId)
+    {
+        case WEAPON_ID_WRENCH:
+        {
+            WRENCH_DAMAGE_TABLE->Entries[level].NearDamage = damage;
+            break;
+        }
+        case WEAPON_ID_OMNI_SHIELD:
+        {
+            if (level == 0)
+            {
+#if APPID == DL_APPID
+            *(u16*)0x003FFE00 = *((u16*)(&damage)+1);
+#endif
+            }
+            else
+            {
+#if APPID == DL_APPID
+            *(u16*)0x003FFE10 = *((u16*)(&damage)+1);
+#endif
+            }
+            break;
+        }
+        case WEAPON_ID_FLAIL:
+        {
+            FLAIL_DAMAGE_TABLE->Entries[level].NearDamage = damage;
+            break;
+        }
+        default:
+        {
+            WEAPON_DAMAGE_TABLE[weaponId - WEAPON_ID_VIPERS].Entries[level].NearDamage = damage;
+            break;
+        }
+    }
+}
+
 /*
  * ------------------------------------------------
  * ----------------- START PLAYER -----------------

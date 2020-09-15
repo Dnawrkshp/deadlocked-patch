@@ -452,6 +452,9 @@ void initialize(void)
 	// Set kill target to 0 (disable)
 	GAME_KILLS_TO_WIN = 0;
 
+	// Set holoshields to instant kill
+	setWeaponDamage(WEAPON_ID_OMNI_SHIELD, 0, 50);
+	
 	// Reset winning team to default
 	WinningTeam = 0;
 
