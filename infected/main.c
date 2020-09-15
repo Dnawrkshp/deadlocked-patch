@@ -19,9 +19,11 @@
 #include "game.h"
 #include "gamesettings.h"
 #include "player.h"
-#include "infected.h"
 
-
+/*
+ * Infected team.
+ */
+#define INFECTED_TEAM			(TEAM_GREEN)
 
 /*
  *
