@@ -17,6 +17,7 @@
 #define _MODULE_H_
 
 
+#include <tamtypes.h>
 #include "appid.h"
 
 
@@ -56,7 +57,7 @@
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-typedef void (*ModuleStart)(void);
+typedef void (*ModuleStart)(u32 arg0);
 
 
 /*
@@ -79,8 +80,8 @@ typedef enum GameModuleState
     GAMEMODULE_OFF,
 
     /*
-     * The module will be invoked when the game starts and
-     * it will be set to 'OFF' when the game ends.
+     * The module will be invoked when the game/lobby starts and
+     * it will be set to 'OFF' when the game/lobby ends.
      */
     GAMEMODULE_TEMP_ON,
 
@@ -112,15 +113,19 @@ typedef struct GameModule
     GameModuleState State;
 
     /*
-     * Entrypoint of module.
-     * When NULL, the module is considered to be empty.
+     * Entrypoint of module to be invoked when in game.
      */
-    ModuleStart Entrypoint;
+    ModuleStart GameEntrypoint;
 
     /*
-     * RESERVED
+     * Entrypoint of module to be invoked when in staging.
      */
-    char RESERVED[8];
+    ModuleStart LobbyEntrypoint;
+
+    /*
+     * Arg0
+     */
+    u32 Arg0;
 
 } GameModule;
 
