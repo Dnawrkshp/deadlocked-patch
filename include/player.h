@@ -60,6 +60,11 @@
 
 #endif
 
+/*
+ * Maximum health of player.
+ */
+#define PLAYER_MAX_HEALTH                   (50)
+
 
 /*
  * NAME :		CameraAngle

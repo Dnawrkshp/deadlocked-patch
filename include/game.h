@@ -70,6 +70,11 @@
 /*
  *
  */
+#define PLAYER_KILLS_START                  ((short*)0x0036DA18)
+
+/*
+ *
+ */
 #define PLAYER_DEATHS_START                 ((short*)0x0036DA2C)
 
 /*
