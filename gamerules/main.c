@@ -30,9 +30,16 @@ enum GameRuleIdBitMask
 	GAMERULE_NONE = 			(0),
 	GAMERULE_NO_PACKS =			(1 << 0),
 	GAMERULE_NO_V2S =			(1 << 1),
-	GAMERULE_MIRROR =			(1 << 2)
+	GAMERULE_MIRROR =			(1 << 2),
+	GAMERULE_NO_HB =			(1 << 3)
 
 };
+
+
+/*
+ *
+ */
+int HasDisabledHealthboxes = 0;
 
 /*
  * NAME :		gameStart
@@ -70,6 +77,9 @@ void gameStart(GameModule * module)
 
 	if (bitmask & GAMERULE_MIRROR)
 		cheatsApplyMirrorWorld(1);
+
+	if (bitmask & GAMERULE_NO_HB && !HasDisabledHealthboxes)
+		HasDisabledHealthboxes = cheatsDisableHealthboxes();
 
 }
 
