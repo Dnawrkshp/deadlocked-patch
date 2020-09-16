@@ -33,7 +33,7 @@
 
 
 #define CHEAT_MIRROR_WORLD                          (*(u8*)0x0021DE31)
-#define CHEAT_HUD_COLOR                             (*(u32*)0x0021DE32)
+#define CHEAT_HUD_COLOR                             (*(u8*)0x0021DE32)
 #define CHEAT_SMF_WRENCH                            (*(u8*)0x0021DE35)
 #define CHEAT_VEHICLE_MORPH_MOD                     (*(u8*)0x0021DE36)
 #define CHEAT_SUPER_BLOOM                           (*(u8*)0x0021DE37)
@@ -44,6 +44,21 @@
 #define CHEAT_NINJA_RATCHET                         (*(u8*)0x0021DE3C)
 #define CHEAT_REMOVE_HELMET                         (*(u8*)0x0021DE3D)
 
+#define CHEAT_CACHED_MIRROR_WORLD                   (*(u8*)0x0021DE41)
+#define CHEAT_CACHED_HUD_COLOR                      (*(u8*)0x0021DE42)
+#define CHEAT_CACHED_SMF_WRENCH                     (*(u8*)0x0021DE45)
+#define CHEAT_CACHED_VEHICLE_MORPH_MOD              (*(u8*)0x0021DE46)
+#define CHEAT_CACHED_SUPER_BLOOM                    (*(u8*)0x0021DE47)
+#define CHEAT_CACHED_COLORBLIND_MODE                (*(u8*)0x0021DE48)
+#define CHEAT_CACHED_WEATHER_MODE                   (*(u8*)0x0021DE49)
+#define CHEAT_CACHED_GANGSTA_GUNS                   (*(u8*)0x0021DE4A)
+#define CHEAT_CACHED_KILL_QWARK                     (*(u8*)0x0021DE4B)
+#define CHEAT_CACHED_NINJA_RATCHET                  (*(u8*)0x0021DE4C)
+#define CHEAT_CACHED_REMOVE_HELMET                  (*(u8*)0x0021DE4D)
+
+#define CHEAT_UPDATE_FUNC                           ((void(*)(int))0x004AA178)
+
+#define CHEAT_WEATHER_MODE_REAL                     (*(int*)0x002202DC)
 
 #endif
 /*
@@ -57,6 +72,7 @@
  */
 enum WeatherIds
 {
+    WEATHER_OFF =                       0,
     WEATHER_DUST_STORM =                1,
     WEATHER_HEAVY_SAND_STORM =          2,
     WEATHER_LIGHT_SNOW =                3,

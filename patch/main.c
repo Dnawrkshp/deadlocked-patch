@@ -116,7 +116,7 @@ void ProcessGameModules()
 					{
 						// Invoke module
 						if (module->GameEntrypoint)
-							module->GameEntrypoint(&module->Arg0);
+							module->GameEntrypoint(module);
 					}
 					// Game has ended so turn off if temporarily on
 					else if (module->State == GAMEMODULE_TEMP_ON)
@@ -136,7 +136,7 @@ void ProcessGameModules()
 			// Invoke lobby module if still active
 			if (!GAME_ACTIVE && module->State > GAMEMODULE_OFF && module->LobbyEntrypoint)
 			{
-				module->LobbyEntrypoint(&module->Arg0);
+				module->LobbyEntrypoint(module);
 			}
 		}
 		// If we aren't in a game then try to turn the module off
@@ -150,7 +150,7 @@ void ProcessGameModules()
 			// Invoke lobby module if still active
 			if (!GAME_ACTIVE && module->LobbyEntrypoint)
 			{
-				module->LobbyEntrypoint(&module->Arg0);
+				module->LobbyEntrypoint(module);
 			}
 		}
 

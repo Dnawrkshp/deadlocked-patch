@@ -249,7 +249,23 @@ int cheatsDisableHealthboxes(void)
 
 void cheatsApplyMirrorWorld(int isOn)
 {
+    // 
+    if (CHEAT_CACHED_MIRROR_WORLD == isOn)
+        return;
+
+    // Apply
     CHEAT_MIRROR_WORLD = isOn ? 1 : 0;
+    
+    if (GAME_ACTIVE)
+    {
+        // Update
+        CHEAT_UPDATE_FUNC(0);
+    }
+    else
+    {
+        // If not in game then just set cached value
+        CHEAT_CACHED_MIRROR_WORLD = isOn ? 1 : 0;
+    }
 }
 
 void cheatsApplyColorblindMode(u8 mode)
@@ -260,5 +276,12 @@ void cheatsApplyColorblindMode(u8 mode)
 void cheatsApplyWeather(u8 weatherId)
 {
     CHEAT_WEATHER_MODE = weatherId;
-}
+    CHEAT_CACHED_WEATHER_MODE = weatherId;
 
+    // 
+    if (weatherId == WEATHER_OFF)
+        return;
+
+    // Apply
+    CHEAT_WEATHER_MODE_REAL = -weatherId;
+}

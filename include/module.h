@@ -43,6 +43,14 @@
 
 #endif
 
+// Forward declarations
+struct GameModule;
+
+
+/*
+ * Size of game module arg buffer.
+ */
+#define GAME_MODULE_ARG_SIZE            (8)
 
 /*
  * NAME :		ModuleStart
@@ -57,7 +65,7 @@
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-typedef void (*ModuleStart)(u32 * arg0);
+typedef void (*ModuleStart)(struct GameModule * module);
 
 
 /*
@@ -123,9 +131,9 @@ typedef struct GameModule
     ModuleStart LobbyEntrypoint;
 
     /*
-     * Arg0
+     * Buffer containing module specific arguments given by the server.
      */
-    u32 Arg0;
+    char Argbuffer[GAME_MODULE_ARG_SIZE];
 
 } GameModule;
 

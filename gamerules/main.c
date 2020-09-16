@@ -49,9 +49,14 @@ enum GameRuleIdBitMask
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void gameStart(u32 * arg0)
+void gameStart(GameModule * module)
 {
-	u32 bitmask = *arg0;
+	u32 bitmask = *(u32*)module->Argbuffer;
+	char weatherId = module->Argbuffer[4];
+
+
+	// Apply weather
+	cheatsApplyWeather(weatherId);
 
 	// If no game rules then exit
 	if (bitmask == GAMERULE_NONE)
@@ -65,6 +70,7 @@ void gameStart(u32 * arg0)
 
 	if (bitmask & GAMERULE_MIRROR)
 		cheatsApplyMirrorWorld(1);
+
 }
 
 /*
@@ -82,14 +88,15 @@ void gameStart(u32 * arg0)
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void lobbyStart(u32 * arg0)
+void lobbyStart(GameModule * module)
 {
 	// If we're not in staging then reset
 	if (GLOBAL_GAMESETTINGS)
 		return;
 
 	// Reset
-	*arg0 = 0;
+	memset(module->Argbuffer, 0, GAME_MODULE_ARG_SIZE);
+	module->State = GAMEMODULE_OFF;
 
 	// Reset mirror world in lobby
 	cheatsApplyMirrorWorld(0);
