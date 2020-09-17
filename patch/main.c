@@ -46,7 +46,7 @@
 
 #endif
 
-
+void ProcessSpectate(void);
 
 /*
  * NAME :		PatchCameraSpeed
@@ -154,6 +154,9 @@ int main (void)
 
 	// Process game modules
 	ProcessGameModules();
+
+	// Process spectate
+	ProcessSpectate();
 
 	return 0;
 }

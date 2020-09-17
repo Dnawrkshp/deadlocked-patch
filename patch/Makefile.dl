@@ -33,7 +33,7 @@
 
 EE_ELF = patch-11184.elf
 EE_BIN = patch-11184.bin
-EE_OBJS = main.o ../deadlocked.o
+EE_OBJS = spectate.o main.o ../deadlocked.o
 
 EE_INCS := -I../include
 
