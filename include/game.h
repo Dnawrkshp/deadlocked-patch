@@ -70,6 +70,11 @@
 /*
  *
  */
+#define GAME_DEATH_BARRIER_Y                (*(float*)0x0022267C)
+
+/*
+ *
+ */
 #define PLAYER_KILLS_START                  ((short*)0x0036DA18)
 
 /*

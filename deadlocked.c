@@ -53,7 +53,26 @@ void (*memcpy)(void *, const void *, int) = (void(*)(void *, const void *, int))
 
 int (*sha1)(const void *, int, void *, int) = (int(*)(const void *, int, void *, int))0x01EB30C8;
 
+void* (*memset)(void *, int, int) = (void* (*)(void *, int, int))0x0011A518;
+
+float (*cosf)(float) = (float (*)(float))MATH_COSF_FADDR;
+
+float (*sqrtf)(float) = (float (*)(float))MATH_SQRTF_FADDR;
+
+Moby * (* spawnMoby)(int id, int propSize) = (Moby * (*)(int, int))0x004F7200;
+
 #endif
+
+
+/*
+ * ------------------------------------------------
+ * ------------------ START MATH ------------------
+ * ------------------------------------------------
+ */
+float sinf(float v)
+{
+    return cosf(v - (MATH_PI / 2));
+}
 
 /*
  * ------------------------------------------------
@@ -161,6 +180,13 @@ void changeTeam(Player * player, int teamId)
 int isLocal(Player * player)
 {
     return (int)player >= 0x00300000 && (int)player <= 0x00400000;
+}
+
+void playerSetPosRot(Player * player, Vector3 * p, Vector3 * r)
+{
+    void (* tp)(Player *, Vector3 *, Vector3 *, int) = (void (*)(Player *, Vector3 *, Vector3 *, int))PLAYER_SET_POS_ROT;
+
+    tp(player, p, r, 0);
 }
 
 /*
