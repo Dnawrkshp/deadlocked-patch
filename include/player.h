@@ -60,6 +60,11 @@
 
 #endif
 
+/*
+ * Maximum health of player.
+ */
+#define PLAYER_MAX_HEALTH                   (50)
+
 
 /*
  * NAME :		CameraAngle
@@ -216,7 +221,7 @@ typedef struct Player
     
     char UNK22[0xCC];
 
-    // Points to the player moby
+    // Points to the player moby (0x2EF0)
     Moby * PlayerMoby;
 
     char UNK23[0x0C];
@@ -237,12 +242,96 @@ typedef struct Player
 
 } Player;
 
-void ChangeWeapon(Player * player, int weaponId);
-void ChangeTeam(Player * player, int teamId);
-int IsLocal(Player * player);
+/*
+ * NAME :		changeWeapon
+ * 
+ * DESCRIPTION :
+ * 			Change player's equipped weapon.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *      player      :           Pointer to player data struct
+ *      weaponId    :           Weapon id to set
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void changeWeapon(Player * player, int weaponId);
 
 /*
- * NAME :		GiveWeapon
+ * NAME :		GetPlayerWeaponData
+ * 
+ * DESCRIPTION :
+ * 			Gets a pointer to the given player's weapon data struct.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *      playerId      :           Player index.
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+PlayerWeaponData * getPlayerWeaponData(int playerId);
+
+/*
+ * NAME :		setLocalPlayerEquipslot
+ * 
+ * DESCRIPTION :
+ * 			Set's the given local player's equip slot with the given weapon id.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *      localPlayerId      :           Local player index.
+ *      
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void setLocalPlayerEquipslot(int localPlayerId, int slot, int weaponId);
+
+/*
+ * NAME :		changeTeam
+ * 
+ * DESCRIPTION :
+ * 			Change player's equipped weapon.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *      player      :           Pointer to player data struct
+ *      teamId    :             Team id to set
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void changeTeam(Player * player, int teamId);
+
+/*
+ * NAME :		isLocal
+ * 
+ * DESCRIPTION :
+ * 			Whether or not the given player is local or remote.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *      player      :           Target player.
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+int isLocal(Player * player);
+
+/*
+ * NAME :		giveWeapon
  * 
  * DESCRIPTION :
  * 			Converts a WEAPON_SLOT_INDEX to the respective WEAPON_IDS
@@ -250,13 +339,15 @@ int IsLocal(Player * player);
  * NOTES :
  * 
  * ARGS : 
- *      slotId      :           Slot index.
+ *      player      :           Target player.
+ *      weaponId    :           ID of weapon to give.
+ *      weaponLevel :           Level of weapon.
  * 
  * RETURN :
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void GiveWeapon(Player * player, int weaponId, int weaponLevel);
+void giveWeapon(Player * player, int weaponId, int weaponLevel);
 
 
 #endif // _PLAYER_H_

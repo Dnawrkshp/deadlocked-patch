@@ -23,6 +23,10 @@
 
 #define WEAPON_EQUIPSLOT                    ((int*)0x0020C690)
 
+#define WRENCH_DAMAGE_TABLE                 ((WrenchDamageData*)0x00398AA0)
+#define WEAPON_DAMAGE_TABLE                 ((WeaponDamageData*)0x00398BA0)
+#define FLAIL_DAMAGE_TABLE                  ((WeaponDamageData*)0x00399770)
+
 #endif
 
 
@@ -44,6 +48,29 @@ typedef struct PlayerWeaponData
     char UNK_3C[0x08];
 
 } PlayerWeaponData;
+
+
+typedef struct WeaponDamageEntry
+{
+    int UNK_10;
+    int UNK_14;
+    float UNK_18;
+    float UNK_1C;
+    float NearDamage;
+    float FarDamage;
+    int LevelId;
+    int Experience;
+} WeaponDamageEntry;
+
+typedef struct WeaponDamageData
+{
+    WeaponDamageEntry Entries[10];
+} WeaponDamageData;
+
+typedef struct WrenchDamageData
+{
+    WeaponDamageEntry Entries[8];
+} WrenchDamageData;
 
 /*
  * NAME :		WEAPON_IDS
@@ -144,7 +171,7 @@ enum OMEGA_MOD_IDS
 };
 
 /*
- * NAME :		WeaponSlotToId
+ * NAME :		weaponSlotToId
  * 
  * DESCRIPTION :
  * 			Converts a WEAPON_SLOT_INDEX to the respective WEAPON_IDS
@@ -158,40 +185,27 @@ enum OMEGA_MOD_IDS
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-int WeaponSlotToId(int slotId);
+extern int weaponSlotToId(int slotId);
+
 
 /*
- * NAME :		GetPlayerWeaponData
+ * NAME :		setWeaponDamage
  * 
  * DESCRIPTION :
- * 			Converts a WEAPON_SLOT_INDEX to the respective WEAPON_IDS
+ * 			Sets the damage of the given weapon at the given level.
  * 
  * NOTES :
  * 
  * ARGS : 
- *      slotId      :           Slot index.
+ *      weaponId        :           Target weapon.
+ *      level           :           Target weapon level.
+ *      damage          :           Target damage.
  * 
  * RETURN :
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-PlayerWeaponData * GetPlayerWeaponData(int playerId);
+extern void setWeaponDamage(int weaponId, int level, float damage);
 
-/*
- * NAME :		WeaponSlotToId
- * 
- * DESCRIPTION :
- * 			Converts a WEAPON_SLOT_INDEX to the respective WEAPON_IDS
- * 
- * NOTES :
- * 
- * ARGS : 
- *      slotId      :           Slot index.
- * 
- * RETURN :
- * 
- * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
- */
-void SetPlayerEquipslot(int playerId, int slot, int weaponId);
 
 #endif // _WEAPON_H_

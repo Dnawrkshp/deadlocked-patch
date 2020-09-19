@@ -79,7 +79,7 @@ void PatchCameraSpeed()
  * NAME :		ProcessGameModules
  * 
  * DESCRIPTION :
- * 			Patches in-game camera speed setting to max out at 200%.
+ * 
  * 
  * NOTES :
  * 
@@ -98,27 +98,45 @@ void ProcessGameModules()
 	GameSettings * gamesettings = GLOBAL_GAMESETTINGS;
 
 	// Iterate through all the game modules until we hit an empty one
-	while (module->Entrypoint)
+	while (module->GameEntrypoint || module->LobbyEntrypoint)
 	{
 		// Ensure we have game settings
 		if (gamesettings)
 		{
-			// Check the module is enabled and that the game has started
-			if (module->State > GAMEMODULE_OFF && gamesettings->GameStartTime > 0)
+			// Check the module is enabled
+			if (module->State > GAMEMODULE_OFF)
 			{
-				// Check if the game hasn't ended
-				// We also give the module a second after the game has ended to
-				// do some end game logic
-				if (!GAME_HAS_ENDED || GAME_TIME < (GAME_TIME_ENDGAME + TIME_SECOND))
+				// If in game, run game entrypoint
+				if (GAME_ACTIVE)
 				{
-					// Invoke module
-					module->Entrypoint();
+					// Check if the game hasn't ended
+					// We also give the module a second after the game has ended to
+					// do some end game logic
+					if (!GAME_HAS_ENDED || GAME_TIME < (GAME_TIME_ENDGAME + TIME_SECOND))
+					{
+						// Invoke module
+						if (module->GameEntrypoint)
+							module->GameEntrypoint(module);
+					}
+					// Game has ended so turn off if temporarily on
+					else if (module->State == GAMEMODULE_TEMP_ON)
+					{
+						module->State = GAMEMODULE_OFF;
+					}
 				}
-				// Game has ended so turn off if temporarily on
-				else if (module->State == GAMEMODULE_TEMP_ON)
+				else
 				{
-					module->State = GAMEMODULE_OFF;
+					// If the game has started and we're no longer in game
+					// Then it must have ended
+					if (gamesettings->GameStartTime > 0 && GAME_TIME > gamesettings->GameStartTime && GAME_HAS_ENDED && module->State == GAMEMODULE_TEMP_ON)
+						module->State = GAMEMODULE_OFF;
 				}
+			}
+
+			// Invoke lobby module if still active
+			if (!GAME_ACTIVE && module->State > GAMEMODULE_OFF && module->LobbyEntrypoint)
+			{
+				module->LobbyEntrypoint(module);
 			}
 		}
 		// If we aren't in a game then try to turn the module off
@@ -126,6 +144,14 @@ void ProcessGameModules()
 		else if (module->State == GAMEMODULE_TEMP_ON)
 		{
 			module->State = GAMEMODULE_OFF;
+		}
+		else if (module->State == GAMEMODULE_ALWAYS_ON)
+		{
+			// Invoke lobby module if still active
+			if (!GAME_ACTIVE && module->LobbyEntrypoint)
+			{
+				module->LobbyEntrypoint(module);
+			}
 		}
 
 		++module;
