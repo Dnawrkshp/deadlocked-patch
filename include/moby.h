@@ -412,13 +412,14 @@ typedef struct Moby
 
     char UNK_1C[0x04];
 
+    char UNK_20[0x03];
     char Opacity;
-    char UNK_21[0x03];
 
     void * ModelPointer;
 
     char UNK_28[0x08];
-    short UNK_30;
+    char UNK_30;
+    char UNK_31;
 
     short RenderDistance;
 
@@ -469,7 +470,9 @@ typedef struct Moby
 
     void * PropertiesPointer;
 
-    char UNK_B0[0x0C];
+    char UNK_B0[0x08];
+
+    float UNK_B8;
 
     short MobyId;
     short UNK_BE;
@@ -478,5 +481,10 @@ typedef struct Moby
 
 } Moby;
 
+
+/*
+ * Spawns a moby with the given id and properties size.
+ */
+extern Moby * (* spawnMoby)(int id, int propSize);
 
 #endif // _MOBY_H_

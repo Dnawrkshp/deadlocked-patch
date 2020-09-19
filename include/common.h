@@ -34,4 +34,9 @@ extern unsigned int (*strlen)(const char *);
  */
 extern int (*sha1)(const void * inBuffer, int inSize, void * outBuffer, int outSize);
 
+/*
+ *
+ */
+extern void* (*memset)(void *, int, int);
+
 #endif // _COMMON_H_

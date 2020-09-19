@@ -16,6 +16,7 @@
 
 
 #include "appid.h"
+#include "math.h"
 #include "weapon.h"
 #include "moby.h"
 #include "pad.h"
@@ -51,6 +52,11 @@
  *
  */
 #define PLAYER_GIVEWEP_FUNCADD              (0x00628018)
+
+/*
+ *
+ */
+#define PLAYER_SET_POS_ROT                  (0x005EB448)
 
 /*
  * ------------------------------------------------
@@ -349,5 +355,23 @@ int isLocal(Player * player);
  */
 void giveWeapon(Player * player, int weaponId, int weaponLevel);
 
+/*
+ * NAME :		playerSetPosRot
+ * 
+ * DESCRIPTION :
+ * 			Sets a given player's position and rotation.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *      player      :           Target player.
+ *      p           :           Position.
+ *      r           :           Rotation.
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void playerSetPosRot(Player * player, Vector3 * p, Vector3 * r);
 
 #endif // _PLAYER_H_
