@@ -158,7 +158,7 @@ u8 getGameSurvivor(void)
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-u8 setGameSurvivor(u8 survivor)
+void setGameSurvivor(u8 survivor)
 {
     GAME_SURVIVOR = survivor;
 }

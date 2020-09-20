@@ -151,6 +151,7 @@ void processGameModules()
 	}
 }
 
+int a  = 0;
 
 /*
  * NAME :		main

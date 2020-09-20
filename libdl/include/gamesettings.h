@@ -187,6 +187,38 @@ u8 getGameTimeLimit(void);
 void setGameTimeLimit(u8 minutes);
 
 /*
+ * NAME :		getGameSurvivor
+ * 
+ * DESCRIPTION :
+ * 			Gets the game's survivor flag (no respawning)
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+u8 getGameSurvivor(void);
+
+/*
+ * NAME :		setGameSurvivor
+ * 
+ * DESCRIPTION :
+ * 			Sets the game's survivor flag (no respawning)
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void setGameSurvivor(u8 survivor);
+
+/*
  * NAME :		getGameKillsToWin
  * 
  * DESCRIPTION :

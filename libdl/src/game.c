@@ -112,14 +112,15 @@ void showPopup(int localPlayerIndex, const char * message)
  * ARGS : 
  *      localPlayerIndex    :               Local player to show popup for.
  *      message             :               Message to show.
+ *      seconds             :               How many seconds to show the popup for.
  * 
  * RETURN :
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void showHelpPopup(int localPlayerIndex, const char * message)
+void showHelpPopup(int localPlayerIndex, const char * message, int seconds)
 {
-    ((void(*)(int, const char *))GAME_SHOWHELP_FUNC)(localPlayerIndex, message);
+    ((void(*)(int, const char *, int))GAME_SHOWHELP_FUNC)(localPlayerIndex, message, seconds * 30);
 }
 
 /*

@@ -134,7 +134,13 @@ void cheatsApplyWeather(u8 weatherId)
 
     // 
     if (weatherId == WEATHER_OFF)
+    {
+        // Disable weather
+        if (CHEAT_WEATHER_MODE_REAL < 0)
+            CHEAT_WEATHER_MODE_REAL = weatherId;
+
         return;
+    }
 
     // Apply
     CHEAT_WEATHER_MODE_REAL = -weatherId;
