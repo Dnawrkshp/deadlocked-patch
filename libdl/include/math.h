@@ -14,34 +14,11 @@
 #ifndef _MATH_H_
 #define _MATH_H_
 
-/*
- *
- */
+//--------------------------------------------------------
 #define MATH_PI                         (3.14159)
-
-/*
- *
- */
 #define MATH_TAU                        (MATH_PI * 2.0)
 
-
-#if APPID == DL_APPID
-
-/*
- * 
- */
-#define MATH_COSF_FADDR                 (0x00135878)
-
-/*
- * 
- */
-#define MATH_SQRTF_FADDR                (0x00136C90) 
-
-#endif
-
-/*
- * 
- */
+//--------------------------------------------------------
 typedef struct Vector3
 {
     float X;
@@ -49,9 +26,8 @@ typedef struct Vector3
     float Z;
 } Vector3;
 
-/*
- *
- */
+
+//--------------------------------------------------------
 typedef struct Vector4
 {
     float X;
@@ -61,8 +37,13 @@ typedef struct Vector4
 } Vector4;
 
 
-extern float (* cosf)(float);
-float sinf(float);
-extern float (* sqrtf)(float);
+//--------------------------------------------------------
+float cosf(float theta);
+
+//--------------------------------------------------------
+float sinf(float theta);
+
+//--------------------------------------------------------
+float sqrtf(float f);
 
 #endif // _MATH_H_

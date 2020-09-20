@@ -14,26 +14,9 @@
 #ifndef _MOBY_H_
 #define _MOBY_H_
 
+#include <tamtypes.h>
 
-#include "appid.h"
-
-
-
-#if APPID == DL_APPID
-
-/*
- * ------------------------------------------------
- * ----------- START DEADLOCKED OFFSETS -----------
- * ------------------------------------------------
- */
-
-
-/*
- * 
- */
-#define MOBY_ARRAY                 ((Moby**)0x0026B5A0)
-
-
+//--------------------------------------------------------
 enum MobyId
 {
     MOBY_ID_CLANK = 0x000A,
@@ -382,14 +365,6 @@ enum MobyId
 };
 
 /*
- * ------------------------------------------------
- * ------------ END DEADLOCKED OFFSETS ------------
- * ------------------------------------------------
- */
-
-#endif
-
-/*
  * NAME :		Moby
  * 
  * DESCRIPTION :
@@ -483,8 +458,13 @@ typedef struct Moby
 
 
 /*
+ * Returns the collection of pointers to each loaded moby.
+ */
+Moby ** getLoadedMobies(void);
+
+/*
  * Spawns a moby with the given id and properties size.
  */
-extern Moby * (* spawnMoby)(int id, int propSize);
+Moby * spawnMoby(int id, int propSize);
 
 #endif // _MOBY_H_

@@ -15,6 +15,8 @@
 
 #include "appid.h"
 #include "common.h"
+#include "player.h"
+#include "pad.h"
 #include "time.h"
 #include "module.h"
 #include "game.h"
@@ -185,7 +187,20 @@ int main (void)
 	processGameModules();
 
 	// Process spectate
-	processSpectate();
+	//processSpectate();
+
+	Player * localPlayer = PLAYER_STRUCT_ARRAY[0];
+	if (localPlayer)
+	{
+		PadButtonStatus * pad2 = (PadButtonStatus*)((u8*)localPlayer->Paddata + 0x80);
+		if ((localPlayer->Paddata->btns & PAD_LEFT) != (pad2->btns & PAD_LEFT))
+		{
+			if ((localPlayer->Paddata->btns & PAD_LEFT) == 0)
+				printf("%d: PAD LEFT DOWN (0:%04x, 1:%04x)\n", GAME_TIME, localPlayer->Paddata->btns, pad2->btns);
+			else
+				printf("%d: PAD LEFT UP (0:%04x, 1:%04x)\n", GAME_TIME, localPlayer->Paddata->btns, pad2->btns);
+		}
+	}
 
 	return 0;
 }

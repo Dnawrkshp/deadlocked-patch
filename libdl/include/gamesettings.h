@@ -14,49 +14,6 @@
 #ifndef _GAMESETTINGS_H_
 #define _GAMESETTINGS_H_
 
-
-#include "appid.h"
-
-
-
-#if APPID == DL_APPID
-
-/*
- * ------------------------------------------------
- * ----------- START DEADLOCKED OFFSETS -----------
- * ------------------------------------------------
- */
-
-
-/*
- * Points to the active game settings.
- */
-#define GLOBAL_GAMESETTINGS			((GameSettings*)(*(u32*)0x0021DFE8))
-
-/*
- *
- */
-#define GAME_RESPAWN_TIME           (*(u8*)0x002126DC)
-
-/*
- *
- */
-#define GAME_TIMELIMT_MINUTES       (*(u8*)0x002126D0)
-
-/*
- *
- */
-#define GAME_KILLS_TO_WIN           (*(u8*)0x002126D1)
-
-/*
- * ------------------------------------------------
- * ------------ END DEADLOCKED OFFSETS ------------
- * ------------------------------------------------
- */
-
-#endif
-
-
 /*
  * Maximum number of players in a game.
  */

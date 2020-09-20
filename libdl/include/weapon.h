@@ -14,22 +14,9 @@
 #ifndef _WEAPON_H_
 #define _WEAPON_H_
 
-#include "appid.h"
-
-#if APPID == DL_APPID
-
-#define WEAPON_DATA_START                   (0x001D49C0)
-#define WEAPON_DATA_SIZE                    (0x12B0)
-
-#define WEAPON_EQUIPSLOT                    ((int*)0x0020C690)
-
-#define WRENCH_DAMAGE_TABLE                 ((WrenchDamageData*)0x00398AA0)
-#define WEAPON_DAMAGE_TABLE                 ((WeaponDamageData*)0x00398BA0)
-#define FLAIL_DAMAGE_TABLE                  ((WeaponDamageData*)0x00399770)
-
-#endif
-
-
+/*
+ *
+ */
 typedef struct PlayerWeaponData
 {
     short Level;
@@ -49,7 +36,9 @@ typedef struct PlayerWeaponData
 
 } PlayerWeaponData;
 
-
+/*
+ *
+ */
 typedef struct WeaponDamageEntry
 {
     int UNK_10;
@@ -62,11 +51,17 @@ typedef struct WeaponDamageEntry
     int Experience;
 } WeaponDamageEntry;
 
+/*
+ *
+ */
 typedef struct WeaponDamageData
 {
     WeaponDamageEntry Entries[10];
 } WeaponDamageData;
 
+/*
+ *
+ */
 typedef struct WrenchDamageData
 {
     WeaponDamageEntry Entries[8];
@@ -185,7 +180,7 @@ enum OMEGA_MOD_IDS
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-extern int weaponSlotToId(int slotId);
+int weaponSlotToId(int slotId);
 
 
 /*
@@ -205,7 +200,7 @@ extern int weaponSlotToId(int slotId);
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-extern void setWeaponDamage(int weaponId, int level, float damage);
+void setWeaponDamage(int weaponId, int level, float damage);
 
 
 #endif // _WEAPON_H_

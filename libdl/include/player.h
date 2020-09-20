@@ -14,63 +14,16 @@
 #ifndef _PLAYER_H_
 #define _PLAYER_H_
 
-
-#include "appid.h"
 #include "math.h"
 #include "weapon.h"
 #include "moby.h"
 #include "pad.h"
 #include "team.h"
 
-
-
-#if APPID == DL_APPID
-
-/*
- * ------------------------------------------------
- * ----------- START DEADLOCKED OFFSETS -----------
- * ------------------------------------------------
- */
-
-
-/*
- * 
- */
-#define PLAYER_STRUCT_ARRAY                 ((Player**)0x00344C38)
-
-/*
- * Local player 1 dme player index.
- */
-#define PLAYER_1_ID                         (*(u32*)0x0017218C)
-
-/*
- * Local player 2 dme player index.
- */
-#define PLAYER_2_ID                         (*(u32*)0x001B6ED8)
-
-/*
- *
- */
-#define PLAYER_GIVEWEP_FUNCADD              (0x00628018)
-
-/*
- *
- */
-#define PLAYER_SET_POS_ROT                  (0x005EB448)
-
-/*
- * ------------------------------------------------
- * ------------ END DEADLOCKED OFFSETS ------------
- * ------------------------------------------------
- */
-
-#endif
-
 /*
  * Maximum health of player.
  */
 #define PLAYER_MAX_HEALTH                   (50)
-
 
 /*
  * NAME :		CameraAngle
@@ -251,6 +204,23 @@ typedef struct Player
     float Speed;
 
 } Player;
+
+
+/*
+ * NAME :		getPlayers
+ * 
+ * DESCRIPTION :
+ * 			Returns a pointer to an array of Player object pointers.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+Player ** getPlayers(void);
 
 /*
  * NAME :		changeWeapon

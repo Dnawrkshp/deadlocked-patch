@@ -1,38 +1,15 @@
-/***************************************************
- * FILENAME :		game.h
- * 
- * DESCRIPTION :
- * 		Contains game specific offsets and structures for Deadlocked.
- * 
- * NOTES :
- * 		Each offset is determined per app id.
- * 		This is to ensure compatibility between versions of Deadlocked/Gladiator.
- * 		
- * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
- */
-
-#ifndef _GAME_H_
-#define _GAME_H_
-
-#include <tamtypes.h>
-#include "appid.h"
-#include "gamesettings.h"
+#include "game.h"
 
 
-
-#if APPID == DL_APPID
-
-/*
- * ------------------------------------------------
- * ----------- START DEADLOCKED OFFSETS -----------
- * ------------------------------------------------
- */
+//--------------------------------------------------------
+#define GAME_END_FUNC                       (0x006228C8)
+#define GAME_SHOWPOPUP_FUNC                 (0x00540170)
+#define GAME_SHOWHELP_FUNC                  (0x00540140)
 
 /*
  * 
  */
 #define GAME_ACTIVE                         (*(int*)0x0021E1EC)
-
 
 /*
  * How many milliseconds for the game to last.
@@ -68,27 +45,27 @@
 #define GAME_TIME                           (*(int*)0x00172378)
 
 /*
- *
+ * 
  */
 #define GAME_DEATH_BARRIER_Y                (*(float*)0x0022267C)
 
 /*
- *
+ * 
  */
 #define PLAYER_KILLS_START                  ((short*)0x0036DA18)
 
 /*
- *
+ * 
  */
 #define PLAYER_DEATHS_START                 ((short*)0x0036DA2C)
 
 /*
- *
+ * 
  */
 #define PLAYER_SUICIDES_START               ((short*)0x0036DA40)
 
 /*
- *
+ * 
  */
 #define PLAYER_WEAPON_STATS_ARRAY           ((PlayerWeaponStats*)0x0036D6A8)
 
@@ -98,42 +75,20 @@
 #define GAME_SCOREBOARD_REFRESH_FLAG        (*(u32*)0x00310248)
 
 /*
- *
+ * Target scoreboard value.
  */
 #define GAME_SCOREBOARD_TARGET              (*(u32*)0x002FA084)
 
 /*
- * 
+ * Collection of scoreboard items.
  */
 #define GAME_SCOREBOARD_ARRAY               ((ScoreboardItem**)0x002FA04C)
 
 /*
- * 
+ * Number of items in the scoreboard.
  */
 #define GAME_SCOREBOARD_ITEM_COUNT          (*(u32*)0x002F9FCC)
 
-
-/*
- * ------------------------------------------------
- * ------------ END DEADLOCKED OFFSETS ------------
- * ------------------------------------------------
- */
-
-#endif
-
-typedef struct PlayerWeaponStats
-{
-    u16 WeaponKills[GAME_MAX_PLAYERS][9];
-    u16 WeaponDeaths[GAME_MAX_PLAYERS][9];
-} PlayerWeaponStats;
-
-
-typedef struct ScoreboardItem
-{
-    int TeamId;
-    int UNK;
-    int Value;
-} ScoreboardItem;
 
 /*
  * NAME :		showPopup
@@ -151,7 +106,10 @@ typedef struct ScoreboardItem
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-extern void (* showPopup)(int localPlayerIndex, const char * message);
+void showPopup(int localPlayerIndex, const char * message)
+{
+    ((void(*)(int, const char *))GAME_SHOWPOPUP_FUNC)(localPlayerIndex, message);
+}
 
 /*
  * NAME :		showHelpPopup
@@ -169,8 +127,10 @@ extern void (* showPopup)(int localPlayerIndex, const char * message);
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-extern void (* showHelpPopup)(int localPlayerIndex, const char * message);
-
+void showHelpPopup(int localPlayerIndex, const char * message)
+{
+    ((void(*)(int, const char *))GAME_SHOWHELP_FUNC)(localPlayerIndex, message);
+}
 
 /*
  * NAME :		setWinner
@@ -188,7 +148,11 @@ extern void (* showHelpPopup)(int localPlayerIndex, const char * message);
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-extern void setWinner(int teamOrPlayerId, int isTeam);
+void setWinner(int teamOrPlayerId, int isTeam)
+{
+    GAME_WINNER_TEAM_ID = teamOrPlayerId;
+    GAME_WINNER_PLAYER_ID = isTeam ? -1 : teamOrPlayerId;
+}
 
 /*
  * NAME :		endGame
@@ -205,23 +169,11 @@ extern void setWinner(int teamOrPlayerId, int isTeam);
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-extern void endGame(int reason);
-/*
- * NAME :		forceGameEnd
- * 
- * DESCRIPTION :
- * 			End the game and indicate if a player or team has won.
- * 
- * NOTES :
- * 
- * ARGS : 
- *      isPlayerWinner  :        Indicates if the winner is a player or a team.
- * 
- * RETURN :
- * 
- * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
- */
-extern void (* ForceGameEnd)(int isPlayerWinner);
+void endGame(int reason)
+{
+    if (!hasGameEnded())
+        ((void(*)(int))GAME_END_FUNC)(reason);
+}
 
 /*
  * NAME :		isInGame
@@ -237,6 +189,26 @@ extern void (* ForceGameEnd)(int isPlayerWinner);
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-extern int isInGame(void);
+int isInGame(void)
+{
+    return GAME_ACTIVE;
+}
 
-#endif // _GAME_H_
+/*
+ * NAME :		hasGameEnded
+ * 
+ * DESCRIPTION :
+ * 			Whether the game has ended and/or is ending.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+int hasGameEnded(void)
+{
+    return GAME_HAS_ENDED;
+}
