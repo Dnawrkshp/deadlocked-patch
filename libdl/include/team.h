@@ -15,6 +15,7 @@
 #define _TEAM_H_
 
 #include <tamtypes.h>
+#include "gamesettings.h"
 
 /*
  *
@@ -34,6 +35,6 @@ enum TEAM_IDS
     TEAM_WHITE
 };
 
-extern const u32 TEAM_COLORS[];
+const u32 TEAM_COLORS[11];
 
 #endif // _TEAM_H_

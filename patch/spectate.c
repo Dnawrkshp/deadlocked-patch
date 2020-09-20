@@ -13,8 +13,9 @@
 
 #include <tamtypes.h>
 
-#include "common.h"
+#include "string.h"
 #include "player.h"
+#include "game.h"
 #include "gamesettings.h"
 #include "pad.h"
 #include "hud.h"
@@ -53,7 +54,7 @@ void spectate(Player * currentPlayer, Player * playerToSpectate)
 
 int findNextPlayerIndex(int currentPlayerIndex, int currentSpectateIndex, int direction)
 {
-    Player ** players = PLAYER_STRUCT_ARRAY;
+    Player ** players = getPlayers();
 
     int newIndex = currentSpectateIndex;
 
@@ -78,8 +79,8 @@ int findNextPlayerIndex(int currentPlayerIndex, int currentSpectateIndex, int di
 
 void processSpectate(void) 
 {
-    GameSettings * gameSettings = GLOBAL_GAMESETTINGS;
-	Player ** players = PLAYER_STRUCT_ARRAY;
+    GameSettings * gameSettings = getGameSettings();
+	Player ** players = getPlayers();
     int i = 0;
 
     // First, we have to ensure we are in-game

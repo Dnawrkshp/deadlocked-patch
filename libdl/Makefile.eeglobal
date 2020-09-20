@@ -28,13 +28,13 @@ EE_C_COMPILE = $(EE_CC) $(EE_CFLAGS) $(EE_INCS)
 EE_CXX_COMPILE = $(EE_CXX) $(EE_CXXFLAGS) $(EE_INCS)
 
 %.o: %.c
-	$(EE_CC) $(EE_CFLAGS) $(EE_DEFS) $(EE_INCS) -c $< -o $@
+	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -c $< -o $@
 
 %.o: %.cc
-	$(EE_CXX) $(EE_CXXFLAGS) $(EE_DEFS) $(EE_INCS) -c $< -o $@
+	$(EE_CXX) $(EE_CXXFLAGS) $(EE_INCS) -c $< -o $@
 
 %.o: %.cpp
-	$(EE_CXX) $(EE_CXXFLAGS) $(EE_DEFS) $(EE_INCS) -c $< -o $@
+	$(EE_CXX) $(EE_CXXFLAGS) $(EE_INCS) -c $< -o $@
 
 %.o: %.S
 	$(EE_CC) $(EE_CFLAGS) $(EE_INCS) -c $< -o $@

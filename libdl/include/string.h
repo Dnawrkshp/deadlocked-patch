@@ -24,12 +24,6 @@ void * memset(void * ptr, int c, unsigned int size);
 void * memcmp(const void * p, const void * q, unsigned int size);
 
 //--------------------------------------------------------
-int sprintf(char * buffer, const char * format, ...);
-
-//--------------------------------------------------------
-int printf(const char * format, ...);
-
-//--------------------------------------------------------
 unsigned int strlen(const char * s);
 
 

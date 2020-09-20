@@ -137,4 +137,38 @@ int isInGame(void);
  */
 int hasGameEnded(void);
 
+/*
+ * NAME :		getGameTime
+ * 
+ * DESCRIPTION :
+ * 			Gets the current game time in milliseconds.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+int getGameTime(void);
+
+/*
+ * NAME :		getGameFinishedExitTime
+ * 
+ * DESCRIPTION :
+ * 			Gets the time when to leave after the game has ended.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ *          Returns 0 if the game has not ended.
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+int getGameFinishedExitTime(void);
+
+
 #endif // _GAME_H_

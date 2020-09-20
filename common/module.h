@@ -18,34 +18,10 @@
 
 
 #include <tamtypes.h>
-#include "appid.h"
 
-
-
-#if APPID == DL_APPID
-
-/*
- * ------------------------------------------------
- * ----------- START DEADLOCKED OFFSETS -----------
- * ------------------------------------------------
- */
-
-/*
- * Array of game modules.
- */
-#define GLOBAL_GAME_MODULES_START			((GameModule*)0x000CF000)
-
-/*
- * ------------------------------------------------
- * ------------ END DEADLOCKED OFFSETS ------------
- * ------------------------------------------------
- */
-
-#endif
 
 // Forward declarations
 struct GameModule;
-
 
 /*
  * Size of game module arg buffer.

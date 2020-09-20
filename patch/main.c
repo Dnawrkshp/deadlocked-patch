@@ -13,24 +13,21 @@
 
 #include <tamtypes.h>
 
-#include "appid.h"
-#include "common.h"
 #include "player.h"
 #include "pad.h"
 #include "time.h"
 #include "module.h"
 #include "game.h"
+#include "string.h"
+#include "stdio.h"
 #include "gamesettings.h"
 
 
 
-#if APPID == DL_APPID
-
 /*
- * ------------------------------------------------
- * ----------- START DEADLOCKED OFFSETS -----------
- * ------------------------------------------------
+ * Array of game modules.
  */
+#define GLOBAL_GAME_MODULES_START			((GameModule*)0x000CF000)
 
 /*
  * Camera speed patch offsets.
@@ -39,15 +36,6 @@
  */
 #define CAMERA_SPEED_PATCH_OFF1			(*(u16*)0x00561BB8)
 #define CAMERA_SPEED_PATCH_OFF2			(*(u16*)0x00561BDC)
-
-
-/*
- * ------------------------------------------------
- * ------------ END DEADLOCKED OFFSETS ------------
- * ------------------------------------------------
- */
-
-#endif
 
 // 
 void processSpectate(void);
@@ -100,7 +88,7 @@ void processGameModules()
 	GameModule * module = GLOBAL_GAME_MODULES_START;
 
 	// Game settings
-	GameSettings * gamesettings = GLOBAL_GAMESETTINGS;
+	GameSettings * gamesettings = getGameSettings();
 
 	// Iterate through all the game modules until we hit an empty one
 	while (module->GameEntrypoint || module->LobbyEntrypoint)
@@ -112,12 +100,12 @@ void processGameModules()
 			if (module->State > GAMEMODULE_OFF)
 			{
 				// If in game, run game entrypoint
-				if (GAME_ACTIVE)
+				if (isInGame())
 				{
 					// Check if the game hasn't ended
 					// We also give the module a second after the game has ended to
 					// do some end game logic
-					if (!GAME_HAS_ENDED || GAME_TIME < (GAME_TIME_ENDGAME + TIME_SECOND))
+					if (!hasGameEnded() || getGameTime() < (getGameFinishedExitTime() + TIME_SECOND))
 					{
 						// Invoke module
 						if (module->GameEntrypoint)
@@ -133,13 +121,13 @@ void processGameModules()
 				{
 					// If the game has started and we're no longer in game
 					// Then it must have ended
-					if (gamesettings->GameStartTime > 0 && GAME_TIME > gamesettings->GameStartTime && GAME_HAS_ENDED && module->State == GAMEMODULE_TEMP_ON)
+					if (gamesettings->GameStartTime > 0 && getGameTime() > gamesettings->GameStartTime && hasGameEnded() && module->State == GAMEMODULE_TEMP_ON)
 						module->State = GAMEMODULE_OFF;
 				}
 			}
 
 			// Invoke lobby module if still active
-			if (!GAME_ACTIVE && module->State > GAMEMODULE_OFF && module->LobbyEntrypoint)
+			if (!isInGame() && module->State > GAMEMODULE_OFF && module->LobbyEntrypoint)
 			{
 				module->LobbyEntrypoint(module);
 			}
@@ -153,7 +141,7 @@ void processGameModules()
 		else if (module->State == GAMEMODULE_ALWAYS_ON)
 		{
 			// Invoke lobby module if still active
-			if (!GAME_ACTIVE && module->LobbyEntrypoint)
+			if (!isInGame() && module->LobbyEntrypoint)
 			{
 				module->LobbyEntrypoint(module);
 			}
@@ -187,20 +175,7 @@ int main (void)
 	processGameModules();
 
 	// Process spectate
-	//processSpectate();
-
-	Player * localPlayer = PLAYER_STRUCT_ARRAY[0];
-	if (localPlayer)
-	{
-		PadButtonStatus * pad2 = (PadButtonStatus*)((u8*)localPlayer->Paddata + 0x80);
-		if ((localPlayer->Paddata->btns & PAD_LEFT) != (pad2->btns & PAD_LEFT))
-		{
-			if ((localPlayer->Paddata->btns & PAD_LEFT) == 0)
-				printf("%d: PAD LEFT DOWN (0:%04x, 1:%04x)\n", GAME_TIME, localPlayer->Paddata->btns, pad2->btns);
-			else
-				printf("%d: PAD LEFT UP (0:%04x, 1:%04x)\n", GAME_TIME, localPlayer->Paddata->btns, pad2->btns);
-		}
-	}
+	processSpectate();
 
 	return 0;
 }

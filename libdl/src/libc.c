@@ -31,26 +31,10 @@ void * memcmp(const void * p, const void * q, unsigned int size)
 }
 
 //--------------------------------------------------------
-int sprintf(char * buffer, const char * format, ...)
-{
-    __asm__ ("jal %0\n"
-            "nop\n"
-            :: "i" (PRINTF_FUNC));
-
-    register int r __asm__("v0");
-    return r;
-}
+int (*sprintf)(char * buffer, const char * format, ...) = (int (*)(char * buffer, const char * format, ...))PRINTF_FUNC;
 
 //--------------------------------------------------------
-int printf(const char * format, ...)
-{
-    __asm__ ("jal %0\n"
-             "nop\n"
-             :: "i" (PRINTF_FUNC));
-
-    register int r __asm__("v0");
-    return r;
-}
+int (*printf)(const char * format, ...) = (int (*)(const char * format, ...))PRINTF_FUNC;
 
 //--------------------------------------------------------
 unsigned int strlen(const char * s)

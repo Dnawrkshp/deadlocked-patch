@@ -14,6 +14,8 @@
 #ifndef _GAMESETTINGS_H_
 #define _GAMESETTINGS_H_
 
+#include <tamtypes.h>
+
 /*
  * Maximum number of players in a game.
  */
@@ -103,6 +105,117 @@ typedef struct GameSettings
 
 } GameSettings;
 
+/*
+ * NAME :		getGameSettings
+ * 
+ * DESCRIPTION :
+ * 			Returns a pointer to the active tNW_GameSettings object.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ *          Returns NULL if no lobby.
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+GameSettings * getGameSettings(void);
 
+/*
+ * NAME :		getGameRespawnTime
+ * 
+ * DESCRIPTION :
+ * 			Gets the game's respawn timer setting.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+u8 getGameRespawnTime(void);
+
+/*
+ * NAME :		setGameRespawnTime
+ * 
+ * DESCRIPTION :
+ * 			Sets the game's respawn timer setting.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void setGameRespawnTime(u8 seconds);
+
+/*
+ * NAME :		getGameTimeLimit
+ * 
+ * DESCRIPTION :
+ * 			Gets the game's time limit in minutes.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+u8 getGameTimeLimit(void);
+
+/*
+ * NAME :		setGameTimeLimit
+ * 
+ * DESCRIPTION :
+ * 			Sets the game's time limit in minutes.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void setGameTimeLimit(u8 minutes);
+
+/*
+ * NAME :		getGameKillsToWin
+ * 
+ * DESCRIPTION :
+ * 			Gets the game's kills to win target.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+u8 getGameKillsToWin(void);
+
+/*
+ * NAME :		setGameKillsToWin
+ * 
+ * DESCRIPTION :
+ * 			Sets the game's kills to win target.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void setGameKillsToWin(u8 kills);
 
 #endif // _GAMESETTINGS_H_
