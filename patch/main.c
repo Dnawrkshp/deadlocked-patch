@@ -47,10 +47,12 @@
 
 #endif
 
-void ProcessSpectate(void);
+// 
+void processSpectate(void);
+
 
 /*
- * NAME :		PatchCameraSpeed
+ * NAME :		patchCameraSpeed
  * 
  * DESCRIPTION :
  * 			Patches in-game camera speed setting to max out at 200%.
@@ -63,7 +65,7 @@ void ProcessSpectate(void);
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void PatchCameraSpeed()
+void patchCameraSpeed()
 {
 	// Check if the value is the default max of 64
 	// This is to ensure that we only write here when
@@ -77,7 +79,7 @@ void PatchCameraSpeed()
 
 
 /*
- * NAME :		ProcessGameModules
+ * NAME :		processGameModules
  * 
  * DESCRIPTION :
  * 
@@ -90,7 +92,7 @@ void PatchCameraSpeed()
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void ProcessGameModules()
+void processGameModules()
 {
 	// Start at the first game module
 	GameModule * module = GLOBAL_GAME_MODULES_START;
@@ -177,10 +179,10 @@ void ProcessGameModules()
 int main (void)
 {
 	// Patch camera speed
-	PatchCameraSpeed();
+	patchCameraSpeed();
 
 	// Process game modules
-	ProcessGameModules();
+	processGameModules();
 
 	// Process spectate
 	processSpectate();
