@@ -17,6 +17,7 @@
 #include "player.h"
 #include "game.h"
 #include "gamesettings.h"
+#include "stdio.h"
 #include "pad.h"
 #include "hud.h"
 
