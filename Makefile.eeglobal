@@ -35,7 +35,7 @@ EE_C_COMPILE = $(EE_CC) $(EE_CFLAGS) $(EE_INCS)
 EE_CXX_COMPILE = $(EE_CXX) $(EE_CXXFLAGS) $(EE_INCS)
 
 %.o : %.c
-	$(EE_CC) $(EE_CFLAGS) $(EE_DEFS) $(EE_INCS) -c $< -o $@
+	$(EE_CC) $(EE_CFLAGS) $(EE_DEFS) $(EE_INCS) $(EE_LDFLAGS) -c $< -o $@
 
 %.o : %.cc
 	$(EE_CXX) $(EE_CXXFLAGS) $(EE_DEFS) $(EE_INCS) -c $< -o $@
@@ -50,7 +50,7 @@ EE_CXX_COMPILE = $(EE_CXX) $(EE_CXXFLAGS) $(EE_INCS)
 	$(EE_AS) $(EE_ASFLAGS) $< -o $@
 
 $(EE_BIN) : $(EE_OBJS) crt0.o
-	$(EE_CC) -Wl,--oformat=binary -mno-crt0 -Tlinkfile $(EE_LDFLAGS) \
+	$(EE_CC) -Wl,--oformat=binary -mno-crt0 -Tlinkfile $(EE_LDFLAGS) -s \
 		-o $(EE_BIN) crt0.o $(EE_OBJS)
-	$(EE_CC) -g -mno-crt0 -Tlinkfile -nostartfiles -L. \
+	$(EE_CC) -g -mno-crt0 -Tlinkfile $(EE_LDFLAGS) \
 		-o $(EE_ELF) crt0.o $(EE_OBJS)

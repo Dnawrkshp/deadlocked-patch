@@ -153,6 +153,24 @@ typedef struct ScoreboardItem
  */
 extern void (* showPopup)(int localPlayerIndex, const char * message);
 
+/*
+ * NAME :		showHelpPopup
+ * 
+ * DESCRIPTION :
+ * 			Shows a help popup with the given text to the given local player.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *      localPlayerIndex    :               Local player to show popup for.
+ *      message             :               Message to show.
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+extern void (* showHelpPopup)(int localPlayerIndex, const char * message);
+
 
 /*
  * NAME :		setWinner

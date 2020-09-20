@@ -31,7 +31,7 @@
 #
 # ------------------------------------------------------------------------
 
-EE_LDFLAGS = -nostartfiles -L. -s
+EE_LDFLAGS = -fno-builtin -nostartfiles -L.
 
 all: $(EE_BIN) clean
 

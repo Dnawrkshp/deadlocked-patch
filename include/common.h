@@ -17,7 +17,17 @@
 /*
  *
  */
-extern void (*memcpy)(void *, const void *, int);
+void memcpy(void *, const void *, int);
+
+/*
+ *
+ */
+void * memset(void *, int, int);
+
+/*
+ *
+ */
+int memcmp(void * a, void * b, int n);
 
 /*
  * 
@@ -39,9 +49,5 @@ extern int (*printf)(const char * format, ...);
  */
 extern int (*sha1)(const void * inBuffer, int inSize, void * outBuffer, int outSize);
 
-/*
- *
- */
-extern void* (*memset)(void *, int, int);
 
 #endif // _COMMON_H_

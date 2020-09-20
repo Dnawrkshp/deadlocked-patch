@@ -14,6 +14,7 @@
 #include <tamtypes.h>
 
 #include "appid.h"
+#include "common.h"
 #include "time.h"
 #include "module.h"
 #include "game.h"

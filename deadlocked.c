@@ -45,23 +45,36 @@ void (* forceGameEnd)(int) = (void(*)(int))0x006228C8;
 
 void (* showPopup)(int, const char *) = (void(*)(int, const char *))0x00540170;
 
+void (* showHelpPopup)(int, const char *) = (void(*)(int, const char *))0x00540140;
+
 int (*printf)(const char *, ...) = (int (*)(const char *, ...))0x0011D5D8;
 
 int (*sprintf)(char *, const char *, ...) = (int(*)(char *, const char *, ...))0x0011D920;
 
 unsigned int (*strlen)(const char *) = (unsigned int(*)(const char *))0x0011AB04;
 
-void (*memcpy)(void *, const void *, int) = (void(*)(void *, const void *, int))0x0011A370;
-
 int (*sha1)(const void *, int, void *, int) = (int(*)(const void *, int, void *, int))0x01EB30C8;
-
-void* (*memset)(void *, int, int) = (void* (*)(void *, int, int))0x0011A518;
 
 float (*cosf)(float) = (float (*)(float))MATH_COSF_FADDR;
 
 float (*sqrtf)(float) = (float (*)(float))MATH_SQRTF_FADDR;
 
 Moby * (* spawnMoby)(int id, int propSize) = (Moby * (*)(int, int))0x004F7200;
+
+void memcpy(void * dst, const void * src, int n)
+{
+    ((void (*)(void *, const void *, int))0x0011A370)(dst, src, n);
+}
+
+void * memset(void * dst, int v, int n)
+{
+    return ((void * (*)(void *, int, int))0x0011A518)(dst, v, n);
+}
+
+int memcmp(void * a, void * b, int n)
+{
+    return ((int (*)(void *, void *, int))0x0011A2DC)(a, b, n);
+}
 
 #endif
 
