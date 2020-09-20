@@ -12,5 +12,5 @@ all: $(EE_BIN) clean
 clean:
 	rm -f *.irx *.o
 
-include $(PWD)/../Makefile.pref
-include $(PWD)/../Makefile.eeglobal
+include ${CURDIR}/../Makefile.pref
+include ${CURDIR}/../Makefile.eeglobal
