@@ -160,11 +160,15 @@ typedef struct Player
     // So wrench and swingshot are 0
     int WeaponHeldGun;
 
-    char UNK11[0x11B0];
+    char UNK11[0x1150];
+
+    Vector4 CameraPos;
+    char UNK99[0x50];
 
     CameraAngle CameraYaw;
-    char UNK12[0x20];
     CameraAngle CameraPitch;
+    
+    char UNK12[0x20];
 
     char UNK13[0xC];
 

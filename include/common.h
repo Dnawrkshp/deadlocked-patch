@@ -30,6 +30,11 @@ extern int (*sprintf)(char *, const char *, ...);
 extern unsigned int (*strlen)(const char *);
 
 /*
+ *
+ */
+extern int (*printf)(const char * format, ...);
+
+/*
  * Computes the SHA1 hash of the input and stores outSize number of bytes of the hash in the output.
  */
 extern int (*sha1)(const void * inBuffer, int inSize, void * outBuffer, int outSize);

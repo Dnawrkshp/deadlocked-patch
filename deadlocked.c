@@ -45,6 +45,8 @@ void (* forceGameEnd)(int) = (void(*)(int))0x006228C8;
 
 void (* showPopup)(int, const char *) = (void(*)(int, const char *))0x00540170;
 
+int (*printf)(const char *, ...) = (int (*)(const char *, ...))0x0011D5D8;
+
 int (*sprintf)(char *, const char *, ...) = (int(*)(char *, const char *, ...))0x0011D920;
 
 unsigned int (*strlen)(const char *) = (unsigned int(*)(const char *))0x0011AB04;

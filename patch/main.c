@@ -182,7 +182,7 @@ int main (void)
 	ProcessGameModules();
 
 	// Process spectate
-	ProcessSpectate();
+	processSpectate();
 
 	return 0;
 }
