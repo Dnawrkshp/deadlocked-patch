@@ -29,7 +29,14 @@ struct PlayerSpectateData
     int Index;
     int HasShownEnterMsg;
     int HasShownNavMsg;
+    VECTOR LastCameraPos;
 } SpectateData[2];
+
+/*
+ * How sharp/snappy the camera interpolation.
+ * Higher is more sharp.
+ */
+const float CameraPositionSharpness = 50;
 
 /*
  * NAME :		spectate
@@ -48,15 +55,20 @@ struct PlayerSpectateData
  */
 void spectate(Player * currentPlayer, Player * playerToSpectate)
 {
+    struct PlayerSpectateData * spectateData = SpectateData + currentPlayer->LocalPlayerIndex;
     if(!playerToSpectate)
         return;
 
     currentPlayer->CameraYaw = playerToSpectate->CameraYaw;
     currentPlayer->CameraPitch = playerToSpectate->CameraPitch;
-    currentPlayer->CameraPos = playerToSpectate->CameraPos;
     currentPlayer->CameraPitchMin = playerToSpectate->CameraPitchMin;
     currentPlayer->CameraPitchMax = playerToSpectate->CameraPitchMax;
     currentPlayer->CameraDistance = playerToSpectate->CameraDistance;
+
+    // Interpolate camera towards target player
+    vector_lerp(spectateData->LastCameraPos, spectateData->LastCameraPos, playerToSpectate->CameraPos, 1 - powf(MATH_E, -CameraPositionSharpness * MATH_DT));
+    vector_copy(currentPlayer->CameraPos, spectateData->LastCameraPos);
+
 
     // Something in this was crashing when swapping weapons
     // memcpy((((u8*)currentPlayer) + 0x18D0), (((u8*)playerToSpectate) + 0x18D0), 0x200);
@@ -170,9 +182,19 @@ void processSpectate(void)
                         }
                     }
 
-                    Player * nextPlayer = players[spectateData->Index = spectateIndex];
+                    Player * nextPlayer = players[spectateIndex];
                     if (nextPlayer)
+                    {
+                        // Update last camera position to new target
+                        // This snaps the camera to the new target instead of lerping
+                        if (spectateIndex != spectateData->Index)
+                            vector_copy(spectateData->LastCameraPos, nextPlayer->CameraPos);
+
                         spectate(player, nextPlayer);
+                    }
+
+                    // Finally update stored index value
+                    spectateData->Index = spectateIndex;
                 }
             } else
             {

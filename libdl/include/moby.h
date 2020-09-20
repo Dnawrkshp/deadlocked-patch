@@ -15,6 +15,7 @@
 #define _MOBY_H_
 
 #include <tamtypes.h>
+#include "vector.h"
 
 //--------------------------------------------------------
 enum MobyId
@@ -381,11 +382,7 @@ typedef struct Moby
     
     char UNK_00[0x10];
 
-    float PositionX;
-    float PositionY;
-    float PositionZ;
-
-    char UNK_1C[0x04];
+    VECTOR Position;
 
     char UNK_20[0x03];
     char Opacity;

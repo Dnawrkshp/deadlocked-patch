@@ -2,6 +2,7 @@
 #include "moby.h"
 #include "cheats.h"
 #include "game.h"
+#include <string.h>
 
 /*
  * Address of spawn pack function.
@@ -68,9 +69,7 @@ int cheatsDisableHealthboxes(void)
 	{
 		if (currentMoby->MobyId == MOBY_ID_HEALTH_BOX_MULT)
 		{
-			currentMoby->PositionX = 0;
-			currentMoby->PositionY = 0;
-			currentMoby->PositionZ = 0;
+			memset(currentMoby->Position, 0, sizeof(currentMoby->Position));
 
 			if (currentMoby->PropertiesPointer)
 			{
@@ -80,10 +79,7 @@ int cheatsDisableHealthboxes(void)
 					Moby * orb = (Moby*)(*(u32*)(subPtr + 0x98));
 					if (orb)
 					{
-						orb->PositionX = 0;
-						orb->PositionY = 0;
-						orb->PositionZ = 0;
-
+                        memset(orb->Position, 0, sizeof(orb->Position));
 						
 						++count;
 					}

@@ -17,29 +17,14 @@
 //--------------------------------------------------------
 #define MATH_PI                         (3.14159)
 #define MATH_TAU                        (MATH_PI * 2.0)
-
-//--------------------------------------------------------
-typedef struct Vector3
-{
-    float X;
-    float Y;
-    float Z;
-} Vector3;
-
-
-//--------------------------------------------------------
-typedef struct Vector4
-{
-    float X;
-    float Y;
-    float Z;
-    float W;
-} Vector4;
+#define MATH_E                          (2.7182818)
+#define MATH_DT                         (0.166666666)
 
 
 //--------------------------------------------------------
 float cosf(float theta);
 float sinf(float theta);
 float sqrtf(float f);
+float powf(float base, float exp);
 
 #endif // _MATH_H_

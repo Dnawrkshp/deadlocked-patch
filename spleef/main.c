@@ -12,8 +12,10 @@
  */
 
 #include <tamtypes.h>
+#include <string.h>
 
 #include "math.h"
+#include "vector.h"
 #include "time.h"
 #include "module.h"
 #include "game.h"
@@ -29,9 +31,12 @@ int Initialized = 0;
 /*
  * Position that boxes are spawned to.
  */
-float StartX = 400;
-float StartY = 400;
-float StartZ = 800;
+VECTOR StartPos = {
+	400,
+	400,
+	800,
+	0
+};
 
 /*
  * NAME :		initialize
@@ -56,22 +61,25 @@ void initialize(void)
 	int w = 15, h = 15;
 	float size = 2.5;
 	float radius = 2.5 * ((w + h) / 5);
-	Vector3 pos, rot, center;
+	VECTOR pos, rot, center;
 
-	pos.X = StartX;
-	pos.Y = StartY;
-	pos.Z = StartZ;
+	// initialize
+	vector_copy(pos, StartPos);
+	memset(rot, 0, sizeof(rot));
 
 	// Center
-	center.X = StartX + (size * (w / 2.0));
-	center.Y = StartY + (size * (h / 2.0));
-	center.Z = StartZ;
+	center[0] = StartPos[0] + (size * (w / 2.0));
+	center[1] = StartPos[1] + (size * (h / 2.0));
+	center[2] = StartPos[2];
 
 	// Set death barrier
-	setDeathHeight(StartZ - 10);
+	setDeathHeight(StartPos[2] - 10);
 	
 	// Spawn box so we know the correct model and collision pointers
 	Moby * sourceBox = spawnMoby(MOBY_ID_BETA_BOX, 0);
+
+	// 
+	pos[3] = sourceBox->Position[3];
 
 	// Spawn boxes
 	for (i = 0; i < w; ++i)
@@ -82,9 +90,7 @@ void initialize(void)
 			
 			if (hbMoby)
 			{
-				hbMoby->PositionX = pos.X;
-				hbMoby->PositionY = pos.Y;
-				hbMoby->PositionZ = pos.Z;
+				vector_copy(hbMoby->Position, pos);
 
 				hbMoby->UNK_30 = 0xFF;
 				hbMoby->UNK_31 = 0x01;
@@ -105,11 +111,11 @@ void initialize(void)
 				//hbMoby->UNK_80[3] = hbMoby->UNK_80[2] = hbMoby->UNK_80[1] = hbMoby->UNK_80[0] = 40000; // sourceBox->UNK_80[3] * 3;
 			}
 
-			pos.Y += size;
+			pos[1] += size;
 		}
 
-		pos.X += size;
-		pos.Y = StartY;
+		pos[0] += size;
+		pos[1] = StartPos[1];
 	}
 
 
@@ -125,17 +131,15 @@ void initialize(void)
 		while (theta > MATH_TAU)
 			theta -= MATH_PI;
 
-		pos.X = center.X + (cosf(theta) * radius);
-		pos.Y = center.Y + (sinf(theta) * radius);
-		pos.Z = center.Z + 30;
+		pos[0] = center[0] + (cosf(theta) * radius);
+		pos[1] = center[1] + (sinf(theta) * radius);
+		pos[2] = center[2] + 30;
 
 		// 
-		rot.X = 0;
-		rot.Y = 0;
-		rot.Z = theta - MATH_PI;
+		rot[2] = theta - MATH_PI;
 
 		// 
-		playerSetPosRot(p, &pos, &rot);
+		playerSetPosRot(p, pos, rot);
 	}
 
 	Initialized = 1;

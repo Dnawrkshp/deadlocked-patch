@@ -2,9 +2,9 @@
 
 
 //--------------------------------------------------------
-#define MATH_COSF_FUNC                 (0x00135878)
-#define MATH_SQRTF_FUNC                (0x00136C90) 
-
+#define MATH_COSF_FUNC                  (0x00135878)
+#define MATH_SQRTF_FUNC                 (0x00136C90) 
+#define MATH_POWF_FUNC                  (0x00136788)
 
 //--------------------------------------------------------
 float cosf(float theta)
@@ -22,4 +22,10 @@ float sinf(float theta)
 float sqrtf(float f)
 {
     return ((float (*)(float))MATH_SQRTF_FUNC)(f);
+}
+
+//--------------------------------------------------------
+float powf(float base, float exp)
+{
+    return ((float (*)(float, float))MATH_POWF_FUNC)(base, exp);
 }

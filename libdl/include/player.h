@@ -19,6 +19,7 @@
 #include "moby.h"
 #include "pad.h"
 #include "team.h"
+#include "vector.h"
 
 /*
  * Maximum health of player.
@@ -79,11 +80,9 @@ typedef struct Player
 {
     char UNK0[0xA0];                                                // 0x00
 
-    float PlayerX;                                                  // 0xA0
-    float PlayerY;                                                  // 0xA4
-    float PlayerZ;                                                  // 0xA8
+    VECTOR PlayerPosition;                                          // 0xA0
     
-    char UNK1[0x0C];                                                // 0xAC
+    char UNK1[0x08];                                                // 0xB0
 
     float PlayerYaw;                                                // 0xB8
 
@@ -133,7 +132,7 @@ typedef struct Player
 
     char UNK11[0x1150];                                             // 0x800
 
-    Vector4 CameraPos;                                              // 0x1950
+    VECTOR CameraPos;                                               // 0x1950
     char UNK99[0x50];                                               // 0x1960
 
     CameraAngle CameraYaw;                                          // 0x19B0
@@ -373,6 +372,6 @@ void giveWeapon(Player * player, int weaponId, int weaponLevel);
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void playerSetPosRot(Player * player, Vector3 * p, Vector3 * r);
+void playerSetPosRot(Player * player, VECTOR p, VECTOR r);
 
 #endif // _PLAYER_H_

@@ -81,7 +81,7 @@ int isLocal(Player * player)
 }
 
 //--------------------------------------------------------------------------------
-void playerSetPosRot(Player * player, Vector3 * p, Vector3 * r)
+void playerSetPosRot(Player * player, VECTOR p, VECTOR r)
 {
-    ((void (*)(Player *, Vector3 *, Vector3 *, int))PLAYER_SET_POS_ROT_FUNC)(player, p, r, 0);
+    ((void (*)(Player *, VECTOR, VECTOR, int))PLAYER_SET_POS_ROT_FUNC)(player, p, r, 0);
 }
