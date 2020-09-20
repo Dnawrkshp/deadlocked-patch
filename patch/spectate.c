@@ -51,9 +51,12 @@ void spectate(Player * currentPlayer, Player * playerToSpectate)
     if(!playerToSpectate)
         return;
 
-     currentPlayer->CameraYaw = playerToSpectate->CameraYaw;
-     currentPlayer->CameraPitch = playerToSpectate->CameraPitch;
-     currentPlayer->CameraPos = playerToSpectate->CameraPos;
+    currentPlayer->CameraYaw = playerToSpectate->CameraYaw;
+    currentPlayer->CameraPitch = playerToSpectate->CameraPitch;
+    currentPlayer->CameraPos = playerToSpectate->CameraPos;
+    currentPlayer->CameraPitchMin = playerToSpectate->CameraPitchMin;
+    currentPlayer->CameraPitchMax = playerToSpectate->CameraPitchMax;
+    currentPlayer->CameraDistance = playerToSpectate->CameraDistance;
 
     // Something in this was crashing when swapping weapons
     // memcpy((((u8*)currentPlayer) + 0x18D0), (((u8*)playerToSpectate) + 0x18D0), 0x200);
@@ -76,6 +79,8 @@ int findNextPlayerIndex(int currentPlayerIndex, int currentSpectateIndex, int di
         if(newIndex >= GAME_MAX_PLAYERS)
             newIndex = 0;
         if(newIndex == currentPlayerIndex && newIndex == currentSpectateIndex)
+            return -1;
+        if (newIndex == currentSpectateIndex)
             return -1;
         if(newIndex == currentPlayerIndex)
             goto loop;

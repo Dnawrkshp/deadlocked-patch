@@ -129,11 +129,16 @@ typedef struct Player
     // player is looking/aiming at
     Moby * LookAtMoby;
 
-    char UNK14[0x30];
+    char UNK14[0x04];
+
+    float CameraPitchMin;
+    float CameraPitchMax;
+
+    Moby * SkinMoby;
 
     float CameraDistance;
 
-    char UNK15[0x48];
+    char UNK15[0x68];
 
     int LocalPlayerIndex;
 
