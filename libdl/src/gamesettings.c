@@ -7,10 +7,7 @@
  */
 #define GLOBAL_GAMESETTINGS			((GameSettings*)(*(u32*)0x0021DFE8))
 
-/*
- *
- */
-#define GAME_RESPAWN_TIME           (*(u8*)0x002126DC)
+
 
 /*
  *
@@ -22,7 +19,15 @@
  */
 #define GAME_KILLS_TO_WIN           (*(u8*)0x002126D1)
 
+/*
+ *
+ */
+#define GAME_SURVIVOR               (*(u8*)0x002126D6)
 
+/*
+ *
+ */
+#define GAME_RESPAWN_TIME           (*(u8*)0x002126DC)
 
 /*
  * NAME :		getGameSettings
@@ -119,6 +124,45 @@ void setGameTimeLimit(u8 minutes)
 {
     GAME_TIMELIMT_MINUTES = minutes;
 }
+
+/*
+ * NAME :		getGameSurvivor
+ * 
+ * DESCRIPTION :
+ * 			Gets the game's survivor flag (no respawning)
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+u8 getGameSurvivor(void)
+{
+    return GAME_SURVIVOR;
+}
+
+/*
+ * NAME :		setGameSurvivor
+ * 
+ * DESCRIPTION :
+ * 			Sets the game's survivor flag (no respawning)
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+u8 setGameSurvivor(u8 survivor)
+{
+    GAME_SURVIVOR = survivor;
+}
+
 
 /*
  * NAME :		getGameKillsToWin

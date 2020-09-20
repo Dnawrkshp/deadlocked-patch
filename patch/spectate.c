@@ -23,6 +23,8 @@
 
 int SpectateEnabled = 0;
 int SpectateIndex = 0;
+int SpectateMessageEnterShown = 0;
+int SpectateMessageNavShown = 0;
 
 /*
  * NAME :		spectate
@@ -82,11 +84,15 @@ void processSpectate(void)
 {
     GameSettings * gameSettings = getGameSettings();
 	Player ** players = getPlayers();
+    int survivor = getGameSurvivor();
     int i = 0;
 
     // First, we have to ensure we are in-game
-	if (!gameSettings || !isInGame())
+	if (!gameSettings || !isInGame()) 
+    {
+        SpectateEnabled = 0;
 		return;
+    }
 
     // Loop through every player
     for (i = 0; i < GAME_MAX_PLAYERS; ++i)
@@ -97,46 +103,63 @@ void processSpectate(void)
 		Player * player = players[i];
 
         // Next, we have to ensure the player is the local player and they are dead
-	    if (isLocal(player) && player->IsDead) 
+	    if (isLocal(player)) 
         {
-
-            // When the player presses square and spectate isn't already enabled. Enable it.
-            if(player->Paddata->square_p && !SpectateEnabled) 
+            if(player->Health <= 0)
             {
-                SpectateEnabled = !SpectateEnabled;
-                SpectateIndex = i;
-            }
-            if(SpectateEnabled) 
-            {
-                int direction = 0; 
-                
-                // If the currently spectated player becomes null, we move forward to the next player            
-                if(!players[SpectateIndex])
-                    direction = 1;
-                // If the player is pressing R1, move forward
-                else if(player->Paddata->r1_p) 
-                    direction = 1;
-                // If the player is pressing L1, move backward
-                else if(player->Paddata->l1_p)
-                    direction = -1;
-
-                if(direction) 
+                if(!SpectateEnabled && !SpectateMessageEnterShown) 
                 {
-                    int tempIndex = SpectateIndex;
-                    SpectateIndex = findNextPlayerIndex(i, SpectateIndex, direction);
-                    printf("%d + %d = %d\n", tempIndex, direction, SpectateIndex);
-                    if(SpectateIndex == -1) 
+                    SpectateMessageEnterShown = 1;
+                    showHelpPopup(player->LocalPlayerIndex, "Press \x13 to enter spectate mode.");
+                }
+
+                // When the player presses square, or survivor is on, and spectate isn't already enabled. Enable it.
+                if((player->Paddata->square_p || survivor) && !SpectateEnabled) 
+                {
+                    SpectateEnabled = !SpectateEnabled;
+                    SpectateIndex = i+1;
+                }
+                if(SpectateEnabled) 
+                {                    
+                    if(!SpectateMessageNavShown) 
                     {
-                        SpectateEnabled = 0;
-                        continue;
+                        SpectateMessageNavShown = 1;
+                        showHelpPopup(player->LocalPlayerIndex, "Press \x15 to spectate the next player. Press \x14 to spectate the previous player.");
+                    }
+                    int direction = 0; 
+                    
+                    // If the currently spectated player becomes null, we move forward to the next player            
+                    if(!players[SpectateIndex])
+                        direction = 1;
+                    // If the player is pressing R1, move forward
+                    else if(player->Paddata->r1_p) 
+                        direction = 1;
+                    // If the player is pressing L1, move backward
+                    else if(player->Paddata->l1_p)
+                        direction = -1;
+
+                    if(direction) 
+                    {
+                        int tempIndex = SpectateIndex;
+                        SpectateIndex = findNextPlayerIndex(i, SpectateIndex, direction);
+                        printf("%d + %d = %d\n", tempIndex, direction, SpectateIndex);
+                        if(SpectateIndex == -1) 
+                        {
+                            SpectateEnabled = 0;
+                            continue;
+                        }
+                    }
+
+                    Player * nextPlayer = players[SpectateIndex];
+                    if(nextPlayer) 
+                    {
+                        spectate(player, nextPlayer);
                     }
                 }
-
-                Player * nextPlayer = players[SpectateIndex];
-                if(nextPlayer) 
-                {
-                    spectate(player, nextPlayer);
-                }
+            } else {
+                SpectateEnabled = 0;
+                SpectateMessageEnterShown = 0;
+                SpectateMessageNavShown = 0;
             }
         }
 	}
