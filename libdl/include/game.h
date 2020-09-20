@@ -19,6 +19,26 @@
 
 
 //--------------------------------------------------------
+typedef struct PlayerGameStats
+{
+    short RoadKills[GAME_MAX_PLAYERS];
+    short RoadKillDeaths[GAME_MAX_PLAYERS];
+    short UNK0[GAME_MAX_PLAYERS];
+    short UNK1[GAME_MAX_PLAYERS];
+    short Kills[GAME_MAX_PLAYERS];
+    short Deaths[GAME_MAX_PLAYERS];
+    short Suicides[GAME_MAX_PLAYERS];
+    short UNK2[GAME_MAX_PLAYERS];
+    short UNK3[GAME_MAX_PLAYERS];
+    short WrenchKills[GAME_MAX_PLAYERS];
+    short UNK4[GAME_MAX_PLAYERS];
+    short UNK5[GAME_MAX_PLAYERS];
+    char FlagsCapped[GAME_MAX_PLAYERS];
+    char FlagsSaved[GAME_MAX_PLAYERS];
+    float HillTime[GAME_MAX_PLAYERS];
+} PlayerGameStats;
+
+//--------------------------------------------------------
 typedef struct PlayerWeaponStats
 {
     u16 WeaponKills[GAME_MAX_PLAYERS][9];
@@ -33,6 +53,7 @@ typedef struct ScoreboardItem
     int UNK;
     int Value;
 } ScoreboardItem;
+
 
 /*
  * NAME :		showPopup
@@ -170,5 +191,69 @@ int getGameTime(void);
  */
 int getGameFinishedExitTime(void);
 
+/*
+ * NAME :		getDeathHeight
+ * 
+ * DESCRIPTION :
+ * 			Gets the level's death height.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+float getDeathHeight(void);
+
+/*
+ * NAME :		setDeathHeight
+ * 
+ * DESCRIPTION :
+ * 			Sets the level's death height.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void setDeathHeight(float height);
+
+/*
+ * NAME :		getPlayerGameStats
+ * 
+ * DESCRIPTION :
+ * 			Gets all the player stats relevant to the current game.
+ * 
+ * NOTES :
+ *          This includes kills, deaths, suicides, hill time, flags capped, wrench kills, etc.
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+PlayerGameStats * getPlayerGameStats(void);
+
+/*
+ * NAME :		getPlayerWeaponStats
+ * 
+ * DESCRIPTION :
+ * 			Gets all the player weapon stats.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+PlayerWeaponStats * getPlayerWeaponStats(void);
 
 #endif // _GAME_H_

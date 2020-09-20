@@ -13,7 +13,7 @@
 
 #include <tamtypes.h>
 
-#include "common.h"
+#include "stdio.h"
 #include "time.h"
 #include "module.h"
 #include "game.h"
@@ -90,7 +90,7 @@ void infect(int playerId)
 {
 	InfectedMask |= (1 << playerId);
 
-	GameSettings * gameSettings = GLOBAL_GAMESETTINGS;
+	GameSettings * gameSettings = getGameSettings();
 	if (!gameSettings)
 		return;
 
@@ -123,7 +123,7 @@ void processPlayer(Player * player)
 		return;
 
 	int teamId = player->Team;
-	short deaths = PLAYER_DEATHS_START[player->PlayerId];
+	PlayerGameStats * stats = getPlayerGameStats();
 
 	// No respawn
 	player->RespawnTimer = 0x27;
@@ -148,7 +148,7 @@ void processPlayer(Player * player)
 	// If the player is already on the infected team
 	// or if they've died
 	// then infect them
-	else if (teamId == INFECTED_TEAM || deaths > 0)
+	else if (teamId == INFECTED_TEAM || stats->Deaths[player->PlayerId] > 0)
 	{
 		infect(player->PlayerId);
 	}
@@ -176,7 +176,7 @@ void processPlayer(Player * player)
  */
 Player * getRandomSurvivor(u32 seed)
 {
-	Player ** playerObjects = PLAYER_STRUCT_ARRAY;
+	Player ** playerObjects = getPlayers();
 
 	int value = (seed % GAME_MAX_PLAYERS) + 1;
 	int i = 0;
@@ -249,8 +249,8 @@ void gameStart(void)
 	int i = 0;
 	int infectedCount = 0;
 	int playerCount = 0;
-	GameSettings * gameSettings = GLOBAL_GAMESETTINGS;
-	Player ** players = PLAYER_STRUCT_ARRAY;
+	GameSettings * gameSettings = getGameSettings();
+	Player ** players = getPlayers();
 
 	// Ensure in game
 	if (!gameSettings || !isInGame())
@@ -259,7 +259,7 @@ void gameStart(void)
 	if (!Initialized)
 		initialize();
 
-	if (!GAME_HAS_ENDED)
+	if (!hasGameEnded())
 	{
 		// Reset to infected team
 		// If one player isn't infected then their team
@@ -291,10 +291,10 @@ void gameStart(void)
 	// 
 	setWinner(WinningTeam, 1);
 
-	if (!GAME_HAS_ENDED)
+	if (!hasGameEnded())
 	{
 		// If no survivors then end game
-		if (playerCount == infectedCount && GAME_TIME_LIMIT > 0)
+		if (playerCount == infectedCount && getGameTimeLimit() > 0)
 		{
 			// End game
 			endGame(2);
@@ -302,7 +302,7 @@ void gameStart(void)
 		else if (infectedCount == 0)
 		{
 			// Infect first player after 10 seconds
-			if ((GAME_TIME - gameSettings->GameStartTime) > (10 * TIME_SECOND))
+			if ((getGameTime() - gameSettings->GameStartTime) > (10 * TIME_SECOND))
 			{
 				Player * survivor = getRandomSurvivor(gameSettings->GameStartTime);
 				if (survivor)

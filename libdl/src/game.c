@@ -52,17 +52,7 @@
 /*
  * 
  */
-#define PLAYER_KILLS_START                  ((short*)0x0036DA18)
-
-/*
- * 
- */
-#define PLAYER_DEATHS_START                 ((short*)0x0036DA2C)
-
-/*
- * 
- */
-#define PLAYER_SUICIDES_START               ((short*)0x0036DA40)
+#define GAME_PLAYER_STATS_ARRAY             ((PlayerGameStats*)0x0036D9C8)
 
 /*
  * 
@@ -250,4 +240,81 @@ int getGameTime(void)
 int getGameFinishedExitTime(void)
 {
     return GAME_TIME_ENDGAME;
+}
+
+/*
+ * NAME :		getDeathHeight
+ * 
+ * DESCRIPTION :
+ * 			Gets the level's death height.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+float getDeathHeight(void)
+{
+    return GAME_DEATH_BARRIER_Y;
+}
+
+/*
+ * NAME :		setDeathHeight
+ * 
+ * DESCRIPTION :
+ * 			Sets the level's death height.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void setDeathHeight(float height)
+{
+    GAME_DEATH_BARRIER_Y = height;
+}
+
+/*
+ * NAME :		getPlayerGameStats
+ * 
+ * DESCRIPTION :
+ * 			Gets all the player stats relevant to the current game.
+ * 
+ * NOTES :
+ *          This includes kills, deaths, suicides, hill time, flags capped, wrench kills, etc.
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+PlayerGameStats * getPlayerGameStats(void)
+{
+    return GAME_PLAYER_STATS_ARRAY;
+}
+
+/*
+ * NAME :		getPlayerWeaponStats
+ * 
+ * DESCRIPTION :
+ * 			Gets all the player weapon stats.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+PlayerWeaponStats * getPlayerWeaponStats(void)
+{
+    return PLAYER_WEAPON_STATS_ARRAY;
 }

@@ -12,8 +12,8 @@
  */
 
 #include <tamtypes.h>
+#include <string.h>
 
-#include "common.h"
 #include "time.h"
 #include "module.h"
 #include "game.h"
@@ -68,13 +68,14 @@ short PlayerKills[GAME_MAX_PLAYERS];
 void vampireLogic(GameModule * module)
 {
 	int i;
-	Player ** playerObjects = PLAYER_STRUCT_ARRAY;
+	Player ** playerObjects = getPlayers();
 	Player * player;
+	PlayerGameStats * stats = getPlayerGameStats();
 
 	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
 	{
 		// Check if player has killed someone
-		if (PLAYER_KILLS_START[i] > PlayerKills[i])
+		if (stats->Kills[i] > PlayerKills[i])
 		{
 			// Try to heal if player exists
 			player = playerObjects[i];
@@ -82,7 +83,7 @@ void vampireLogic(GameModule * module)
 				player->Health = PLAYER_MAX_HEALTH;
 			
 			// Update our cached kills count
-			PlayerKills[i] = PLAYER_KILLS_START[i];
+			PlayerKills[i] = stats->Kills[i];
 		}
 	}
 }
@@ -178,7 +179,7 @@ void gameStart(GameModule * module)
 void lobbyStart(GameModule * module)
 {
 	// If we're not in staging then reset
-	if (GLOBAL_GAMESETTINGS)
+	if (!getGameSettings())
 		return;
 
 	// Reset

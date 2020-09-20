@@ -13,7 +13,6 @@
 
 #include <tamtypes.h>
 
-#include "common.h"
 #include "math.h"
 #include "time.h"
 #include "module.h"
@@ -51,7 +50,7 @@ float StartZ = 800;
  */
 void initialize(void)
 {
-	Player ** players = PLAYER_STRUCT_ARRAY;
+	Player ** players = getPlayers();
 
 	int i, j;
 	int w = 15, h = 15;
@@ -69,15 +68,8 @@ void initialize(void)
 	center.Z = StartZ;
 
 	// Set death barrier
-	GAME_DEATH_BARRIER_Y = StartZ - 10;
-
-#if APPID == DL_APPID
-
-	// Disable betabox respawning
-	*(u32*)0x004D6E6C = 0;
-
-#endif
-
+	setDeathHeight(StartZ - 10);
+	
 	// Spawn box so we know the correct model and collision pointers
 	Moby * sourceBox = spawnMoby(MOBY_ID_BETA_BOX, 0);
 
@@ -167,8 +159,8 @@ void initialize(void)
  */
 void gameStart(void)
 {
-	GameSettings * gameSettings = GLOBAL_GAMESETTINGS;
-	Player ** players = PLAYER_STRUCT_ARRAY;
+	GameSettings * gameSettings = getGameSettings();
+	Player ** players = getPlayers();
 	int i;
 
 	// Ensure in game

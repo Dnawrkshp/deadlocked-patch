@@ -12,8 +12,8 @@
  */
 
 #include <tamtypes.h>
+#include <string.h>
 
-#include "common.h"
 #include "time.h"
 #include "module.h"
 #include "game.h"
@@ -22,6 +22,31 @@
 #include "weapon.h"
 #include "hud.h"
 #include "cheats.h"
+#include "sha1.h"
+
+// TODO
+// Create scoreboard abstraction in libdl
+
+/*
+ * When non-zero, it refreshes the in-game scoreboard.
+ */
+#define GAME_SCOREBOARD_REFRESH_FLAG        (*(u32*)0x00310248)
+
+/*
+ * Target scoreboard value.
+ */
+#define GAME_SCOREBOARD_TARGET              (*(u32*)0x002FA084)
+
+/*
+ * Collection of scoreboard items.
+ */
+#define GAME_SCOREBOARD_ARRAY               ((ScoreboardItem**)0x002FA04C)
+
+/*
+ * Number of items in the scoreboard.
+ */
+#define GAME_SCOREBOARD_ITEM_COUNT          (*(u32*)0x002F9FCC)
+
 
 /*
  * 
@@ -192,8 +217,9 @@ void demotePlayer(Player * player, struct GunGameState * playerState, PlayerWeap
 		return;
 
 	int playerId = player->PlayerId;
+	PlayerGameStats * stats = getPlayerGameStats();
 	playerState->LastWrenchDeaths = playerWepStats->WeaponDeaths[playerId][WEAPON_SLOT_WRENCH];
-	playerState->LastSuicides = PLAYER_SUICIDES_START[playerId];
+	playerState->LastSuicides = stats->Suicides[playerId];
 
 	if (playerState->GunIndex <= 0)
 	{
@@ -233,6 +259,7 @@ void promotePlayer(Player * player, struct GunGameState * playerState, PlayerWea
 		return;
 
 	int playerId = player->PlayerId;
+	PlayerGameStats * stats = getPlayerGameStats();
 
 	// Player has already promoted as far as possible
 	if (playerState->GunIndex >= GUN_INDEX_END)
@@ -245,7 +272,7 @@ void promotePlayer(Player * player, struct GunGameState * playerState, PlayerWea
 	playerState->GunIndex += 1;
 	playerState->LastGunKills = playerWepStats->WeaponKills[playerId][(int)GunGameWeaponIds[playerState->GunIndex]];
 	playerState->LastWrenchDeaths = playerWepStats->WeaponDeaths[playerId][WEAPON_SLOT_WRENCH];
-	playerState->LastSuicides = PLAYER_SUICIDES_START[playerId];
+	playerState->LastSuicides = stats->Suicides[playerId];
 
 	// Show popup
 	if (isLocal(player))
@@ -274,9 +301,10 @@ void processPlayer(Player * player)
 
 	int playerId = player->PlayerId;
 	struct GunGameState * playerState = &PlayerGunGameStates[player->PlayerId];
+	PlayerGameStats * stats = getPlayerGameStats();
 	char activeGunSlotId = GunGameWeaponIds[playerState->GunIndex];
 	char activeGunId = weaponSlotToId(activeGunSlotId);
-	PlayerWeaponStats * playerWepStats = PLAYER_WEAPON_STATS_ARRAY;
+	PlayerWeaponStats * playerWepStats = getPlayerWeaponStats();
 	PlayerWeaponData * playerWeaponData = NULL;
 
 	// If player has reached end then game over
@@ -319,7 +347,7 @@ void processPlayer(Player * player)
 	
 	// Check for demotion
 	if (playerWepStats->WeaponDeaths[playerId][WEAPON_SLOT_WRENCH] > playerState->LastWrenchDeaths ||
-		PLAYER_SUICIDES_START[playerId] > playerState->LastSuicides)
+		stats->Suicides[playerId] > playerState->LastSuicides)
 		demotePlayer(player, playerState, playerWepStats);
 
 	// Check for promotion
@@ -377,6 +405,8 @@ void initialize(void)
 	int j = 0;
 	u8 rngSeed[12];
 	u8 rngBuf[12];
+	GameSettings * gameSettings = getGameSettings();
+	Player ** players = getPlayers();
 
 	// Reset states to 0
 	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
@@ -392,7 +422,7 @@ void initialize(void)
 	}
 
 	// Randomize middle tier weapons
-	u32 seed = GLOBAL_GAMESETTINGS->SpawnSeed;
+	u32 seed = gameSettings->SpawnSeed;
 	j = 1;
 	while (seed)
 	{
@@ -416,7 +446,7 @@ void initialize(void)
 	}
 
 	// Generate our rng seed from SHA1 of spawn seed
-	sha1(&GLOBAL_GAMESETTINGS->SpawnSeed, 4, (void*)rngSeed, 12);
+	sha1(&gameSettings->SpawnSeed, 4, (void*)rngSeed, 12);
 
 	// Initialize weapon mods
 	for (i = 0; i < 16; ++i)
@@ -434,7 +464,7 @@ void initialize(void)
 	// Initialize scoreboard
 	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
 	{
-		Player * p = PLAYER_STRUCT_ARRAY[i];
+		Player * p = players[i];
 		PlayerScores[i].TeamId = p ? i : 0;
 		PlayerScores[i].UNK = isLocal(p);
 		PlayerScores[i].Value = 0;
@@ -447,10 +477,10 @@ void initialize(void)
 	cheatsApplyNoPacks();
 
 	// Set respawn time to 2
-	GAME_RESPAWN_TIME = 2;
+	setGameRespawnTime(2);
 
 	// Set kill target to 0 (disable)
-	GAME_KILLS_TO_WIN = 0;
+	setGameKillsToWin(0);
 
 	// Set holoshields to instant kill
 	setWeaponDamage(WEAPON_ID_OMNI_SHIELD, 0, 50);
@@ -482,8 +512,8 @@ void initialize(void)
 void gameStart(void)
 {
 	int i = 0;
-	GameSettings * gameSettings = GLOBAL_GAMESETTINGS;
-	Player ** players = PLAYER_STRUCT_ARRAY;
+	GameSettings * gameSettings = getGameSettings();
+	Player ** players = getPlayers();
 
 	// Ensure in game
 	if (!gameSettings)
@@ -492,11 +522,11 @@ void gameStart(void)
 	if (!Initialized)
 		initialize();
 
-	if (!GAME_HAS_ENDED && !GameOver)
+	if (!hasGameEnded() && !GameOver)
 	{
 		// Disable weapon hud
-		HUD_P1->Weapons = 0;
-		HUD_P2->Weapons = 0;
+		getPlayerHUDFlags(0)->Weapons = 0;
+		getPlayerHUDFlags(1)->Weapons = 0;
 
 		// Iterate through players
 		for (i = 0; i < GAME_MAX_PLAYERS; ++i)
@@ -550,7 +580,7 @@ void gameStart(void)
 	setWinner(WinningTeam, 0);
 
 	// End game
-	if (GameOver && !GAME_HAS_ENDED)
+	if (GameOver && !hasGameEnded())
 	{
 		endGame(2);
 		ScoreboardChanged = 1;
