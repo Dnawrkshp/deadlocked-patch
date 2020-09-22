@@ -86,15 +86,18 @@ int findNextPlayerIndex(int currentPlayerIndex, int currentSpectateIndex, int di
     loop:
         newIndex += direction;
 
-        if(newIndex < 0)
+        if (newIndex < 0)
             newIndex = GAME_MAX_PLAYERS-1;
-        if(newIndex >= GAME_MAX_PLAYERS)
+        else if (newIndex >= GAME_MAX_PLAYERS)
             newIndex = 0;
+        // Fail if the only player is us
         if(newIndex == currentPlayerIndex && newIndex == currentSpectateIndex)
             return -1;
+        // prevent infinite loop
         if (newIndex == currentSpectateIndex)
-            return -1;
-        if(newIndex == currentPlayerIndex)
+            return players[currentSpectateIndex] ? currentSpectateIndex : -1;
+        // skip self
+        if (newIndex == currentPlayerIndex)
             goto loop;
     }
     while(!players[newIndex]);
@@ -107,7 +110,6 @@ void processSpectate(void)
     GameSettings * gameSettings = getGameSettings();
 	Player ** players = getPlayers();
     struct PlayerSpectateData * spectateData = 0;
-    int survivor = getGameSurvivor();
     int i = 0;
     int direction = 0;
     int spectateIndex = 0;
@@ -147,14 +149,42 @@ void processSpectate(void)
                         showHelpPopup(player->LocalPlayerIndex, "Press \x13 to enter spectate mode.", 5);
                     }
 
-                    // When the player presses square and spectate isn't already enabled. Enable it.
+                    // When the player presses square and spectate isn't already enabled. Try to enable it.
                     if (playerPadGetButtonDown(player, PAD_SQUARE) > 0) 
                     {
-                        spectateData->Enabled = 1;
-                        spectateData->Index = i+1;
-                        getPlayerHUDFlags(player->LocalPlayerIndex)->Weapons = 0;
-                        getPlayerHUDFlags(player->LocalPlayerIndex)->Healthbar = 0;
+                        // First check if there is a player to spectate
+                        spectateIndex = findNextPlayerIndex(i, spectateIndex, 1);
+                        if (spectateIndex >= 0)
+                        {
+                            spectateData->Enabled = 1;
+                            spectateData->Index = spectateIndex;
+                            getPlayerHUDFlags(player->LocalPlayerIndex)->Weapons = 0;
+                            getPlayerHUDFlags(player->LocalPlayerIndex)->Healthbar = 0;
+                            vector_copy(spectateData->LastCameraPos, players[spectateIndex]->CameraPos);
+                        }
                     }
+                }
+                // Let the player exit spectate by pressing square
+                else if (playerPadGetButtonDown(player, PAD_SQUARE) > 0)
+                {
+                    spectateData->Enabled = 0;
+                    getPlayerHUDFlags(player->LocalPlayerIndex)->Weapons = 1;
+                    getPlayerHUDFlags(player->LocalPlayerIndex)->Healthbar = 1;
+                }
+                // If the actively spectated player left find the next player
+                else if (!players[spectateIndex])
+                {
+                    // First check if there is a player to spectate
+                    spectateIndex = findNextPlayerIndex(i, spectateIndex, 1);
+                    if (spectateIndex < 0)
+                    {
+                        spectateData->Enabled = 0;
+                        getPlayerHUDFlags(player->LocalPlayerIndex)->Weapons = 1;
+                        getPlayerHUDFlags(player->LocalPlayerIndex)->Healthbar = 1;
+                    }
+
+                    // Update spectate index
+                    spectateData->Index = spectateIndex;
                 }
                 else
                 {
@@ -175,31 +205,30 @@ void processSpectate(void)
                     else if (playerPadGetButtonDown(player, PAD_L1) > 0)
                         direction = -1;
 
-                    if (direction) 
-                    {
+                    // 
+                    if (direction) {
                         spectateIndex = findNextPlayerIndex(i, spectateIndex, direction);
-                        if (spectateIndex < 0) 
-                        {
-                            SpectateData->Enabled = 0;
-                            continue;
-                        }
                     }
 
-                    Player * nextPlayer = players[spectateIndex];
-                    if (nextPlayer)
+                    if (spectateIndex >= 0)
                     {
-                        // Update last camera position to new target
-                        // This snaps the camera to the new target instead of lerping
-                        if (spectateIndex != spectateData->Index)
-                            vector_copy(spectateData->LastCameraPos, nextPlayer->CameraPos);
+                        Player * nextPlayer = players[spectateIndex];
+                        if (nextPlayer)
+                        {
+                            // Update last camera position to new target
+                            // This snaps the camera to the new target instead of lerping
+                            if (spectateIndex != spectateData->Index)
+                                vector_copy(spectateData->LastCameraPos, nextPlayer->CameraPos);
 
-                        spectate(player, nextPlayer);
+                            spectate(player, nextPlayer);
+                        }
                     }
 
                     // Finally update stored index value
                     spectateData->Index = spectateIndex;
                 }
-            } else
+            }
+            else
             {
                 spectateData->Enabled = 0;
                 getPlayerHUDFlags(player->LocalPlayerIndex)->Weapons = 1;
