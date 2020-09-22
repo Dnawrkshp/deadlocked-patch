@@ -71,7 +71,7 @@ void spectate(Player * currentPlayer, Player * playerToSpectate)
 
 
     // Something in this was crashing when swapping weapons
-    // memcpy((((u8*)currentPlayer) + 0x18D0), (((u8*)playerToSpectate) + 0x18D0), 0x200);
+    //memcpy((((u8*)currentPlayer) + 0x1950), (((u8*)playerToSpectate) + 0x590), 0x20);
 
 }
 
@@ -115,7 +115,8 @@ void processSpectate(void)
     // First, we have to ensure we are in-game
 	if (!gameSettings || !isInGame()) 
     {
-        memset(SpectateData, 0, sizeof(SpectateData));
+        //memset(SpectateData, 0, sizeof(SpectateData));
+        SpectateData->Enabled = 0;
 		return;
     }
 
@@ -151,6 +152,8 @@ void processSpectate(void)
                     {
                         spectateData->Enabled = 1;
                         spectateData->Index = i+1;
+                        getPlayerHUDFlags(player->LocalPlayerIndex)->Weapons = 0;
+                        getPlayerHUDFlags(player->LocalPlayerIndex)->Healthbar = 0;
                     }
                 }
                 else
@@ -159,7 +162,7 @@ void processSpectate(void)
                     if (!spectateData->HasShownNavMsg) 
                     {
                         spectateData->HasShownNavMsg = 1;
-                        showHelpPopup(player->LocalPlayerIndex, "Press \x15 to spectate the next player. Press \x14 to spectate the previous player.", 10);
+                        showHelpPopup(player->LocalPlayerIndex, "Use \x14 and \x15 to navigate between players.", 10);
                     }
                     
                     // If the currently spectated player becomes null, we move forward to the next player            
@@ -199,24 +202,9 @@ void processSpectate(void)
             } else
             {
                 spectateData->Enabled = 0;
-                spectateData->HasShownEnterMsg = 0;
-                spectateData->HasShownNavMsg = 0;
+                getPlayerHUDFlags(player->LocalPlayerIndex)->Weapons = 1;
+                getPlayerHUDFlags(player->LocalPlayerIndex)->Healthbar = 1;
             }
         }
 	}
-
-
-    
-    // Next, we check if survivor is on or not
-    // - If survivor is on, automatically trigger spectate
-    // - If survivor is off, logic to hook in and show option to turn on spectate
-    
-    
-    // Spectate logic
-    // When spectate is triggered
-    // - Get list of active players in-game
-    // - Remove yourself from the list of players to spectate
-    // - Select the first player in that list
-    // Pressing L1/R1 will move to the previous/next player index
-    // Respawning automatically disables spectate
 }
