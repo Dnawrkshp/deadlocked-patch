@@ -146,8 +146,8 @@ void processSpectate(void)
                         showHelpPopup(player->LocalPlayerIndex, "Press \x13 to enter spectate mode.", 5);
                     }
 
-                    // When the player presses square, or survivor is on, and spectate isn't already enabled. Enable it.
-                    if (player->Paddata->square_p || survivor) 
+                    // When the player presses square and spectate isn't already enabled. Enable it.
+                    if (playerPadGetButtonDown(player, PAD_SQUARE) > 0) 
                     {
                         spectateData->Enabled = 1;
                         spectateData->Index = i+1;
@@ -166,10 +166,10 @@ void processSpectate(void)
                     if (!players[spectateIndex])
                         direction = 1;
                     // If the player is pressing R1, move forward
-                    else if (player->Paddata->r1_p) 
+                    else if (playerPadGetButtonDown(player, PAD_R1) > 0) 
                         direction = 1;
                     // If the player is pressing L1, move backward
-                    else if (player->Paddata->l1_p)
+                    else if (playerPadGetButtonDown(player, PAD_L1) > 0)
                         direction = -1;
 
                     if (direction) 

@@ -221,7 +221,11 @@ typedef struct Player
 
     int Team;                                                       // 0x2F14
 
-    char UNK25[0x98];                                               // 0x2F18
+    char UNK25[0x10];                                               // 0x2F18
+
+    void * RemotePadInfo;                                           // 0x2F28
+
+    char UNK36[0x84];                                               // 0x2F2C
 
     float DamageMultiplier;                                         // 0x2FB0
 
@@ -373,5 +377,79 @@ void giveWeapon(Player * player, int weaponId, int weaponLevel);
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
 void playerSetPosRot(Player * player, VECTOR p, VECTOR r);
+
+/*
+ * NAME :		playerGetPad
+ * 
+ * DESCRIPTION :
+ * 			Returns a pointer to the player's pad data.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *          player:                     Target player.
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+PadButtonStatus * playerGetPad(Player * player);
+
+/*
+ * NAME :		playerPadGetButton
+ * 
+ * DESCRIPTION :
+ * 			Returns 1 when the given player is pressing the given button combination.
+ *          Returns negative on failure.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *          player:                     Pointer to player's player object.
+ *          buttonMask:                 Buttons to check.
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+int playerPadGetButton(Player * player, u16 buttonMask);
+
+/*
+ * NAME :		playerPadGetButtonDown
+ * 
+ * DESCRIPTION :
+ * 			Returns 1 during the frame that the given player starts pressing the given button combination.
+ *          Returns negative on failure.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *          player:                     Pointer to player's player object.
+ *          buttonMask:                 Buttons to check.
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+int playerPadGetButtonDown(Player * player, u16 buttonMask);
+
+/*
+ * NAME :		playerPadGetButtonUp
+ * 
+ * DESCRIPTION :
+ * 			Returns 1 during the frame that the given player releases the given button combination.
+ *          Returns negative on failure.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *          player:                     Pointer to player's player object.
+ *          buttonMask:                 Buttons to check.
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+int playerPadGetButtonUp(Player * player, u16 buttonMask);
 
 #endif // _PLAYER_H_

@@ -24,22 +24,26 @@
 #ifndef _PAD_H
 #define _PAD_H
 
-#define PAD_LEFT      0x0080
-#define PAD_DOWN      0x0040
-#define PAD_RIGHT     0x0020
-#define PAD_UP        0x0010
-#define PAD_START     0x0008
-#define PAD_R3        0x0004
-#define PAD_L3        0x0002
-#define PAD_SELECT    0x0001
-#define PAD_SQUARE    0x8000
-#define PAD_CROSS     0x4000
-#define PAD_CIRCLE    0x2000
-#define PAD_TRIANGLE  0x1000
-#define PAD_R1        0x0800
-#define PAD_L1        0x0400
-#define PAD_R2        0x0200
-#define PAD_L2        0x0100
+#include <tamtypes.h>
+
+#define PAD_PORT_MAX        2
+
+#define PAD_LEFT            0x0080
+#define PAD_DOWN            0x0040
+#define PAD_RIGHT           0x0020
+#define PAD_UP              0x0010
+#define PAD_START           0x0008
+#define PAD_R3              0x0004
+#define PAD_L3              0x0002
+#define PAD_SELECT          0x0001
+#define PAD_SQUARE          0x8000
+#define PAD_CROSS           0x4000
+#define PAD_CIRCLE          0x2000
+#define PAD_TRIANGLE        0x1000
+#define PAD_R1              0x0800
+#define PAD_L1              0x0400
+#define PAD_R2              0x0200
+#define PAD_L2              0x0100
 
 typedef struct padButtonStatus
 {
@@ -64,9 +68,73 @@ typedef struct padButtonStatus
     unsigned char r1_p;
     unsigned char l2_p;
     unsigned char r2_p;
-    unsigned char unkn16[12];
 } __attribute__((packed)) PadButtonStatus;
 
+typedef struct PadHistory
+{
+    u16 btns;
+    u8 rjoy_h;
+    u8 rjoy_v;
+    u8 ljoy_h;
+    u8 ljoy_v;
+    short id;
+} PadHistory;
 
+/*
+ * NAME :		padGetButton
+ * 
+ * DESCRIPTION :
+ * 			Returns 1 when the user is pressing the given button combination.
+ *          Returns negative on failure.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *          port:                       Which controller port to read.
+ *          buttonMask:                 Buttons to check.
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+int padGetButton(int port, u16 buttonMask);
+
+/*
+ * NAME :		padGetButtonDown
+ * 
+ * DESCRIPTION :
+ * 			Returns 1 during the frame that the user starts pressing the given button combination.
+ *          Returns negative on failure.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *          port:                       Which controller port to read.
+ *          buttonMask:                 Buttons to check.
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+int padGetButtonDown(int port, u16 buttonMask);
+
+/*
+ * NAME :		padGetButtonUp
+ * 
+ * DESCRIPTION :
+ * 			Returns 1 during the frame that the user releases the given button combination.
+ *          Returns negative on failure.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *          port:                       Which controller port to read.
+ *          buttonMask:                 Buttons to check.
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+int padGetButtonUp(int port, u16 buttonMask);
 
 #endif // _PAD_H

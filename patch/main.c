@@ -13,6 +13,7 @@
 
 #include <tamtypes.h>
 
+#include "dl.h"
 #include "player.h"
 #include "pad.h"
 #include "time.h"
@@ -151,7 +152,6 @@ void processGameModules()
 	}
 }
 
-int a  = 0;
 
 /*
  * NAME :		main
@@ -169,6 +169,9 @@ int a  = 0;
  */
 int main (void)
 {
+	// Call this first
+	dlPreUpdate();
+
 	// Patch camera speed
 	patchCameraSpeed();
 
@@ -177,6 +180,9 @@ int main (void)
 
 	// Process spectate
 	processSpectate();
+
+	// Call this last
+	dlPostUpdate();
 
 	return 0;
 }

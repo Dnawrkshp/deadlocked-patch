@@ -1,5 +1,7 @@
+#include <string.h>
 #include "player.h"
 #include "team.h"
+#include "game.h"
 
 /*
  * 
@@ -28,6 +30,12 @@
  * 
  */
 #define PLAYER_SET_POS_ROT_FUNC                     (0x005EB448)
+
+// 
+extern const PadHistory DefaultPadHistory;
+
+// Player pad history
+PadHistory PlayerPadHistory[GAME_MAX_PLAYERS];
 
 //--------------------------------------------------------------------------------
 Player ** getPlayers(void)
@@ -84,4 +92,97 @@ int isLocal(Player * player)
 void playerSetPosRot(Player * player, VECTOR p, VECTOR r)
 {
     ((void (*)(Player *, VECTOR, VECTOR, int))PLAYER_SET_POS_ROT_FUNC)(player, p, r, 0);
+}
+
+//--------------------------------------------------------------------------------
+PadButtonStatus * playerGetPad(Player * player)
+{
+    if (!player)
+        return 0;
+
+    if (isLocal(player))
+    {
+        return player->Paddata;
+    }
+    else
+    {
+        u8 * remotePadInfo = player->RemotePadInfo;
+        if (!remotePadInfo)
+            return 0;
+
+        return (PadButtonStatus*)(remotePadInfo + 0x70);
+    }
+}
+
+//--------------------------------------------------------------------------------
+void playerPadUpdate(void)
+{
+    int i;
+    PadButtonStatus * playerPad;
+    struct PadHistory * padHistory;
+    Player ** players = getPlayers();
+    Player * player;
+
+    // Update player pad in game
+    if (isInGame())
+    {
+        for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+        {
+            player = players[i];
+            padHistory = &PlayerPadHistory[i];
+            playerPad = playerGetPad(player);
+
+            // Copy last player pad
+            if (playerPad)
+            {
+                memcpy(padHistory, &playerPad->btns, sizeof(struct PadHistory));
+                padHistory->id = player->PlayerId;
+            }
+            // Reset pad if no player
+            else if (padHistory->id >= 0)
+            {
+                memcpy(padHistory, &DefaultPadHistory, sizeof(struct PadHistory));
+            }
+        }
+    }
+
+    // Reset player pad history when not in game
+    else if (PlayerPadHistory[0].id >= 0)
+    {
+        for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+            memcpy(PlayerPadHistory + i, &DefaultPadHistory, sizeof(struct PadHistory));
+    }
+}
+
+//--------------------------------------------------------------------------------
+int playerPadGetButton(Player * player, u16 buttonMask)
+{
+    if (!player)
+        return 0;
+
+    PadButtonStatus * paddata = playerGetPad(player);
+    if (!paddata)
+        return 0;
+
+    return (paddata->btns & buttonMask) == buttonMask;
+}
+
+//--------------------------------------------------------------------------------
+int playerPadGetButtonDown(Player * player, u16 buttonMask)
+{
+    if (!player)
+        return 0;
+
+    return playerPadGetButton(player, buttonMask) &&
+            (PlayerPadHistory[player->PlayerId].btns & buttonMask) != buttonMask;
+}
+
+//--------------------------------------------------------------------------------
+int playerPadGetButtonUp(Player * player, u16 buttonMask)
+{
+    if (!player)
+        return 0;
+
+    return !playerPadGetButton(player, buttonMask) &&
+        (PlayerPadHistory[player->PlayerId].btns & buttonMask) == buttonMask;
 }
