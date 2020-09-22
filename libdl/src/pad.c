@@ -8,12 +8,12 @@
 
 // Default value for pad history
 const PadHistory DefaultPadHistory = {
-    -1,
     0xFFFF,
     0x7F,
     0x7F,
     0x7F,
-    0x7F
+    0x7F,
+    -1
 };
 
 // Local pad history

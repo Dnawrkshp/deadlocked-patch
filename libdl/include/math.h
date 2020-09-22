@@ -15,16 +15,21 @@
 #define _MATH_H_
 
 //--------------------------------------------------------
-#define MATH_PI                         (3.14159)
+#define MATH_PI                         (3.141596)
 #define MATH_TAU                        (MATH_PI * 2.0)
 #define MATH_E                          (2.7182818)
 #define MATH_DT                         (0.166666666)
-
+#define MATH_RAD2DEG                    (180 / MATH_PI)
+#define MATH_DEG2RAD                    (MATH_PI / 180)
 
 //--------------------------------------------------------
 float cosf(float theta);
 float sinf(float theta);
 float sqrtf(float f);
 float powf(float base, float exp);
+float fabsf(float f);
+float lerpf(float a, float b, float t);
+float lerpfAngle(float a, float b, float t);
+float clampAngle(float theta);
 
 #endif // _MATH_H_

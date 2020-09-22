@@ -30,13 +30,21 @@ struct PlayerSpectateData
     int HasShownEnterMsg;
     int HasShownNavMsg;
     VECTOR LastCameraPos;
+    float LastCameraYaw;
+    float LastCameraPitch;
 } SpectateData[2];
 
 /*
- * How sharp/snappy the camera interpolation.
+ * How sharp/snappy the camera position interpolation.
  * Higher is more sharp.
  */
 const float CameraPositionSharpness = 50;
+
+/*
+ * How sharp/snappy the camera rotation interpolation.
+ * Higher is more sharp.
+ */
+const float CameraRotationSharpness = 5;
 
 /*
  * NAME :		spectate
@@ -59,11 +67,15 @@ void spectate(Player * currentPlayer, Player * playerToSpectate)
     if(!playerToSpectate)
         return;
 
-    currentPlayer->CameraYaw = playerToSpectate->CameraYaw;
-    currentPlayer->CameraPitch = playerToSpectate->CameraPitch;
+    float cameraT = 1 - powf(MATH_E, -CameraRotationSharpness * MATH_DT);
+
     currentPlayer->CameraPitchMin = playerToSpectate->CameraPitchMin;
     currentPlayer->CameraPitchMax = playerToSpectate->CameraPitchMax;
     currentPlayer->CameraDistance = playerToSpectate->CameraDistance;
+
+    // Interpolate camera rotation towards target player
+    currentPlayer->CameraYaw.Value = spectateData->LastCameraYaw = lerpfAngle(spectateData->LastCameraYaw, playerToSpectate->CameraYaw.Value, cameraT);
+    currentPlayer->CameraPitch.Value = spectateData->LastCameraPitch = lerpfAngle(spectateData->LastCameraPitch, playerToSpectate->CameraPitch.Value, cameraT);
 
     // Interpolate camera towards target player
     vector_lerp(spectateData->LastCameraPos, spectateData->LastCameraPos, playerToSpectate->CameraPos, 1 - powf(MATH_E, -CameraPositionSharpness * MATH_DT));
