@@ -2,6 +2,7 @@
 
 //--------------------------------------------------------
 #define MATH_COSF_FUNC                  (0x00135878)
+#define MATH_ASINF_FUNC                 (0x00136278)
 #define MATH_SQRTF_FUNC                 (0x00136C90) 
 #define MATH_POWF_FUNC                  (0x00136788)
 #define MATH_FABS_FUNC                  (0x00135300)
@@ -16,7 +17,19 @@ float cosf(float theta)
 //--------------------------------------------------------
 float sinf(float theta)
 {
-    return ((float (*)(float))MATH_COSF_FUNC)(theta - MATH_PI);
+    return ((float (*)(float))MATH_COSF_FUNC)(clampAngle(theta - (MATH_PI / 2)));
+}
+
+//--------------------------------------------------------
+float acosf(float v)
+{
+    return (MATH_PI / 2) - asinf(v);
+}
+
+//--------------------------------------------------------
+float asinf(float v)
+{
+    return ((float (*)(float))MATH_ASINF_FUNC)(v);
 }
 
 //--------------------------------------------------------

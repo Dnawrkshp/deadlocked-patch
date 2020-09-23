@@ -11,15 +11,16 @@
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
 
-#ifndef _PLAYER_H_
-#define _PLAYER_H_
+#ifndef _LIBDL_PLAYER_H_
+#define _LIBDL_PLAYER_H_
 
 #include "math.h"
 #include "weapon.h"
 #include "moby.h"
 #include "pad.h"
 #include "team.h"
-#include "vector.h"
+#include "math3d.h"
+#include "vehicle.h"
 
 /*
  * Maximum health of player.
@@ -82,8 +83,9 @@ typedef struct Player
 
     VECTOR PlayerPosition;                                          // 0xA0
     
-    char UNK1[0x08];                                                // 0xB0
+    char UNK1[0x04];                                                // 0xB0
 
+    float PlayerPitch;                                              // 0xB4
     float PlayerYaw;                                                // 0xB8
 
     char UNK2[0x240];                                               // 0xBC
@@ -167,7 +169,11 @@ typedef struct Player
 
     int CameraType;                                                 // 0x1AE0
 
-    char UNK17[0x814];                                              // 0x1AE4
+    char UNK47[0x18];                                               // 0x1AE4
+
+    float CameraElevation;                                          // 0x1AFC
+
+    char UNK17[0x7F8];                                              // 0x1B00
 
     // When 1, the player is trying to shoot
     int IsShooting;                                                 // 0x22F8
@@ -213,7 +219,9 @@ typedef struct Player
     // Points to the player moby
     Moby * PlayerMoby;                                              // 0x2EF0
 
-    char UNK23[0x0C];                                               // 0x2EFC
+    Vehicle * Vehicle;                                              // 0x2EF4
+
+    char UNK23[0x08];                                               // 0x2EF8
 
     PadButtonStatus * Paddata;                                      // 0x2F00
 
@@ -452,4 +460,4 @@ int playerPadGetButtonDown(Player * player, u16 buttonMask);
  */
 int playerPadGetButtonUp(Player * player, u16 buttonMask);
 
-#endif // _PLAYER_H_
+#endif // _LIBDL_PLAYER_H_

@@ -25,6 +25,8 @@
 //--------------------------------------------------------
 float cosf(float theta);
 float sinf(float theta);
+float acosf(float v);
+float asinf(float v);
 float sqrtf(float f);
 float powf(float base, float exp);
 float fabsf(float f);

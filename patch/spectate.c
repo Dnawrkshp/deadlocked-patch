@@ -38,13 +38,49 @@ struct PlayerSpectateData
  * How sharp/snappy the camera position interpolation.
  * Higher is more sharp.
  */
-const float CameraPositionSharpness = 50;
+const float CAMERA_POSITION_SHARPNESS = 50;
 
 /*
  * How sharp/snappy the camera rotation interpolation.
  * Higher is more sharp.
  */
-const float CameraRotationSharpness = 5;
+const float CAMERA_ROTATION_SHARPNESS = 5;
+
+/*
+ * How sharp/snappy the camera rotation interpolation is in vehicle.
+ * Higher is more sharp.
+ */
+const float VEHICLE_CAMERA_ROTATION_SHARPNESS = 0.3;
+
+/*
+ * How far to spectate from a vehicle
+ */
+const float VEHICLE_DISTANCE[] =
+{
+    2,                  // hoverbike
+    0,                  // hoverbike passenger
+    3,                  // puma
+    0,                  // puma passenger
+    2,                  // landstalker
+    0,                  // landstalker passenger
+    4,                  // hovership
+    0                   // hovership passenger
+};
+
+/*
+ * How much elevation to add the camera position when spectate target is in vehicle.
+ */
+const float VEHICLE_ELEVATION[] =
+{
+    2,                  // hoverbike
+    0,                  // hoverbike passenger
+    3,                  // puma
+    3,                  // puma passenger
+    2.5,                // landstalker
+    3,                  // landstalker passenger
+    2,                  // hovership
+    3                   // hovership passenger
+};
 
 /*
  * NAME :		spectate
@@ -63,28 +99,105 @@ const float CameraRotationSharpness = 5;
  */
 void spectate(Player * currentPlayer, Player * playerToSpectate)
 {
+    float cameraT;
     struct PlayerSpectateData * spectateData = SpectateData + currentPlayer->LocalPlayerIndex;
     if(!playerToSpectate)
         return;
 
-    float cameraT = 1 - powf(MATH_E, -CameraRotationSharpness * MATH_DT);
-
     currentPlayer->CameraPitchMin = playerToSpectate->CameraPitchMin;
     currentPlayer->CameraPitchMax = playerToSpectate->CameraPitchMax;
-    currentPlayer->CameraDistance = playerToSpectate->CameraDistance;
 
-    // Interpolate camera rotation towards target player
-    currentPlayer->CameraYaw.Value = spectateData->LastCameraYaw = lerpfAngle(spectateData->LastCameraYaw, playerToSpectate->CameraYaw.Value, cameraT);
-    currentPlayer->CameraPitch.Value = spectateData->LastCameraPitch = lerpfAngle(spectateData->LastCameraPitch, playerToSpectate->CameraPitch.Value, cameraT);
+    if (playerToSpectate->Vehicle)
+    {
+        Moby * vehicleMoby = playerToSpectate->Vehicle->VehicleMoby;
+        int isPassenger = playerToSpectate->Vehicle->PassengerPlayer == playerToSpectate;
+        cameraT = 1 - powf(MATH_E, -(isPassenger ? CAMERA_ROTATION_SHARPNESS : VEHICLE_CAMERA_ROTATION_SHARPNESS) * MATH_DT);
 
-    // Interpolate camera towards target player
-    vector_lerp(spectateData->LastCameraPos, spectateData->LastCameraPos, playerToSpectate->CameraPos, 1 - powf(MATH_E, -CameraPositionSharpness * MATH_DT));
-    vector_copy(currentPlayer->CameraPos, spectateData->LastCameraPos);
+        // Grab rotation
+        float yaw = playerToSpectate->Vehicle->VehicleYaw;
+        float pitch = 0.08;
+        float distance = 0;
+        float elevation = 0;
+        
+        // Determine distance and elevation by vehicle id
+        switch (vehicleMoby->MobyId)
+        {
+            case MOBY_ID_HOVERBIKE:
+            {
+                yaw = playerToSpectate->PlayerYaw;
+                distance = VEHICLE_DISTANCE[0 + isPassenger];
+                elevation = VEHICLE_ELEVATION[0 + isPassenger];
+                break;
+            }
+            case MOBY_ID_PUMA:
+            {
+                distance = VEHICLE_DISTANCE[2 + isPassenger];
+                elevation = VEHICLE_ELEVATION[2 + isPassenger];
 
+                if (isPassenger)
+                {
+                    yaw = playerToSpectate->Vehicle->PassengerYaw;
+                    pitch = playerToSpectate->Vehicle->PassengerPitch + 0.08;
+                }
+                break;
+            }
+            case MOBY_ID_LANDSTALKER:
+            {
+                distance = VEHICLE_DISTANCE[4 + isPassenger];
+                elevation = VEHICLE_ELEVATION[4 + isPassenger];
 
-    // Something in this was crashing when swapping weapons
-    //memcpy((((u8*)currentPlayer) + 0x1950), (((u8*)playerToSpectate) + 0x590), 0x20);
+                if (isPassenger)
+                {
+                    yaw = playerToSpectate->Vehicle->PassengerYaw;
+                    pitch = playerToSpectate->Vehicle->PassengerPitch;
+                }
+                break;
+            }
+            case MOBY_ID_HOVERSHIP:
+            {
+                pitch = playerToSpectate->Vehicle->VehiclePitch;
+                yaw = playerToSpectate->Vehicle->VehicleYaw;
+                distance = VEHICLE_DISTANCE[6 + isPassenger];
+                elevation = VEHICLE_ELEVATION[6 + isPassenger];
 
+                // Get passenger camera rotation -- only works with local
+                if (isPassenger && isLocal(playerToSpectate))
+                {
+                    float * props = (float*)((*(u32*)((u32)vehicleMoby->PropertiesPointer + 0x10)) + 0x180);
+                    pitch = props[1];
+                    yaw = props[0];
+                }
+                break;
+            }
+        }
+
+        // Interpolate camera rotation towards target player
+        currentPlayer->CameraYaw.Value = spectateData->LastCameraYaw = lerpfAngle(spectateData->LastCameraYaw, yaw, cameraT);
+        currentPlayer->CameraPitch.Value = spectateData->LastCameraPitch = lerpfAngle(spectateData->LastCameraPitch, pitch, cameraT);
+        
+        // Generate target based off distance and elevation
+        VECTOR target;
+        vector_copy(target, playerToSpectate->Vehicle->VehicleMoby->Position);
+        target[0] -= cosf(spectateData->LastCameraYaw) * distance;
+        target[1] -= sinf(spectateData->LastCameraYaw) * distance;
+        target[2] += (sinf(spectateData->LastCameraPitch) * distance) + elevation;
+
+        // Interpolate camera towards target player
+        vector_lerp(spectateData->LastCameraPos, spectateData->LastCameraPos, target, 1 - powf(MATH_E, -CAMERA_POSITION_SHARPNESS * MATH_DT));
+        vector_copy(currentPlayer->CameraPos, spectateData->LastCameraPos);
+    }
+    else
+    {
+        cameraT = 1 - powf(MATH_E, -CAMERA_ROTATION_SHARPNESS * MATH_DT);
+
+        // Interpolate camera rotation towards target player
+        currentPlayer->CameraYaw.Value = spectateData->LastCameraYaw = lerpfAngle(spectateData->LastCameraYaw, playerToSpectate->CameraYaw.Value, cameraT);
+        currentPlayer->CameraPitch.Value = spectateData->LastCameraPitch = lerpfAngle(spectateData->LastCameraPitch, playerToSpectate->CameraPitch.Value, cameraT);
+
+        // Interpolate camera towards target player
+        vector_lerp(spectateData->LastCameraPos, spectateData->LastCameraPos, playerToSpectate->CameraPos, 1 - powf(MATH_E, -CAMERA_POSITION_SHARPNESS * MATH_DT));
+        vector_copy(currentPlayer->CameraPos, spectateData->LastCameraPos);
+    }
 }
 
 int findNextPlayerIndex(int currentPlayerIndex, int currentSpectateIndex, int direction)

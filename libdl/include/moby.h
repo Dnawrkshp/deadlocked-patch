@@ -15,7 +15,7 @@
 #define _MOBY_H_
 
 #include <tamtypes.h>
-#include "vector.h"
+#include "math3d.h"
 
 //--------------------------------------------------------
 enum MobyId
@@ -449,7 +449,7 @@ typedef struct Moby
     short MobyId;
     short UNK_BE;
 
-    float TRS[4][4];
+    MATRIX WorldMatrix;
 
 } Moby;
 
