@@ -80,6 +80,7 @@ void changeTeam(Player * player, int teamId)
     
     player->Team = teamId;
     player->PlayerMoby->SecondaryColor = TEAM_COLORS[teamId];
+    player->SkinMoby->TextureId = 0x80 + (8 * teamId);
 }
 
 //--------------------------------------------------------------------------------

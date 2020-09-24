@@ -55,6 +55,11 @@
 #define GAME_PLAYER_STATS_ARRAY             ((PlayerGameStats*)0x0036D9C8)
 
 /*
+ *
+ */
+#define GAME_TEAM_CAPS_ARRAY                ((u8*)0x0036DC4C)
+
+/*
  * 
  */
 #define PLAYER_WEAPON_STATS_ARRAY           ((PlayerWeaponStats*)0x0036D6A8)
@@ -302,6 +307,25 @@ PlayerGameStats * getPlayerGameStats(void)
 }
 
 /*
+ * NAME :		getTeamStatCaps
+ * 
+ * DESCRIPTION :
+ * 			Returns the collection of team flag captures.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+u8 * getTeamStatCaps(void)
+{
+    return GAME_TEAM_CAPS_ARRAY;
+}
+
+/*
  * NAME :		getPlayerWeaponStats
  * 
  * DESCRIPTION :
@@ -318,4 +342,23 @@ PlayerGameStats * getPlayerGameStats(void)
 PlayerWeaponStats * getPlayerWeaponStats(void)
 {
     return PLAYER_WEAPON_STATS_ARRAY;
+}
+
+/*
+ * NAME :		gameGetRawTimeLimit
+ * 
+ * DESCRIPTION :
+ * 			Gets the actual time limit in milliseconds.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+int gameGetRawTimeLimit(void)
+{
+    return GAME_TIME_LIMIT;
 }

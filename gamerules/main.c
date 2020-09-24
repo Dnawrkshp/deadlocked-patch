@@ -20,6 +20,7 @@
 #include "gamesettings.h"
 #include "player.h"
 #include "cheats.h"
+#include "stdio.h"
 
 /*
  * Gamerule ids.
@@ -32,8 +33,8 @@ enum GameRuleIdBitMask
 	GAMERULE_NO_V2S =			(1 << 1),
 	GAMERULE_MIRROR =			(1 << 2),
 	GAMERULE_NO_HB =			(1 << 3),
-	GAMERULE_VAMPIRE =			(1 << 4)
-
+	GAMERULE_VAMPIRE =			(1 << 4),
+	GAMERULE_HALFTIME =			(1 << 5)
 };
 
 /*
@@ -46,10 +47,177 @@ int Initialized = 0;
  */
 int HasDisabledHealthboxes = 0;
 
+/* 
+ * 
+ */
+int HasHalfTimeFlipped = 0;
+
 /*
  * 
  */
 short PlayerKills[GAME_MAX_PLAYERS];
+
+/*
+ * When non-zero, it refreshes the in-game scoreboard.
+ */
+#define GAME_SCOREBOARD_REFRESH_FLAG        (*(u32*)0x00310248)
+
+/*
+ * Target scoreboard value.
+ */
+#define GAME_SCOREBOARD_TARGET              (*(u32*)0x002FA084)
+
+/*
+ * Collection of scoreboard items.
+ */
+#define GAME_SCOREBOARD_ARRAY               ((ScoreboardItem**)0x002FA04C)
+
+/*
+ * Number of items in the scoreboard.
+ */
+#define GAME_SCOREBOARD_ITEM_COUNT          (*(u32*)0x002F9FCC)
+
+/*
+ * NAME :		flipCtfTeams
+ * 
+ * DESCRIPTION :
+ * 			
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void flipCtfTeams(void)
+{
+	int i, j;
+	Player ** players = getPlayers();
+	Player * player;
+	ScoreboardItem * scoreboardItem;
+	u8 * teamCaps = getTeamStatCaps();
+	int teams = 0;
+	u8 teamChangeMap[4] = {0,1,2,3};
+	u8 backupTeamCaps[4];
+	int scoreboardItemCount = GAME_SCOREBOARD_ITEM_COUNT;
+
+	// backup
+	memcpy(backupTeamCaps, teamCaps, 4);
+
+	// Determine teams
+	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+	{
+		player = players[i];
+		if (!player)
+			continue;
+			
+		teams |= (1 << (player->Team+1));
+	}
+
+	// If all four teams then just swap
+	if (teams == 0xF)
+	{
+		teamChangeMap[TEAM_BLUE] = TEAM_RED;
+		teamChangeMap[TEAM_RED] = TEAM_BLUE;
+		teamChangeMap[TEAM_GREEN] = TEAM_ORANGE;
+		teamChangeMap[TEAM_ORANGE] = TEAM_GREEN;
+	}
+	// Otherwise rotate the teams
+	else
+	{
+		for (i = 0; i < 4; ++i)
+		{
+			if (!(teams & (1 << (i+1))))
+				continue;
+
+			j = i;
+			do
+			{
+				++j;
+				if (j >= 4)
+					j = 0;
+
+				if (!(teams & (1 << (j+1))))
+					continue;
+
+				teamChangeMap[i] = j;
+				break;
+			} while (j != i);
+		}
+	}
+
+	// Switch player teams
+	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+	{
+		player = players[i];
+		if (!player)
+			continue;
+
+		if (isLocal(player))
+		{
+			// Update local scoreboard
+			for (j = 0; j < scoreboardItemCount; ++j)
+			{
+				scoreboardItem = GAME_SCOREBOARD_ARRAY[j];
+				if (!scoreboardItem)
+					continue;
+
+				// Swap
+				if (scoreboardItem->TeamId == teamChangeMap[player->Team])
+				{
+					ScoreboardItem * temp = GAME_SCOREBOARD_ARRAY[player->LocalPlayerIndex];
+					GAME_SCOREBOARD_ARRAY[player->LocalPlayerIndex] = scoreboardItem;
+					GAME_SCOREBOARD_ARRAY[j] = temp;
+					break;
+				}
+			}
+		}
+
+		changeTeam(player, teamChangeMap[player->Team]);
+	}
+
+	// Switch team scores
+	for (i = 0; i < 4; ++i)
+		teamCaps[i] = backupTeamCaps[teamChangeMap[i]];
+}
+
+/*
+ * NAME :		halftimeLogic
+ * 
+ * DESCRIPTION :
+ * 			Checks if half the game has passed, and then flips the sides if possible.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void halftimeLogic(GameModule * module)
+{
+	int i;
+	GameSettings * gameSettings = getGameSettings();
+	Player ** playerObjects = getPlayers();
+	Player * player;
+	PlayerGameStats * stats = getPlayerGameStats();
+	int timeLimit = gameGetRawTimeLimit();
+
+	// Check we're in game and that it is compatible
+	if (HasHalfTimeFlipped || !gameSettings || gameSettings->GameRules != GAMERULE_CTF || timeLimit <= 0)
+		return;
+
+	// Flip on half time
+	u32 gameHalfTime = gameSettings->GameStartTime + (timeLimit / 2);
+	if (getGameTime() > gameHalfTime)
+	{
+		flipCtfTeams();
+		HasHalfTimeFlipped = 1;
+	}
+}
 
 /*
  * NAME :		vampireLogic
@@ -111,6 +279,9 @@ void initialize(void)
 	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
 		PlayerKills[i] = 0;
 
+	// reset
+	HasHalfTimeFlipped = 0;
+
 	Initialized = 1;
 }
 
@@ -159,6 +330,9 @@ void gameStart(GameModule * module)
 
 	if (bitmask & GAMERULE_VAMPIRE)
 		vampireLogic(module);
+
+	if (bitmask & GAMERULE_HALFTIME)
+		halftimeLogic(module);
 }
 
 /*
@@ -178,13 +352,20 @@ void gameStart(GameModule * module)
  */
 void lobbyStart(GameModule * module)
 {
+	GameSettings * gameSettings = getGameSettings();
+
 	// If we're not in staging then reset
-	if (!getGameSettings())
+	if (!gameSettings)
+		return;
+
+	// Check we're not loading
+	if (gameSettings->GameLoadStartTime > 0)
 		return;
 
 	// Reset
 	memset(module->Argbuffer, 0, GAME_MODULE_ARG_SIZE);
 	module->State = GAMEMODULE_OFF;
+	Initialized = 0;
 
 	// Reset mirror world in lobby
 	cheatsApplyMirrorWorld(0);

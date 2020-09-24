@@ -1,7 +1,7 @@
 #include "moby.h"
 
 //--------------------------------------------------------
-#define MOBY_ARRAY                              ((Moby**)0x0026B5A0)
+#define MOBY_ARRAY                              ((Moby**)0x0026BDA0)
 #define SPAWN_MOBY_FUNC                         (0x004F7200)
 
 

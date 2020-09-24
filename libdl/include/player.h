@@ -139,14 +139,14 @@ typedef struct Player
 
     CameraAngle CameraYaw;                                          // 0x19B0
     CameraAngle CameraPitch;                                        // 0x19D0
-    
-    char UNK12[0x20];                                               // 0x19F0
 
-    char UNK13[0xC];                                                // 0x1A10
+    char UNK13[0x0C];                                               // 0x19F0
 
     // This is a pointer to the moby that the
     // player is looking/aiming at
-    Moby * LookAtMoby;                                              // 0x1A1C
+    Moby * LookAtMoby;                                              // 0x19FC
+
+    char UNK12[0x20];                                               // 0x1A00
 
     char UNK14[0x04];                                               // 0x1A20
 

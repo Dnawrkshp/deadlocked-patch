@@ -395,7 +395,8 @@ typedef struct Moby
 
     short RenderDistance;
 
-    char UNK_34[0x04];
+    char UNK_34[0x03];
+    char TextureId;
     // Does something with shadows
     char UNK_38[0x04];
 

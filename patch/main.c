@@ -124,14 +124,14 @@ void processGameModules()
 					// Then it must have ended
 					if (gamesettings->GameStartTime > 0 && getGameTime() > gamesettings->GameStartTime && hasGameEnded() && module->State == GAMEMODULE_TEMP_ON)
 						module->State = GAMEMODULE_OFF;
+					// Invoke lobby module if still active
+					else if (module->LobbyEntrypoint)
+					{
+						module->LobbyEntrypoint(module);
+					}
 				}
 			}
 
-			// Invoke lobby module if still active
-			if (!isInGame() && module->State > GAMEMODULE_OFF && module->LobbyEntrypoint)
-			{
-				module->LobbyEntrypoint(module);
-			}
 		}
 		// If we aren't in a game then try to turn the module off
 		// ONLY if it's temporarily enabled

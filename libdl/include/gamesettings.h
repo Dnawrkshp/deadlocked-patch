@@ -22,6 +22,18 @@
 #define GAME_MAX_PLAYERS                (10)
 
 /*
+ *
+ */
+enum GameRuleIds
+{
+    GAMERULE_CQ,
+    GAMERULE_CTF,
+    GAMERULE_DM,
+    GAMERULE_KOTH,
+    GAMERULE_JUGGY
+};
+
+/*
  * NAME :		GameSettings
  * 
  * DESCRIPTION :

@@ -242,6 +242,22 @@ void setDeathHeight(float height);
 PlayerGameStats * getPlayerGameStats(void);
 
 /*
+ * NAME :		getTeamStatCaps
+ * 
+ * DESCRIPTION :
+ * 			Returns the collection of team flag captures.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+u8 * getTeamStatCaps(void);
+
+/*
  * NAME :		getPlayerWeaponStats
  * 
  * DESCRIPTION :
@@ -256,5 +272,21 @@ PlayerGameStats * getPlayerGameStats(void);
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
 PlayerWeaponStats * getPlayerWeaponStats(void);
+
+/*
+ * NAME :		gameGetRawTimeLimit
+ * 
+ * DESCRIPTION :
+ * 			Gets the actual time limit in milliseconds.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+int gameGetRawTimeLimit(void);
 
 #endif // _GAME_H_
