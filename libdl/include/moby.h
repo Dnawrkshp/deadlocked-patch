@@ -438,7 +438,7 @@ typedef struct Moby
     char UNK_9C[0x04];
     char UNK_A0[0x04];
     char UNK_A4[0x04];
-    char UNK_A8[0x04];
+    void * UNK_A8;
 
     void * PropertiesPointer;
 

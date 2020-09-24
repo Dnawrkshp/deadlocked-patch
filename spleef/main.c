@@ -14,8 +14,9 @@
 #include <tamtypes.h>
 #include <string.h>
 
+#include "stdio.h"
 #include "math.h"
-#include "vector.h"
+#include "math3d.h"
 #include "time.h"
 #include "module.h"
 #include "game.h"
@@ -39,6 +40,16 @@ VECTOR StartPos = {
 };
 
 /*
+ *
+ */
+VECTOR StartUNK_80 = {
+	0.00514222,
+	-0.0396723,
+	62013.9,
+	62013.9
+};
+
+/*
  * NAME :		initialize
  * 
  * DESCRIPTION :
@@ -55,13 +66,18 @@ VECTOR StartPos = {
  */
 void initialize(void)
 {
+	GameSettings * gameSettings = getGameSettings();
 	Player ** players = getPlayers();
 
 	int i, j;
 	int w = 15, h = 15;
 	float size = 2.5;
 	float radius = 2.5 * ((w + h) / 5);
+#if DEBUG
+	int count = 0;
+#endif
 	VECTOR pos, rot, center;
+	Moby * sourceBox, * hbMoby;
 
 	// initialize
 	vector_copy(pos, StartPos);
@@ -74,9 +90,12 @@ void initialize(void)
 
 	// Set death barrier
 	setDeathHeight(StartPos[2] - 10);
+
+	// Set survivor
+	setGameSurvivor(1);
 	
 	// Spawn box so we know the correct model and collision pointers
-	Moby * sourceBox = spawnMoby(MOBY_ID_BETA_BOX, 0);
+	sourceBox = spawnMoby(MOBY_ID_BETA_BOX, 0);
 
 	// 
 	pos[3] = sourceBox->Position[3];
@@ -86,7 +105,7 @@ void initialize(void)
 	{
 		for (j = 0; j < h; ++j)
 		{
-			Moby * hbMoby = spawnMoby(MOBY_ID_NODE_BOLT_GUARD, 0);
+			hbMoby = spawnMoby(MOBY_ID_NODE_BOLT_GUARD, 0);
 			
 			if (hbMoby)
 			{
@@ -104,11 +123,18 @@ void initialize(void)
 				hbMoby->UNK_38[1] = 2;
 				hbMoby->ExtraPropertiesPointer = 0;
 
+				// For this model the vector here is copied to 0x80 in the moby
+				// This fixes the occlusion bug
+				hbMoby->AnimationPointer = StartUNK_80;
+
 				// Copy from source box
 				hbMoby->ModelPointer = sourceBox->ModelPointer;
 				hbMoby->CollisionPointer = sourceBox->CollisionPointer;
 				hbMoby->UNK_20[2] = sourceBox->UNK_20[2];
-				//hbMoby->UNK_80[3] = hbMoby->UNK_80[2] = hbMoby->UNK_80[1] = hbMoby->UNK_80[0] = 40000; // sourceBox->UNK_80[3] * 3;
+
+#if DEBUG
+				++count;
+#endif
 			}
 
 			pos[1] += size;
@@ -118,7 +144,11 @@ void initialize(void)
 		pos[1] = StartPos[1];
 	}
 
-
+	// 
+#if DEBUG
+	hbMoby->Opacity = 0xFF;
+	printf("count: %d, source: %08x, new: %08x\n", count, (u32)sourceBox, (u32)hbMoby);
+#endif
 
 	// 
 	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
@@ -127,7 +157,7 @@ void initialize(void)
 		if (!p)
 			continue;
 
-		float theta = (p->PlayerId / (float)GAME_MAX_PLAYERS) * 2.0 * MATH_PI;
+		float theta = (p->PlayerId / (float)gameSettings->PlayerCount) * 2.0 * MATH_PI;
 		while (theta > MATH_TAU)
 			theta -= MATH_PI;
 
