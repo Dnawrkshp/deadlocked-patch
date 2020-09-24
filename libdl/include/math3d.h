@@ -63,4 +63,24 @@ void matrix_transpose(MATRIX output, MATRIX input0);
 /** Create a unit matrix. */
 void matrix_unit(MATRIX output);
 
+/** Create a local_world matrix given a translation and rotation.
+ * Commonly used to describe an object's position and orientation.
+ */
+void create_local_world(MATRIX local_world, VECTOR translation, VECTOR rotation);
+
+/** Create a world_view matrix given a translation and rotation.
+ * Commonly used to describe a camera's position and rotation.
+ */
+void create_world_view(MATRIX world_view, VECTOR translation, VECTOR rotation);
+
+/** Create a view_screen matrix given an aspect and clipping plane values.
+ * Functionally similar to the opengl function: glFrustum()
+ */
+void create_view_screen(MATRIX view_screen, float aspect, float left, float right, float bottom, float top, float near, float far);
+
+/** Create a local_screen matrix given a local_world, world_view and view_screen matrix.
+ * Commonly used with vector_apply() to transform vertices for rendering.
+ */
+void create_local_screen(MATRIX local_screen, MATRIX local_world, MATRIX world_view, MATRIX view_screen);
+
 #endif // _LIBDL_MATH3D_H_

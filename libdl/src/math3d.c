@@ -355,3 +355,59 @@ void matrix_unit(MATRIX output)
     output[0x0A] = 1.00f;
     output[0x0F] = 1.00f;
 }
+
+void create_local_world(MATRIX local_world, VECTOR translation, VECTOR rotation)
+{
+    // Create the local_world matrix.
+    matrix_unit(local_world);
+    matrix_rotate(local_world, local_world, rotation);
+    matrix_translate(local_world, local_world, translation);
+}
+
+void create_world_view(MATRIX world_view, VECTOR translation, VECTOR rotation)
+{
+    VECTOR work0, work1;
+
+    // Reverse the translation.
+    work0[0] = -translation[0];
+    work0[1] = -translation[1];
+    work0[2] = -translation[2];
+    work0[3] = translation[3];
+
+    // Reverse the rotation.
+    work1[0] = -rotation[0];
+    work1[1] = -rotation[1];
+    work1[2] = -rotation[2];
+    work1[3] = rotation[3];
+
+    // Create the world_view matrix.
+    matrix_unit(world_view);
+    matrix_translate(world_view, world_view, work0);
+    matrix_rotate(world_view, world_view, work1);
+}
+
+void create_view_screen(MATRIX view_screen, float aspect, float left, float right, float bottom, float top, float near, float far)
+{
+    // Apply the aspect ratio adjustment.
+    left = (left * aspect); right = (right * aspect);
+
+    // Create the view_screen matrix.
+    matrix_unit(view_screen);
+    view_screen[0x00] = (2 * near) / (right - left);
+    view_screen[0x05] = (2 * near) / (top - bottom);
+    view_screen[0x08] = (right + left) / (right - left);
+    view_screen[0x09] = (top + bottom) / (top - bottom);
+    view_screen[0x0A] = (far + near) / (far - near);
+    view_screen[0x0B] = -1.00f;
+    view_screen[0x0E] = (2 * far * near) / (far - near);
+    view_screen[0x0F] = 0.00f;
+}
+
+void create_local_screen(MATRIX local_screen, MATRIX local_world, MATRIX world_view, MATRIX view_screen)
+{
+    // Create the local_screen matrix.
+    matrix_unit(local_screen);
+    matrix_multiply(local_screen, local_screen, local_world);
+    matrix_multiply(local_screen, local_screen, world_view);
+    matrix_multiply(local_screen, local_screen, view_screen);
+}

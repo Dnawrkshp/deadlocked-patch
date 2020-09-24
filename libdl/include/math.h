@@ -33,5 +33,6 @@ float fabsf(float f);
 float lerpf(float a, float b, float t);
 float lerpfAngle(float a, float b, float t);
 float clampAngle(float theta);
+double fmod(double x, double y);
 
 #endif // _MATH_H_

@@ -83,6 +83,41 @@ const float VEHICLE_ELEVATION[] =
 };
 
 /*
+ * NAME :		enableSpectate
+ * 
+ * DESCRIPTION :
+ * 			
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void enableSpectate(Player * player, struct PlayerSpectateData * data)
+{
+    // Fixes void fall bug
+    *((u8*)0x00171DE0 + player->PlayerId) = 1;
+
+    data->Enabled = 1;
+    getPlayerHUDFlags(player->LocalPlayerIndex)->Weapons = 0;
+    getPlayerHUDFlags(player->LocalPlayerIndex)->Healthbar = 0;
+}
+
+/*
+ * NAME :		disableSpectate
+ * 
+ * DESCRIPTION :
+ * 			
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void disableSpectate(Player * player, struct PlayerSpectateData * data)
+{
+    *((u8*)0x00171DE0 + player->PlayerId) = 0;
+
+    data->Enabled = 0;
+    getPlayerHUDFlags(player->LocalPlayerIndex)->Weapons = 1;
+    getPlayerHUDFlags(player->LocalPlayerIndex)->Healthbar = 1;
+}
+
+/*
  * NAME :		spectate
  * 
  * DESCRIPTION :
@@ -106,6 +141,7 @@ void spectate(Player * currentPlayer, Player * playerToSpectate)
 
     currentPlayer->CameraPitchMin = playerToSpectate->CameraPitchMin;
     currentPlayer->CameraPitchMax = playerToSpectate->CameraPitchMax;
+    currentPlayer->CameraDistance = -6;
 
     if (playerToSpectate->Vehicle)
     {
@@ -262,8 +298,8 @@ void processSpectate(void)
             spectateData = SpectateData + player->LocalPlayerIndex;
             spectateIndex = spectateData->Index;
 
-            // 
-            if (player->Health <= 0)
+            // If dead
+            if ((player->PlayerState & 0xFFFF) == 0x99)
             {
                 if (!spectateData->Enabled)
                 {
@@ -281,10 +317,8 @@ void processSpectate(void)
                         spectateIndex = findNextPlayerIndex(i, spectateIndex, 1);
                         if (spectateIndex >= 0)
                         {
-                            spectateData->Enabled = 1;
+                            enableSpectate(player, spectateData);
                             spectateData->Index = spectateIndex;
-                            getPlayerHUDFlags(player->LocalPlayerIndex)->Weapons = 0;
-                            getPlayerHUDFlags(player->LocalPlayerIndex)->Healthbar = 0;
                             vector_copy(spectateData->LastCameraPos, players[spectateIndex]->CameraPos);
                         }
                     }
@@ -292,9 +326,7 @@ void processSpectate(void)
                 // Let the player exit spectate by pressing square
                 else if (playerPadGetButtonDown(player, PAD_SQUARE) > 0)
                 {
-                    spectateData->Enabled = 0;
-                    getPlayerHUDFlags(player->LocalPlayerIndex)->Weapons = 1;
-                    getPlayerHUDFlags(player->LocalPlayerIndex)->Healthbar = 1;
+                    disableSpectate(player, spectateData);
                 }
                 // If the actively spectated player left find the next player
                 else if (!players[spectateIndex])
@@ -302,11 +334,7 @@ void processSpectate(void)
                     // First check if there is a player to spectate
                     spectateIndex = findNextPlayerIndex(i, spectateIndex, 1);
                     if (spectateIndex < 0)
-                    {
-                        spectateData->Enabled = 0;
-                        getPlayerHUDFlags(player->LocalPlayerIndex)->Weapons = 1;
-                        getPlayerHUDFlags(player->LocalPlayerIndex)->Healthbar = 1;
-                    }
+                        disableSpectate(player, spectateData);
 
                     // Update spectate index
                     spectateData->Index = spectateIndex;
@@ -331,9 +359,8 @@ void processSpectate(void)
                         direction = -1;
 
                     // 
-                    if (direction) {
+                    if (direction)
                         spectateIndex = findNextPlayerIndex(i, spectateIndex, direction);
-                    }
 
                     if (spectateIndex >= 0)
                     {
@@ -353,11 +380,9 @@ void processSpectate(void)
                     spectateData->Index = spectateIndex;
                 }
             }
-            else
+            else if (spectateData->Enabled)
             {
-                spectateData->Enabled = 0;
-                getPlayerHUDFlags(player->LocalPlayerIndex)->Weapons = 1;
-                getPlayerHUDFlags(player->LocalPlayerIndex)->Healthbar = 1;
+                disableSpectate(player, spectateData);
             }
         }
 	}
