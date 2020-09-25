@@ -368,6 +368,25 @@ int isLocal(Player * player);
 void giveWeapon(Player * player, int weaponId, int weaponLevel);
 
 /*
+ * NAME :		playerRespawn
+ * 
+ * DESCRIPTION :
+ * 			Respawns the given player.
+ * 
+ * NOTES :
+ *          Spawn point is determined internally.
+ *          This will freeze on CQ if the player hasn't picked a node to respawn to.
+ * 
+ * ARGS : 
+ *      player      :           Target player.
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void playerRespawn(Player * player);
+
+/*
  * NAME :		playerSetPosRot
  * 
  * DESCRIPTION :

@@ -53,6 +53,11 @@ int HasDisabledHealthboxes = 0;
 int HasHalfTimeFlipped = 0;
 
 /*
+ * Indicates when the half time grace period should end.
+ */
+int HalfTimeEnd = -1;
+
+/*
  * 
  */
 short PlayerKills[GAME_MAX_PLAYERS];
@@ -96,16 +101,23 @@ void flipCtfTeams(void)
 	int i, j;
 	Player ** players = getPlayers();
 	Player * player;
+	Moby ** mobies = getLoadedMobies();
+	Moby * moby;
+	Moby * flags[4] = {0,0,0,0};
 	ScoreboardItem * scoreboardItem;
+	VECTOR emptyVector;
 	u8 * teamCaps = getTeamStatCaps();
 	int teams = 0;
 	u8 teamChangeMap[4] = {0,1,2,3};
 	u8 backupTeamCaps[4];
 	int scoreboardItemCount = GAME_SCOREBOARD_ITEM_COUNT;
 
+	// 
+	memset(emptyVector, 0, sizeof(VECTOR));
+
 	// backup
 	memcpy(backupTeamCaps, teamCaps, 4);
-
+	
 	// Determine teams
 	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
 	{
@@ -148,6 +160,22 @@ void flipCtfTeams(void)
 		}
 	}
 
+	// Reset flags
+	while ((moby = *mobies))
+	{
+		if (moby->MobyId == MOBY_ID_BLUE_FLAG ||
+			moby->MobyId == MOBY_ID_RED_FLAG ||
+			moby->MobyId == MOBY_ID_GREEN_FLAG ||
+			moby->MobyId == MOBY_ID_ORANGE_FLAG)
+		{
+			*(u16*)(moby->PropertiesPointer + 0x10) = 0xFFFF;
+			//vector_copy(moby->Position, (float*)moby->PropertiesPointer);
+			flags[*(u16*)(moby->PropertiesPointer + 0x14)] = moby;
+		}
+
+		++mobies;
+	}
+
 	// Switch player teams
 	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
 	{
@@ -175,12 +203,29 @@ void flipCtfTeams(void)
 			}
 		}
 
+		// Change to new team
 		changeTeam(player, teamChangeMap[player->Team]);
+
+		// Respawn at base
+		playerRespawn(player);
+
+		moby = flags[player->Team];
+		if (moby)
+		{
+			playerSetPosRot(player, (float*)moby->PropertiesPointer, emptyVector);
+		}
 	}
 
 	// Switch team scores
 	for (i = 0; i < 4; ++i)
 		teamCaps[i] = backupTeamCaps[teamChangeMap[i]];
+
+	// Indicate when the intermission should end
+	HalfTimeEnd = getGameTime() + (TIME_SECOND * 3);
+
+	// Show popup
+	showPopup(0, "Halftime  switching sides");
+	showPopup(1, "Halftime  switching sides");
 }
 
 /*
@@ -200,15 +245,47 @@ void flipCtfTeams(void)
 void halftimeLogic(GameModule * module)
 {
 	int i;
-	GameSettings * gameSettings = getGameSettings();
-	Player ** playerObjects = getPlayers();
-	Player * player;
-	PlayerGameStats * stats = getPlayerGameStats();
 	int timeLimit = gameGetRawTimeLimit();
+	int gameTime = getGameTime();
+	GameSettings * gameSettings = getGameSettings();
+	Player ** players = getPlayers();
+	Moby ** mobies = getLoadedMobies();
+	Moby * moby;
 
 	// Check we're in game and that it is compatible
-	if (HasHalfTimeFlipped || !gameSettings || gameSettings->GameRules != GAMERULE_CTF || timeLimit <= 0)
+	if (!gameSettings || gameSettings->GameRules != GAMERULE_CTF || timeLimit <= 0)
 		return;
+
+	// 
+	if (HasHalfTimeFlipped)
+	{
+		// Prevent players from moving while in half time
+		if (gameTime < HalfTimeEnd)
+		{
+			for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+			{
+				if (!players[i])
+					continue;
+				playerSetPosRot(players[i], (float*)(&players[i]->PlayerPosition), (float*)&players[i]->UNK1);
+			}
+
+			// Reset flags
+			while ((moby = *mobies))
+			{
+				if (moby->MobyId == MOBY_ID_BLUE_FLAG ||
+					moby->MobyId == MOBY_ID_RED_FLAG ||
+					moby->MobyId == MOBY_ID_GREEN_FLAG ||
+					moby->MobyId == MOBY_ID_ORANGE_FLAG)
+				{
+					vector_copy(moby->Position, (float*)moby->PropertiesPointer);
+				}
+
+				++mobies;
+			}
+		}
+
+		return;
+	}
 
 	// Flip on half time
 	u32 gameHalfTime = gameSettings->GameStartTime + (timeLimit / 2);
@@ -281,6 +358,7 @@ void initialize(void)
 
 	// reset
 	HasHalfTimeFlipped = 0;
+	HalfTimeEnd = -1;
 
 	Initialized = 1;
 }

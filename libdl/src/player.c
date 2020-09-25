@@ -30,6 +30,7 @@
  * 
  */
 #define PLAYER_SET_POS_ROT_FUNC                     (0x005EB448)
+#define PLAYER_RESPAWN_FUNC                         (0x005E2940)
 
 // 
 extern const PadHistory DefaultPadHistory;
@@ -60,6 +61,12 @@ void setLocalPlayerEquipslot(int localPlayerId, int slot, int weaponId)
 void giveWeapon(Player * player, int weaponId, int weaponLevel)
 {
     ((void (*)(u32, int, int, int))PLAYER_GIVEWEP_FUNC)(player->WeaponHeldDataPointer, weaponId, weaponLevel, 1);
+}
+
+//--------------------------------------------------------------------------------
+void playerRespawn(Player * player)
+{
+    ((void (*)(Player *))PLAYER_RESPAWN_FUNC)(player);
 }
 
 //--------------------------------------------------------------------------------
