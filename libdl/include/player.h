@@ -157,7 +157,11 @@ typedef struct Player
 
     float CameraDistance;                                           // 0x1A30
 
-    char UNK15[0x68];                                               // 0x1A34
+    char UNK15[0x1C];                                               // 0x1A34
+
+    short CameraType2;                                              // 0x1A50
+
+    char UNK45[0x4A];                                               // 0x1A52
 
     int LocalPlayerIndex;                                           // 0x1A9C
 

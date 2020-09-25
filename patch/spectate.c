@@ -94,6 +94,7 @@ void enableSpectate(Player * player, struct PlayerSpectateData * data)
 {
     // Fixes void fall bug
     *((u8*)0x00171DE0 + player->PlayerId) = 1;
+    *(u32*)0x004DB88C = 0;
 
     data->Enabled = 1;
     getPlayerHUDFlags(player->LocalPlayerIndex)->Weapons = 0;
@@ -111,6 +112,7 @@ void enableSpectate(Player * player, struct PlayerSpectateData * data)
 void disableSpectate(Player * player, struct PlayerSpectateData * data)
 {
     *((u8*)0x00171DE0 + player->PlayerId) = 0;
+    *(u32*)0x004DB88C = 0xA48200E0;
 
     data->Enabled = 0;
     getPlayerHUDFlags(player->LocalPlayerIndex)->Weapons = 1;
@@ -138,6 +140,9 @@ void spectate(Player * currentPlayer, Player * playerToSpectate)
     struct PlayerSpectateData * spectateData = SpectateData + currentPlayer->LocalPlayerIndex;
     if(!playerToSpectate)
         return;
+
+    // Fix void fall spectate bug
+    currentPlayer->CameraType2 = 2;
 
     currentPlayer->CameraPitchMin = playerToSpectate->CameraPitchMin;
     currentPlayer->CameraPitchMax = playerToSpectate->CameraPitchMax;
