@@ -21,6 +21,8 @@
 #include "player.h"
 #include "cheats.h"
 #include "stdio.h"
+#include "pad.h"
+#include "dl.h"
 
 /*
  * Gamerule ids.
@@ -37,6 +39,15 @@ enum GameRuleIdBitMask
 	GAMERULE_HALFTIME =			(1 << 5)
 };
 
+enum HalfTimeStates
+{
+	HT_WAITING,
+	HT_INTERMISSION,
+	HT_SWITCH,
+	HT_INTERMISSION2,
+	HT_COMPLETED
+};
+
 /*
  *
  */
@@ -50,12 +61,17 @@ int HasDisabledHealthboxes = 0;
 /* 
  * 
  */
-int HasHalfTimeFlipped = 0;
+int HalfTimeState = 0;
 
 /*
  * Indicates when the half time grace period should end.
  */
 int HalfTimeEnd = -1;
+
+/*
+ * Flag moby by team id.
+ */
+Moby * CtfFlags[4] = {0,0,0,0};
 
 /*
  * 
@@ -83,7 +99,76 @@ short PlayerKills[GAME_MAX_PLAYERS];
 #define GAME_SCOREBOARD_ITEM_COUNT          (*(u32*)0x002F9FCC)
 
 /*
- * NAME :		flipCtfTeams
+ * NAME :		getFlags
+ * 
+ * DESCRIPTION :
+ * 			Grabs all four flags and stores their moby pointers in CtfFlags.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void getFlags(void)
+{
+	Moby ** mobies = getLoadedMobies();
+	Moby * moby;
+
+	// reset
+	CtfFlags[0] = CtfFlags[1] = CtfFlags[2] = CtfFlags[3] = 0;
+
+	// grab flags
+	while ((moby = *mobies))
+	{
+		if (moby->MobyId == MOBY_ID_BLUE_FLAG ||
+			moby->MobyId == MOBY_ID_RED_FLAG ||
+			moby->MobyId == MOBY_ID_GREEN_FLAG ||
+			moby->MobyId == MOBY_ID_ORANGE_FLAG)
+		{
+			CtfFlags[*(u16*)(moby->PropertiesPointer + 0x14)] = moby;
+		}
+
+		++mobies;
+	}
+}
+
+/*
+ * NAME :		htCtfBegin
+ * 
+ * DESCRIPTION :
+ * 			Performs all the operations needed at the start of half time.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void htCtfBegin(void)
+{
+	// Make sure we have the flag mobies
+	getFlags();
+
+	// Indicate when the intermission should end
+	HalfTimeEnd = getGameTime() + (TIME_SECOND * 5);
+	HalfTimeState = HT_INTERMISSION;
+
+	// Disable saving or pickup up flag
+	flagSetPickupDistance(0);
+
+	// Show popup
+	showPopup(0, "Halftime");
+	showPopup(1, "Halftime");
+}
+
+
+/*
+ * NAME :		htCtfSwitch
  * 
  * DESCRIPTION :
  * 			
@@ -96,16 +181,14 @@ short PlayerKills[GAME_MAX_PLAYERS];
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void flipCtfTeams(void)
+void htCtfSwitch(void)
 {
 	int i, j;
 	Player ** players = getPlayers();
 	Player * player;
-	Moby ** mobies = getLoadedMobies();
 	Moby * moby;
-	Moby * flags[4] = {0,0,0,0};
 	ScoreboardItem * scoreboardItem;
-	VECTOR emptyVector;
+	VECTOR rVector, pVector;
 	u8 * teamCaps = getTeamStatCaps();
 	int teams = 0;
 	u8 teamChangeMap[4] = {0,1,2,3};
@@ -113,7 +196,7 @@ void flipCtfTeams(void)
 	int scoreboardItemCount = GAME_SCOREBOARD_ITEM_COUNT;
 
 	// 
-	memset(emptyVector, 0, sizeof(VECTOR));
+	memset(rVector, 0, sizeof(VECTOR));
 
 	// backup
 	memcpy(backupTeamCaps, teamCaps, 4);
@@ -160,22 +243,6 @@ void flipCtfTeams(void)
 		}
 	}
 
-	// Reset flags
-	while ((moby = *mobies))
-	{
-		if (moby->MobyId == MOBY_ID_BLUE_FLAG ||
-			moby->MobyId == MOBY_ID_RED_FLAG ||
-			moby->MobyId == MOBY_ID_GREEN_FLAG ||
-			moby->MobyId == MOBY_ID_ORANGE_FLAG)
-		{
-			*(u16*)(moby->PropertiesPointer + 0x10) = 0xFFFF;
-			//vector_copy(moby->Position, (float*)moby->PropertiesPointer);
-			flags[*(u16*)(moby->PropertiesPointer + 0x14)] = moby;
-		}
-
-		++mobies;
-	}
-
 	// Switch player teams
 	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
 	{
@@ -203,16 +270,25 @@ void flipCtfTeams(void)
 			}
 		}
 
+		// Kick from vehicle
+		if (player->Vehicle)
+			VehicleRemovePlayer(player->Vehicle, player);
+
 		// Change to new team
 		changeTeam(player, teamChangeMap[player->Team]);
 
-		// Respawn at base
+		// Respawn
 		playerRespawn(player);
 
-		moby = flags[player->Team];
+		// Teleport player to base
+		moby = CtfFlags[player->Team];
 		if (moby)
 		{
-			playerSetPosRot(player, (float*)moby->PropertiesPointer, emptyVector);
+			vector_copy(pVector, (float*)moby->PropertiesPointer);
+			float theta = (player->PlayerId / (float)GAME_MAX_PLAYERS) * MATH_TAU;
+			pVector[0] += cosf(theta) * 2.5;
+			pVector[1] += sinf(theta) * 2.5;
+			playerSetPosRot(player, pVector, rVector);
 		}
 	}
 
@@ -220,12 +296,113 @@ void flipCtfTeams(void)
 	for (i = 0; i < 4; ++i)
 		teamCaps[i] = backupTeamCaps[teamChangeMap[i]];
 
-	// Indicate when the intermission should end
-	HalfTimeEnd = getGameTime() + (TIME_SECOND * 3);
+	// reset flags
+	for (i = 0; i < 4; ++i)
+	{
+		if (CtfFlags[i])
+		{
+			*(u16*)(CtfFlags[i]->PropertiesPointer + 0x10) = 0xFFFF;
+			vector_copy((float*)&CtfFlags[i]->Position, (float*)CtfFlags[i]->PropertiesPointer);
+		}
+	}
+}
 
-	// Show popup
-	showPopup(0, "Halftime  switching sides");
-	showPopup(1, "Halftime  switching sides");
+/*
+ * NAME :		htCtfEnd
+ * 
+ * DESCRIPTION :
+ * 			
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void htCtfEnd(void)
+{
+	// Enable flag pickup
+	flagSetPickupDistance(2);
+}
+
+
+/*
+ * NAME :		htCtfTick
+ * 
+ * DESCRIPTION :
+ * 			Performs all the operations needed while in intermission.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void htCtfTick(void)
+{
+	int i;
+	Player ** players = getPlayers();
+	int gameTime = getGameTime();
+
+	// Prevent input
+	padResetInput(0);
+	padResetInput(1);
+
+	switch (HalfTimeState)
+	{
+		case HT_INTERMISSION:
+		{
+			if (gameTime > (HalfTimeEnd - (TIME_SECOND * 2)))
+				HalfTimeState = HT_SWITCH;
+			break;
+		}
+		case HT_SWITCH:
+		{
+			// Show popup
+			if (gameTime > (HalfTimeEnd - (TIME_SECOND * 2)))
+			{
+				showPopup(0, "switching sides...");
+				showPopup(1, "switching sides...");
+
+				htCtfSwitch();
+				HalfTimeState = HT_INTERMISSION2;
+			}
+			break;
+		}
+		case HT_INTERMISSION2:
+		{
+			// Drop held items
+			for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+			{
+				if (!players[i])
+					continue;
+
+				players[i]->HeldMoby = 0;
+			}
+
+			// reset flags
+			for (i = 0; i < 4; ++i)
+			{
+				if (CtfFlags[i])
+				{
+					*(u16*)(CtfFlags[i]->PropertiesPointer + 0x10) = 0xFFFF;
+					vector_copy((float*)&CtfFlags[i]->Position, (float*)CtfFlags[i]->PropertiesPointer);
+				}
+			}
+
+			if (gameTime > HalfTimeEnd)
+			{
+				htCtfEnd();
+				HalfTimeState = HT_COMPLETED;
+			}
+			break;
+		}
+	}
+	
 }
 
 /*
@@ -244,55 +421,40 @@ void flipCtfTeams(void)
  */
 void halftimeLogic(GameModule * module)
 {
-	int i;
 	int timeLimit = gameGetRawTimeLimit();
 	int gameTime = getGameTime();
 	GameSettings * gameSettings = getGameSettings();
-	Player ** players = getPlayers();
-	Moby ** mobies = getLoadedMobies();
-	Moby * moby;
 
 	// Check we're in game and that it is compatible
-	if (!gameSettings || gameSettings->GameRules != GAMERULE_CTF || timeLimit <= 0)
+	if (!gameSettings || gameSettings->GameRules != GAMERULE_CTF)
 		return;
 
 	// 
-	if (HasHalfTimeFlipped)
+	switch (HalfTimeState)
 	{
-		// Prevent players from moving while in half time
-		if (gameTime < HalfTimeEnd)
+		case HT_WAITING:
 		{
-			for (i = 0; i < GAME_MAX_PLAYERS; ++i)
-			{
-				if (!players[i])
-					continue;
-				playerSetPosRot(players[i], (float*)(&players[i]->PlayerPosition), (float*)&players[i]->UNK1);
-			}
+			if (timeLimit <= 0)
+				break;
 
-			// Reset flags
-			while ((moby = *mobies))
+			// Trigger halfway through game
+			u32 gameHalfTime = gameSettings->GameStartTime + (timeLimit / 2);
+			if (gameTime > gameHalfTime)
 			{
-				if (moby->MobyId == MOBY_ID_BLUE_FLAG ||
-					moby->MobyId == MOBY_ID_RED_FLAG ||
-					moby->MobyId == MOBY_ID_GREEN_FLAG ||
-					moby->MobyId == MOBY_ID_ORANGE_FLAG)
-				{
-					vector_copy(moby->Position, (float*)moby->PropertiesPointer);
-				}
-
-				++mobies;
+				htCtfBegin();
+				HalfTimeState = HT_INTERMISSION;
 			}
+			break;
 		}
-
-		return;
-	}
-
-	// Flip on half time
-	u32 gameHalfTime = gameSettings->GameStartTime + (timeLimit / 2);
-	if (getGameTime() > gameHalfTime)
-	{
-		flipCtfTeams();
-		HasHalfTimeFlipped = 1;
+		case HT_COMPLETED:
+		{
+			break;
+		}
+		default:
+		{
+			htCtfTick();
+			break;
+		}
 	}
 }
 
@@ -357,8 +519,9 @@ void initialize(void)
 		PlayerKills[i] = 0;
 
 	// reset
-	HasHalfTimeFlipped = 0;
+	HalfTimeState = 0;
 	HalfTimeEnd = -1;
+	CtfFlags[0] = CtfFlags[1] = CtfFlags[2] = CtfFlags[3] = 0;
 
 	Initialized = 1;
 }
@@ -384,11 +547,24 @@ void gameStart(GameModule * module)
 	char weatherId = module->Argbuffer[4];
 
 	// Initialize
-	if (!Initialized)
+	if (Initialized != 1)
 		initialize();
 
 	// Apply weather
 	cheatsApplyWeather(weatherId);
+
+#if DEBUG
+	dlPreUpdate();
+
+	halftimeLogic(module);
+	if (padGetButtonDown(0, PAD_L3 | PAD_R3) > 0)
+	{
+		htCtfBegin();
+		HalfTimeState = HT_INTERMISSION;
+	}
+
+	dlPostUpdate();
+#endif
 
 	// If no game rules then exit
 	if (bitmask == GAMERULE_NONE)

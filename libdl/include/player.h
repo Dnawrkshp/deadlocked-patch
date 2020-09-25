@@ -194,11 +194,15 @@ typedef struct Player
 
     int PlayerState;                                                // 0x25CC
 
-    char UNK19[0x94];                                               // 0x25D0
+    char UNK19[0x90];                                               // 0x25D0
 
-    int NerfPlayer;                                                 // 0x2664
-
-    char UNK31[0xC];                                                // 0x2668
+    // These seem to do a variety of things
+    // 0x04: 1 = Disables shooting and cbooting
+    // 0x06: 1 = Equips wrench
+    // 0x0C: 1 = Equips swingshot
+    // 0x0D: Toggles respawn popup if dead, otherwise just fucks camera
+    // 0x12: 1 = Disables moving
+    char UNKFlags[0x14];                                            // 0x2660
 
     int ChangeWeaponHeldId;                                         // 0x2674
 
@@ -214,7 +218,11 @@ typedef struct Player
     
     float Health;                                                   // 0x2E20
     
-    char UNK22[0xCC];                                               // 0x2EEC
+    char UNK22[0xC4];                                               // 0x2E24
+
+    Moby * HeldMoby;                                                // 0x2EE8
+
+    void * UNK44;                                                   // 0x2EEC
 
     // Points to the player moby
     Moby * PlayerMoby;                                              // 0x2EF0
@@ -229,7 +237,13 @@ typedef struct Player
 
     int Team;                                                       // 0x2F14
 
-    char UNK25[0x10];                                               // 0x2F18
+    // Not super sure what this is
+    // But it seems to only get set when entering/leaving vehicles
+    // And setting it to non-zero stops the game from
+    // letting you get in another vehicle
+    int InVehicle;                                                  // 0x2F18
+
+    char UNK25[0x0C];                                               // 0x2F1C
 
     void * RemotePadInfo;                                           // 0x2F28
 

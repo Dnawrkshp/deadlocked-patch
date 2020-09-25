@@ -137,4 +137,21 @@ int padGetButtonDown(int port, u16 buttonMask);
  */
 int padGetButtonUp(int port, u16 buttonMask);
 
+/*
+ * NAME :		padResetInput
+ * 
+ * DESCRIPTION :
+ * 			Resets the given ports inputs.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *          port:                       Which controller port to reset.
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void padResetInput(int port);
+
 #endif // _PAD_H

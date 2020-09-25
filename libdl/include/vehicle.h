@@ -61,5 +61,20 @@ typedef struct Vehicle
 
 } Vehicle;
 
+/*
+ * NAME :		VehicleRemovePlayer
+ * 
+ * DESCRIPTION :
+ * 			Removes the given player from the given vehicle.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void VehicleRemovePlayer(Vehicle * vehicle, struct Player * player);
 
 #endif // _LIBDL_VEHICLE_H_

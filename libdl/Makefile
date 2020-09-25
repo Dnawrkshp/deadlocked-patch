@@ -6,7 +6,8 @@ EE_INCS += -I./include -I$(EE_SRC_DIR)
 
 EE_LIB = $(EE_LIB_DIR)libdl.a
 EE_OBJS = libc.o math.o pad.o cheats.o moby.o game.o gamesettings.o \
-			sha1.o weapon.o hud.o player.o team.o math3d.o dl.o
+			sha1.o weapon.o hud.o player.o team.o math3d.o dl.o \
+			vehicle.o
 
 EE_OBJS := $(EE_OBJS:%=$(EE_OBJS_DIR)%)
 

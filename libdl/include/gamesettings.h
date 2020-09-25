@@ -262,4 +262,20 @@ u8 getGameKillsToWin(void);
  */
 void setGameKillsToWin(u8 kills);
 
+/*
+ * NAME :		flagSetPickupDistance
+ * 
+ * DESCRIPTION :
+ * 			Sets the distance from a flag a player can pick up or save it.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void flagSetPickupDistance(float distance);
+
 #endif // _GAMESETTINGS_H_

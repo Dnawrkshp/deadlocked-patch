@@ -62,8 +62,8 @@ int padGetButton(int port, u16 buttonMask)
 {
     switch (port)
     {
-        case 0: return (P1_PAD->btns & buttonMask) == buttonMask;
-        case 1: return (P2_PAD->btns & buttonMask) == buttonMask;
+        case 0: return (P1_PAD->btns & buttonMask) == 0;
+        case 1: return (P2_PAD->btns & buttonMask) == 0;
         default: return -1;
     }
 }
@@ -91,7 +91,7 @@ int padGetButtonDown(int port, u16 buttonMask)
         return -1;
 
     return padGetButton(port, buttonMask) &&
-            (LocalPadHistory[port].btns & buttonMask) != buttonMask;
+            (LocalPadHistory[port].btns & buttonMask) != 0;
 }
 
 /*
@@ -117,5 +117,32 @@ int padGetButtonUp(int port, u16 buttonMask)
         return -1;
 
     return !padGetButton(port, buttonMask) &&
-        (LocalPadHistory[port].btns & buttonMask) == buttonMask;
+        (LocalPadHistory[port].btns & buttonMask) != 0;
+}
+
+/*
+ * NAME :		padResetInput
+ * 
+ * DESCRIPTION :
+ * 			Resets the given ports inputs.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ *          port:                       Which controller port to reset.
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void padResetInput(int port)
+{
+    if (port < 0 || port >= PAD_PORT_MAX)
+        return;
+
+    PadButtonStatus * pad = port ? P2_PAD : P1_PAD;
+
+    u64 defaultValue = 0x7F7F7F7FFFFF7900;
+    *(u64*)((u32)pad + 0x00) = defaultValue;
+    *(u64*)((u32)pad + 0x80) = defaultValue;
 }

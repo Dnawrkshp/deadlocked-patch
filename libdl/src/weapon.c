@@ -70,9 +70,9 @@ void setWeaponDamage(int weaponId, int level, float damage)
         case WEAPON_ID_OMNI_SHIELD:
         {
             if (level == 0)
-                *(u16*)OMNI_DAMAGE_V1_PATCH = *((u16*)(&damage)+1);
+                *(u16*)OMNI_DAMAGE_V1_PATCH = *(((u16*)&damage)+1);
             else
-                *(u16*)OMNI_DAMAGE_V2_PATCH = *((u16*)(&damage)+1);
+                *(u16*)OMNI_DAMAGE_V2_PATCH = *(((u16*)&damage)+1);
             break;
         }
         case WEAPON_ID_FLAIL:
