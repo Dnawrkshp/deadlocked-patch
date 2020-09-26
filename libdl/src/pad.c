@@ -1,4 +1,4 @@
-#include <string.h>
+#include "string.h"
 #include "pad.h"
 #include "game.h"
 #include "player.h"

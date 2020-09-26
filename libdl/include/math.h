@@ -15,12 +15,12 @@
 #define _MATH_H_
 
 //--------------------------------------------------------
-#define MATH_PI                         (3.141596)
-#define MATH_TAU                        (MATH_PI * 2.0)
-#define MATH_E                          (2.7182818)
-#define MATH_DT                         (0.166666666)
-#define MATH_RAD2DEG                    (180 / MATH_PI)
-#define MATH_DEG2RAD                    (MATH_PI / 180)
+#define MATH_PI                         ((float)3.141596)
+#define MATH_TAU                        (MATH_PI * (float)2.0)
+#define MATH_E                          ((float)2.7182818)
+#define MATH_DT                         ((float)0.166666666)
+#define MATH_RAD2DEG                    ((float)180 / MATH_PI)
+#define MATH_DEG2RAD                    (MATH_PI / (float)180)
 
 //--------------------------------------------------------
 float cosf(float theta);

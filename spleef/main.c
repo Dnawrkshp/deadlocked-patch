@@ -84,8 +84,8 @@ void initialize(void)
 	memset(rot, 0, sizeof(rot));
 
 	// Center
-	center[0] = StartPos[0] + (size * (w / 2.0));
-	center[1] = StartPos[1] + (size * (h / 2.0));
+	center[0] = StartPos[0] + (size * (w / (float)2.0));
+	center[1] = StartPos[1] + (size * (h / (float)2.0));
 	center[2] = StartPos[2];
 
 	// Set death barrier
@@ -118,7 +118,7 @@ void initialize(void)
 				hbMoby->UNK_20[0] = 1;
 
 				hbMoby->UNK_B8 = 1;
-				hbMoby->Scale = 0.11;
+				hbMoby->Scale = (float)0.11;
 				hbMoby->UNK_38[0] = 2;
 				hbMoby->UNK_38[1] = 2;
 				hbMoby->ExtraPropertiesPointer = 0;
@@ -157,13 +157,13 @@ void initialize(void)
 		if (!p)
 			continue;
 
-		float theta = (p->PlayerId / (float)gameSettings->PlayerCount) * 2.0 * MATH_PI;
+		float theta = (p->PlayerId / (float)gameSettings->PlayerCount) * (float)2.0 * MATH_PI;
 		while (theta > MATH_TAU)
 			theta -= MATH_PI;
 
 		pos[0] = center[0] + (cosf(theta) * radius);
 		pos[1] = center[1] + (sinf(theta) * radius);
-		pos[2] = center[2] + 30;
+		pos[2] = center[2] + (float)30;
 
 		// 
 		rot[2] = theta - MATH_PI;

@@ -9,19 +9,6 @@
 #define MATH_FABSF_FUNC                 (0x00135960)
 #define MATH_FMOD_FUNC                  (0x00135C18)
 
-// https://stackoverflow.com/questions/4633177/c-how-to-wrap-a-float-to-the-interval-pi-pi
-double wrapMax(double x, double max)
-{
-    /* integer math: `(max + x % max) % max` */
-    return fmod(max + fmod(x, max), max);
-}
-
-// https://stackoverflow.com/questions/4633177/c-how-to-wrap-a-float-to-the-interval-pi-pi
-double wrapMinMax(double x, double min, double max)
-{
-    return min + wrapMax(x - min, max - min);
-}
-
 //--------------------------------------------------------
 float cosf(float theta)
 {
@@ -84,11 +71,10 @@ float lerpfAngle(float a, float b, float t)
 //--------------------------------------------------------
 float clampAngle(float theta)
 {
-    return wrapMinMax(theta, -MATH_PI, MATH_PI);
-}
+    if (theta > MATH_PI)
+        theta -= MATH_TAU;
+    else if (theta < -MATH_PI)
+        theta += MATH_TAU;
 
-//--------------------------------------------------------
-double fmod(double x, double y)
-{
-    return ((double (*)(double, double))MATH_FMOD_FUNC)(x, y);
+    return theta;
 }

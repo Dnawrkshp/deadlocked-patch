@@ -22,18 +22,6 @@
 #include "hud.h"
 
 
-// This contains the spectate related info per local
-struct PlayerSpectateData
-{
-    int Enabled;
-    int Index;
-    int HasShownEnterMsg;
-    int HasShownNavMsg;
-    VECTOR LastCameraPos;
-    float LastCameraYaw;
-    float LastCameraPitch;
-} SpectateData[2];
-
 /*
  * How sharp/snappy the camera position interpolation.
  * Higher is more sharp.
@@ -51,6 +39,21 @@ const float CAMERA_ROTATION_SHARPNESS = 5;
  * Higher is more sharp.
  */
 const float VEHICLE_CAMERA_ROTATION_SHARPNESS = 0.3;
+
+int Initialized = 0;
+
+// This contains the spectate related info per local
+struct PlayerSpectateData
+{
+    int Enabled;
+    int Index;
+    int HasShownEnterMsg;
+    int HasShownNavMsg;
+    VECTOR LastCameraPos;
+    float LastCameraYaw;
+    float LastCameraPitch;
+} SpectateData[2];
+
 
 /*
  * How far to spectate from a vehicle
@@ -178,7 +181,7 @@ void spectate(Player * currentPlayer, Player * playerToSpectate)
                 if (isPassenger)
                 {
                     yaw = playerToSpectate->Vehicle->PassengerYaw;
-                    pitch = playerToSpectate->Vehicle->PassengerPitch + 0.08;
+                    pitch = playerToSpectate->Vehicle->PassengerPitch + (float)0.08;
                 }
                 break;
             }
@@ -271,6 +274,12 @@ int findNextPlayerIndex(int currentPlayerIndex, int currentSpectateIndex, int di
     return newIndex;
 }
 
+void initialize(void)
+{
+    memset(SpectateData, 0, sizeof(SpectateData));
+    Initialized = 1;
+}
+
 void processSpectate(void) 
 {
     GameSettings * gameSettings = getGameSettings();
@@ -283,10 +292,13 @@ void processSpectate(void)
     // First, we have to ensure we are in-game
 	if (!gameSettings || !isInGame()) 
     {
-        //memset(SpectateData, 0, sizeof(SpectateData));
         SpectateData->Enabled = 0;
+        Initialized = 0;
 		return;
     }
+
+    if (Initialized != 1)
+        initialize();
 
     // Loop through every player
     for (i = 0; i < GAME_MAX_PLAYERS; ++i)

@@ -2,7 +2,7 @@
 #include "moby.h"
 #include "cheats.h"
 #include "game.h"
-#include <string.h>
+#include "string.h"
 
 /*
  * Address of spawn pack function.
