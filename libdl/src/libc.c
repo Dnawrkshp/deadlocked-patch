@@ -4,7 +4,7 @@
 #define SPRINTF_FUNC                    (0x0011D920)
 #define PRINTF_FUNC                     (0x0011D5D8)
 #define MEMSET_FUNC                     (0x0011A518)
-#define MEMCPY_FUNC                     (0x00082F50)
+#define MEMCPY_FUNC                     (0x0011A370)
 
 //--------------------------------------------------------
 int (*sprintf)(char * buffer, const char * format, ...) = (int (*)(char * buffer, const char * format, ...))SPRINTF_FUNC;

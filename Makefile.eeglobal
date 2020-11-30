@@ -42,7 +42,8 @@ EE_CXX_COMPILE = $(EE_CXX) $(EE_CXXFLAGS) $(EE_INCS)
 	$(EE_AS) $(EE_ASFLAGS) $< -o $@
 
 $(EE_BIN) : $(EE_OBJS) crt0.o
-	$(EE_CC) -Os  -mno-crt0 -Tlinkfile $(EE_LDFLAGS) -s \
-		-o $(EE_BIN) crt0.o $(EE_OBJS) $(EE_LIBS) -Wl,--gc-sections -Wl,--oformat=binary
+	# $(EE_CC) -Os  -mno-crt0 -Tlinkfile $(EE_LDFLAGS) -s \
+	#	-o $(EE_BIN) crt0.o $(EE_OBJS) $(EE_LIBS) -Wl,--gc-sections -Wl,--oformat=binary
 	$(EE_CC) -g -mno-crt0 -Tlinkfile $(EE_LDFLAGS) \
 		-o $(EE_ELF) crt0.o $(EE_OBJS) $(EE_LIBS) -Wl,--gc-sections
+	$(EE_OBJCOPY) -O binary $(EE_ELF) $(EE_BIN)
