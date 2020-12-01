@@ -18,11 +18,13 @@
 #include "module.h"
 #include "game.h"
 #include "gamesettings.h"
+#include "map.h"
 #include "player.h"
 #include "cheats.h"
 #include "stdio.h"
 #include "pad.h"
 #include "dl.h"
+#include "spawnpoint.h"
 
 /*
  * Gamerule ids.
@@ -36,7 +38,8 @@ enum GameRuleIdBitMask
 	GAMERULE_MIRROR =			(1 << 2),
 	GAMERULE_NO_HB =			(1 << 3),
 	GAMERULE_VAMPIRE =			(1 << 4),
-	GAMERULE_HALFTIME =			(1 << 5)
+	GAMERULE_HALFTIME =			(1 << 5),
+	GAMERULE_BETTERHILLS = 		(1 << 6)
 };
 
 enum HalfTimeStates
@@ -97,6 +100,20 @@ short PlayerKills[GAME_MAX_PLAYERS];
  * Number of items in the scoreboard.
  */
 #define GAME_SCOREBOARD_ITEM_COUNT          (*(u32*)0x002F9FCC)
+
+/*
+ * Custom hill spawn points
+ */
+SpawnPoint BetterHillPoints[] = {
+	// TORVAL ID 0x13
+	{ { 20, 0, 0, 0, 0, 19.907925, -1.916915, 0, 0, 0.9584575, 9.953962, 0, 300, 371, 107, 0 }, { 0.05, 0, 0, 0, 0, 0.04976981, -0.0047922875, 0, 0, 0.009584575, 0.09953962, 0, 300, 371, 107, 0 } }
+};
+
+enum BETTER_HILL_PTS
+{
+	TORVAL_13 = 0
+
+};
 
 /*
  * NAME :		getFlags
@@ -495,6 +512,41 @@ void vampireLogic(GameModule * module)
 	}
 }
 
+int betterHillsInitialized = 0;
+
+/*
+ * NAME :		betterHillsLogic
+ * 
+ * DESCRIPTION :
+ * 			
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void betterHillsLogic(GameModule * module)
+{
+	if (betterHillsInitialized)
+		return;
+
+	//
+	betterHillsInitialized = 1;
+
+	// 
+	switch (getGameSettings()->GameLevel)
+	{
+		case MAP_ID_TORVAL:
+		{
+			setSpawnPoint(&BetterHillPoints[TORVAL_13], 0x13);
+			break;
+		}
+	}
+}
+
 /*
  * NAME :		initialize
  * 
@@ -522,6 +574,7 @@ void initialize(void)
 	HalfTimeState = 0;
 	HalfTimeEnd = -1;
 	CtfFlags[0] = CtfFlags[1] = CtfFlags[2] = CtfFlags[3] = 0;
+	betterHillsInitialized = 0;
 
 	Initialized = 1;
 }
@@ -587,6 +640,9 @@ void gameStart(GameModule * module)
 
 	if (bitmask & GAMERULE_HALFTIME)
 		halftimeLogic(module);
+
+	if (bitmask & GAMERULE_BETTERHILLS)
+		betterHillsLogic(module);
 }
 
 /*
