@@ -23,6 +23,7 @@
 #include "hud.h"
 #include "cheats.h"
 #include "sha1.h"
+#include "dialog.h"
 
 // TODO
 // Create scoreboard abstraction in libdl
@@ -122,6 +123,11 @@ int ScoreboardChanged = 0;
  *
  */
 int Initialized = 0;
+
+/*
+ *
+ */
+char shaBuffer;
 
 
 /*
@@ -276,7 +282,26 @@ void promotePlayer(Player * player, struct GunGameState * playerState, PlayerWea
 
 	// Show popup
 	if (isLocal(player))
+	{
 		showPopup(player->LocalPlayerIndex, "You've promoted to the next weapon!");
+
+		// Generate our rng seed from SHA1 of spawn seed
+		sha1(&shaBuffer, 4, (void*)&shaBuffer, 4);
+
+		switch (shaBuffer & 3)
+		{
+			case 0:
+			{
+				playDialogSound(DIALOG_ID_TRY_THIS_ONE_ON_FOR_SIZE, 0);
+				break;
+			}
+			case 1:
+			{
+				playDialogSound(DIALOG_ID_LETS_SEE_HOW_HE_DOES_WITH_THIS, 0);
+				break;
+			}
+		}
+	}
 }
 
 /*
