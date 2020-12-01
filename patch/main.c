@@ -22,6 +22,7 @@
 #include "string.h"
 #include "stdio.h"
 #include "gamesettings.h"
+#include "dialog.h"
 
 
 
@@ -37,6 +38,8 @@
  */
 #define CAMERA_SPEED_PATCH_OFF1			(*(u16*)0x00561BB8)
 #define CAMERA_SPEED_PATCH_OFF2			(*(u16*)0x00561BDC)
+
+#define ANNOUNCEMENTS_CHECK_PATCH		(*(u32*)0x00621D58)
 
 // 
 void processSpectate(void);
@@ -65,6 +68,28 @@ void patchCameraSpeed()
 	{
 		CAMERA_SPEED_PATCH_OFF1 = 0x80;
 		CAMERA_SPEED_PATCH_OFF2 = 0x81;
+	}
+}
+
+/*
+ * NAME :		patchAnnouncements
+ * 
+ * DESCRIPTION :
+ * 			Patches in-game announcements to work in all gamemodes.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchAnnouncements()
+{
+	if (ANNOUNCEMENTS_CHECK_PATCH == 0x907E01A9)
+	{
+		ANNOUNCEMENTS_CHECK_PATCH = 0x241E0000;
 	}
 }
 
@@ -174,6 +199,9 @@ int main (void)
 
 	// Patch camera speed
 	patchCameraSpeed();
+
+	// Patch announcements
+	patchAnnouncements();
 
 	// Process game modules
 	processGameModules();
