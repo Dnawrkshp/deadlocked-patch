@@ -450,7 +450,10 @@ typedef struct Moby
     short MobyId;
     short UNK_BE;
 
-    MATRIX WorldMatrix;
+    VECTOR M0_03;
+    VECTOR M1_03;
+    VECTOR M2_03;
+    VECTOR Rotation;
 
 } Moby;
 
@@ -464,5 +467,10 @@ Moby ** getLoadedMobies(void);
  * Spawns a moby with the given id and properties size.
  */
 Moby * spawnMoby(int id, int propSize);
+
+/*
+ * Returns pointer to water moby if it exists.
+ */
+Moby * getWaterMoby(void);
 
 #endif // _MOBY_H_

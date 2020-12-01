@@ -7,6 +7,7 @@ all:
 	$(MAKE) -C infected
 	$(MAKE) -C gamerules
 	$(MAKE) -C gun-game
+	$(MAKE) -C infinite-climber
 	
 clean:
 	$(MAKE) -C libdl clean
@@ -15,4 +16,5 @@ clean:
 	$(MAKE) -C infected clean
 	$(MAKE) -C gamerules clean
 	$(MAKE) -C gun-game clean
+	$(MAKE) -C infinite-climber clean
 
