@@ -29,3 +29,14 @@ Moby * getWaterMoby(void)
 {
     return *WATER_MOBY_PTR;
 }
+
+/*
+ * Destroys the moby.
+ */
+void mobyDestroy(Moby * moby)
+{
+    if (!moby)
+        return;
+
+    ((void (*)(Moby*))0x004F76A0)(moby);
+}

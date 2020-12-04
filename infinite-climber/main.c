@@ -43,17 +43,22 @@ int Initialized = 0;
  *
  */
 int SpawnRate = TIME_SECOND * 4;
-
+int BranchRate = TIME_SECOND * 30;
 int LastSpawn = 0;
-
-float LastTheta = 0;
 float WaterRaiseRate = 0.1 * (1 / 60.0);
 float WaterHeight = 0;
-int NextItem = 0;
-
 int MobyCount = 0;
-
 Moby * WaterMoby = NULL;
+
+
+struct ClimbChain
+{
+	int Active;
+	int NextItem;
+	float LastTheta;
+	int LastBranch;
+	VECTOR CurrentPosition;
+} Chains[4];
 
 /*
  *
@@ -70,7 +75,7 @@ VECTOR StartUNK_80 = {
 	62013.9
 };
 
-VECTOR CurrentPosition = {
+VECTOR StartPos = {
 	440,
 	205,
 	106.1,
@@ -119,7 +124,7 @@ Moby * spawn(MobyDef * def, VECTOR position, VECTOR rotation, float scale)
 	sourceBox->UNK_30 = 0xFF;
 	sourceBox->UNK_31 = 0x01;
 	sourceBox->RenderDistance = 0x0080;
-	sourceBox->Opacity = 0x80;
+	sourceBox->Opacity = 0x7E;
 	sourceBox->UNK_20[0] = 1;
 
 	sourceBox->UNK_B8 = 1;
@@ -140,40 +145,109 @@ Moby * spawn(MobyDef * def, VECTOR position, VECTOR rotation, float scale)
 	return sourceBox;
 }
 
+struct ClimbChain * GetFreeChain(void)
+{
+	int i = 0;
+	for (; i < 4; ++i)
+		if (!Chains[i].Active)
+			return &Chains[i];
+
+	return NULL;
+}
+
+void DestroyOld(void)
+{
+	Moby ** mobies = getLoadedMobies();
+	Moby * moby;
+
+	while ((moby = *mobies++))
+	{
+		if (moby->Opacity == 0x7E)
+		{
+			if (moby->Position[2] < WaterHeight)
+			{
+				mobyDestroy(moby);
+				moby->Opacity = 0x7F;
+			}
+		}
+	}
+}
+
+void GenerateNext(struct ClimbChain * chain, MobyDef * currentItem, float scale)
+{
+	// Determine next object
+	chain->NextItem = RandomRangeShort(0, MobyDefsCount);
+	MobyDef * nextItem = &MobyDefs[chain->NextItem];
+
+	// Adjust scale by current item
+	if (currentItem)
+		scale *= (currentItem->ScaleHorizontal + nextItem->ScaleHorizontal) / 2;
+
+	// Generate next position
+	chain->LastTheta = clampAngle(RandomRange(chain->LastTheta - (MATH_PI/4), chain->LastTheta + (MATH_PI/4)));
+	chain->CurrentPosition[0] += scale * cosf(chain->LastTheta);
+	chain->CurrentPosition[1] += scale * sinf(chain->LastTheta);
+	chain->CurrentPosition[2] += nextItem->ScaleVertical * RandomRange(1.5, 3);
+}
+
 void spawnTick(void)
 {
 	int gameTime = getGameTime();
+	int chainIndex = 0;
 	VECTOR rot;
 	float scale;
 
 	if ((gameTime - LastSpawn) > SpawnRate)
 	{
-		// Generate new random parameters
-		scale = RandomRange(1, 2);
-		rot[0] = RandomRange(-0.3, 0.3);
-		rot[1] = RandomRange(-0.3, 0.3);
-		rot[2] = RandomRange(-1, 1);
-		MobyDef * currentItem = &MobyDefs[NextItem];
+		// Destroy submerged objects
+		DestroyOld();
 
-		// Spawn
-		spawn(currentItem, CurrentPosition, rot, scale);
+		// 
+		for (chainIndex = 0; chainIndex < 4; ++chainIndex)
+		{
+			struct ClimbChain * chain = &Chains[chainIndex];
+			if (!chain->Active)
+				continue;
 
-		// Determine next object
-		NextItem = RandomRangeShort(0, MobyDefsCount);
-		MobyDef * nextItem = &MobyDefs[NextItem];
+			// Generate new random parameters
+			scale = RandomRange(1, 2);
+			rot[0] = RandomRange(-0.3, 0.3);
+			rot[1] = RandomRange(-0.3, 0.3);
+			rot[2] = RandomRange(-1, 1);
+			MobyDef * currentItem = &MobyDefs[chain->NextItem];
 
-		// Generate next position
-		LastTheta = RandomRange(LastTheta - (MATH_PI/2), LastTheta + (MATH_PI/2));
-		scale *= (currentItem->ScaleHorizontal + nextItem->ScaleHorizontal) / 2;
-		CurrentPosition[0] += scale * cosf(LastTheta);
-		CurrentPosition[1] += scale * sinf(LastTheta);
-		CurrentPosition[2] += nextItem->ScaleVertical * RandomRange(1.5, 3);
+			// Spawn
+			spawn(currentItem, chain->CurrentPosition, rot, scale);
+
+			// Branch
+			if ((gameTime - chain->LastBranch) > BranchRate)
+			{
+				struct ClimbChain * branchChain = GetFreeChain();
+				if (branchChain)
+				{
+					branchChain->Active = 1;
+					branchChain->LastBranch = gameTime;
+					branchChain->LastTheta = MATH_PI + chain->LastTheta;
+					vector_copy(branchChain->CurrentPosition, chain->CurrentPosition);
+
+					// Determine next object
+					GenerateNext(branchChain, currentItem, scale);
+				}
+
+				chain->LastBranch = gameTime;
+			}
+
+			// Determine next object
+			GenerateNext(chain, currentItem, scale);
+		}
+
 
 		// 
 		LastSpawn = gameTime;
 
 		++MobyCount;
-		SpawnRate -= MobyCount * 5;
+		if (SpawnRate > (TIME_SECOND * 1))
+			SpawnRate -= MobyCount * 5;
 
 		if (WaterRaiseRate < 0.1)
 			WaterRaiseRate *= 1.1;
@@ -187,6 +261,60 @@ void spawnTick(void)
 	// Set death barrier
 	setDeathHeight(WaterHeight);
 }
+
+
+/*
+const int testCount = 20;
+const float testRingCount = 30;
+int testIndex = 0;
+int testOffset = 0;
+int testLastTime = 0;
+Moby* mobies[20];
+
+void testTick(void)
+{
+	int gameTime = getGameTime();
+	VECTOR pos;
+
+	if ((gameTime - testLastTime) > (TIME_SECOND * 0.1))
+	{
+		Moby * item = mobies[testIndex];
+		if (item)
+		{
+			mobyDestroy(item);
+		}
+
+		item = spawnMoby(MOBY_ID_BETA_BOX, 0);
+		
+		float theta = ((float)(testOffset% 30) / (float)testRingCount) * MATH_TAU;
+		pos[0] = CurrentPosition[0] + 5 * cosf(theta);
+		pos[1] = CurrentPosition[1] + 5 * sinf(theta);
+		pos[2] = CurrentPosition[2] + 1;
+		vector_copy(item->Position, pos);
+
+		item->Rotation[2] = theta;
+		
+		item->UNK_30 = 0xFF;
+		item->UNK_31 = 0x01;
+		item->RenderDistance = 0x0080;
+		item->Opacity = 0x80;
+		item->UNK_20[0] = 1;
+
+		item->UNK_B8 = 1;
+		item->Scale = (float)0.05;
+		item->UNK_38[0] = 2;
+		item->UNK_38[1] = 2;
+		item->ExtraPropertiesPointer = 0;
+
+		mobies[testIndex] = item;
+		++testIndex;
+		++testOffset;
+		if (testIndex >= testCount)
+			testIndex = 0;
+		testLastTime = gameTime;
+	}
+}
+*/
 
 /*
  * NAME :		initialize
@@ -218,9 +346,18 @@ void initialize(void)
 	WaterMoby = getWaterMoby();
 	WaterHeight = ((float*)WaterMoby->PropertiesPointer)[19];
 
+	memset(Chains, 0, sizeof(Chains));
+
+	Chains[0].Active = 1;
+	vector_copy(Chains[0].CurrentPosition, StartPos);
+	Chains[0].LastBranch = getGameTime();
+
+	// 
+	//memset(mobies, 0, sizeof(mobies));
+	//testIndex = 0;
+
 	Initialized = 1;
 }
-
 
 /*
  * NAME :		gameStart
@@ -253,6 +390,8 @@ void gameStart(void)
 	// Spawn tick
 	spawnTick();
 
+	//testTick();
+
 	// Fix health
 	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
 	{
@@ -265,8 +404,6 @@ void gameStart(void)
 		else
 			p->Health = PLAYER_MAX_HEALTH;
 	}
-
-	return;
 }
 
 /*

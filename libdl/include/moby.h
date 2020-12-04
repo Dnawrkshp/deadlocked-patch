@@ -160,7 +160,7 @@ enum MobyId
     MOBY_ID_B6_BALL1 = 0x20D6,
     MOBY_ID_CATACROM_ENERGY_BRIDGE_CONFIG = 0x20DC,
     MOBY_ID_POSSIBLY_THE_BOTTOM_TO_THE_BATTLE_BOT_PRISON_CONTAINER = 0x20DE,
-    MOBY_ID_BULLET_SPLASH_VIPERS,_MAG,_FLAIL = 0x20E2,
+    MOBY_ID_BULLET_SPLASH_VIPERS_MAG_FLAIL = 0x20E2,
     MOBY_ID_NAPALM_ON_FIRE = 0x20E3,
     MOBY_ID_OTHER_PART_FOR_SARATHOS_BRIDGE = 0x20E8,
     MOBY_ID_SARATHOS_BRIDGE = 0x20E9,
@@ -437,7 +437,7 @@ typedef struct Moby
     void * CollisionPointer;
 
     char UNK_9C[0x04];
-    char UNK_A0[0x04];
+    int UNK_A0;
     char UNK_A4[0x04];
     void * UNK_A8;
 
@@ -472,5 +472,10 @@ Moby * spawnMoby(int id, int propSize);
  * Returns pointer to water moby if it exists.
  */
 Moby * getWaterMoby(void);
+
+/*
+ * Destroys the given moby.
+ */
+void mobyDestroy(Moby * moby);
 
 #endif // _MOBY_H_

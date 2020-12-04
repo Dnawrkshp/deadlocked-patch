@@ -10,6 +10,7 @@
  * 
  */
 #define GAME_ACTIVE                         (*(int*)0x0021E1EC)
+#define SCENE_LOADED                        (*(int*)0x0022026C)
 
 /*
  * How many milliseconds for the game to last.
@@ -187,7 +188,7 @@ void endGame(int reason)
  */
 int isInGame(void)
 {
-    return GAME_ACTIVE;
+    return GAME_ACTIVE && SCENE_LOADED;
 }
 
 /*
