@@ -31,6 +31,7 @@
  */
 #define PLAYER_SET_POS_ROT_FUNC                     (0x005EB448)
 #define PLAYER_RESPAWN_FUNC                         (0x005E2940)
+#define PLAYER_RESPAWN_FUNC2                        (0x005F72E0)
 
 // 
 extern const PadHistory DefaultPadHistory;
@@ -66,6 +67,7 @@ void giveWeapon(Player * player, int weaponId, int weaponLevel)
 //--------------------------------------------------------------------------------
 void playerRespawn(Player * player)
 {
+    ((void (*)(Player *))PLAYER_RESPAWN_FUNC2)(player);
     ((void (*)(Player *))PLAYER_RESPAWN_FUNC)(player);
 }
 
@@ -88,6 +90,7 @@ void changeTeam(Player * player, int teamId)
     player->Team = teamId;
     player->PlayerMoby->SecondaryColor = TEAM_COLORS[teamId];
     player->SkinMoby->TextureId = 0x80 + (8 * teamId);
+    player->SkinMoby->UNK_BE = 0;
 }
 
 //--------------------------------------------------------------------------------

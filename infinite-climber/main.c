@@ -85,10 +85,6 @@ int MapMobyDefsCount = 0;
 MobyDef * MapMobyDefs[MAX_MAP_MOBY_DEFS];
 
 MobyDef MobyDefs[] = {
-	{ 3, 0.5, 0.5, MOBY_ID_BETA_BOX, MAP_MASK_ALL },
-	//{ 5, 0.85, 1, MOBY_ID_VEHICLE_PAD, MAP_MASK_ALL },
-	//{ 3, 0.2, 0.5, MOBY_ID_TELEPORT_PAD, MAP_MASK_ALL },
-	//{ 3, 0.1, 0.5, MOBY_ID_PICKUP_PAD, MAP_MASK_ALL },
 	
 	//{ 5, 0.85, 1, MOBY_ID_PART_CATACROM_BRIDGE, MAP_MASK_CATACROM },
 
@@ -99,6 +95,10 @@ MobyDef MobyDefs[] = {
 
 	//{ 5, 0.8, 0.5, MOBY_ID_POSSIBLY_THE_BOTTOM_TO_THE_BATTLE_BOT_PRISON_CONTAINER, MAP_MASK_SHAAR },
 
+	{ 3, 0.5, 0.5, MOBY_ID_BETA_BOX, MAP_MASK_ALL },
+	//{ 5, 0.85, 1, MOBY_ID_VEHICLE_PAD, MAP_MASK_ALL },
+	//{ 3, 0.2, 0.5, MOBY_ID_TELEPORT_PAD, MAP_MASK_ALL },
+	//{ 3, 0.1, 0.5, MOBY_ID_PICKUP_PAD, MAP_MASK_ALL }
 };
 
 float RandomRange(float min, float max)
