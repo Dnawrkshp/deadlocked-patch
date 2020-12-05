@@ -478,4 +478,9 @@ Moby * getWaterMoby(void);
  */
 void mobyDestroy(Moby * moby);
 
+/*
+ * Updates the moby's transform
+ */
+void mobyUpdateTransform(Moby * moby);
+
 #endif // _MOBY_H_

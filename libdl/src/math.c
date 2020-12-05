@@ -58,6 +58,18 @@ float lerpf(float a, float b, float t)
 }
 
 //--------------------------------------------------------
+float signf(float a)
+{
+    return (a < 0) ? -1 : 1;
+}
+
+//--------------------------------------------------------
+float maxf(float a, float b)
+{
+    return (a < b) ? b : a;
+}
+
+//--------------------------------------------------------
 float lerpfAngle(float a, float b, float t)
 {
     if (fabsf(a-b) < MATH_PI)
@@ -77,4 +89,35 @@ float clampAngle(float theta)
         theta += MATH_TAU;
 
     return theta;
+}
+
+
+//--------------------------------------------------------
+// https://gist.github.com/volkansalma/2972237
+float atan2f(float y, float x)
+{
+    //http://pubs.opengroup.org/onlinepubs/009695399/functions/atan2.html
+    //Volkan SALMA
+
+    const float ONEQTR_PI = MATH_PI / 4.0;
+	const float THRQTR_PI = 3.0 * MATH_PI / 4.0;
+	float r, angle;
+	float abs_y = fabsf(y) + 1e-10f;      // kludge to prevent 0/0 condition
+	if ( x < 0.0f )
+	{
+		r = (x + abs_y) / (abs_y - x);
+		angle = THRQTR_PI;
+	}
+	else
+	{
+		r = (x - abs_y) / (x + abs_y);
+		angle = ONEQTR_PI;
+	}
+	angle += (0.1963f * r * r - 0.9817f) * r;
+	if ( y < 0.0f )
+		return( -angle );     // negate if in quad III or IV
+	else
+		return( angle );
+
+
 }

@@ -8,6 +8,7 @@ all:
 	$(MAKE) -C gamerules
 	$(MAKE) -C gun-game
 	$(MAKE) -C infinite-climber
+	$(MAKE) -C race
 	
 clean:
 	$(MAKE) -C libdl clean
@@ -17,4 +18,5 @@ clean:
 	$(MAKE) -C gamerules clean
 	$(MAKE) -C gun-game clean
 	$(MAKE) -C infinite-climber clean
+	$(MAKE) -C race clean
 
