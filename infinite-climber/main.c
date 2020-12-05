@@ -283,10 +283,10 @@ void spawnTick(void)
 	WaterHeight += WaterRaiseRate;
 
 	// Set water
-	//((float*)WaterMoby->PropertiesPointer)[19] = WaterHeight;
+	((float*)WaterMoby->PropertiesPointer)[19] = WaterHeight;
 
 	// Set death barrier
-	//setDeathHeight(WaterHeight);
+	setDeathHeight(WaterHeight);
 }
 
 /*
@@ -457,7 +457,6 @@ void gameStart(void)
 	spawnTick();
 
 	// Fix health
-	return;
 	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
 	{
 		Player * p = players[i];
