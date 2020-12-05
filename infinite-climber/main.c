@@ -93,12 +93,12 @@ MobyDef MobyDefs[] = {
 
 	{ 5, 0.8, 1, MOBY_ID_DARK_CATHEDRAL_SECRET_PLATFORM, MAP_MASK_DC },
 
-	//{ 5, 0.8, 0.5, MOBY_ID_POSSIBLY_THE_BOTTOM_TO_THE_BATTLE_BOT_PRISON_CONTAINER, MAP_MASK_SHAAR },
+	{ 5, 0.8, 0.5, MOBY_ID_POSSIBLY_THE_BOTTOM_TO_THE_BATTLE_BOT_PRISON_CONTAINER, MAP_MASK_SHAAR },
 
 	{ 3, 0.5, 0.5, MOBY_ID_BETA_BOX, MAP_MASK_ALL },
-	//{ 5, 0.85, 1, MOBY_ID_VEHICLE_PAD, MAP_MASK_ALL },
-	//{ 3, 0.2, 0.5, MOBY_ID_TELEPORT_PAD, MAP_MASK_ALL },
-	//{ 3, 0.1, 0.5, MOBY_ID_PICKUP_PAD, MAP_MASK_ALL }
+	{ 5, 0.85, 1, MOBY_ID_VEHICLE_PAD, MAP_MASK_ALL },
+	{ 3, 0.8, 0.5, MOBY_ID_TELEPORT_PAD, MAP_MASK_ALL },
+	//{ 3, 0.8, 0.5, MOBY_ID_PICKUP_PAD, MAP_MASK_ALL }
 };
 
 float RandomRange(float min, float max)
@@ -119,12 +119,23 @@ short RandomRangeShort(short min, short max)
 	return (shaBuffer % (max - min)) + min;
 }
 
+Moby * spawnWithPVars(int mobyId)
+{
+	switch (mobyId)
+	{
+		case MOBY_ID_VEHICLE_PAD: return spawnMoby(mobyId, 0x60);
+		case MOBY_ID_PICKUP_PAD: return spawnMoby(mobyId, 0x90);
+		case MOBY_ID_TELEPORT_PAD: return spawnMoby(mobyId, 0xD0);
+		default: return spawnMoby(mobyId, 0);
+	}
+}
+
 Moby * spawn(MobyDef * def, VECTOR position, VECTOR rotation, float scale)
 {
 	Moby * sourceBox;
 
 	// Spawn box so we know the correct model and collision pointers
-	sourceBox = spawnMoby(def->MobyId, 0);
+	sourceBox = spawnWithPVars(def->MobyId);
 
 	// 
 	position[3] = sourceBox->Position[3];
@@ -272,10 +283,10 @@ void spawnTick(void)
 	WaterHeight += WaterRaiseRate;
 
 	// Set water
-	((float*)WaterMoby->PropertiesPointer)[19] = WaterHeight;
+	//((float*)WaterMoby->PropertiesPointer)[19] = WaterHeight;
 
 	// Set death barrier
-	setDeathHeight(WaterHeight);
+	//setDeathHeight(WaterHeight);
 }
 
 /*
@@ -446,6 +457,7 @@ void gameStart(void)
 	spawnTick();
 
 	// Fix health
+	return;
 	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
 	{
 		Player * p = players[i];
