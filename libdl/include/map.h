@@ -33,4 +33,25 @@ enum MAP_IDS
     MAP_ID_GS           = 54
 };
 
+enum MAP_MASK_IDS
+{
+    MAP_MASK_NONE         = 0,
+    MAP_MASK_BATTLEDOME   = (1 << 0),
+    MAP_MASK_CATACROM     = (1 << 1),
+    MAP_MASK_SARATHOS     = (1 << 2),
+    MAP_MASK_DC           = (1 << 3),
+    MAP_MASK_SHAAR        = (1 << 4),
+    MAP_MASK_VALIX        = (1 << 5),
+    MAP_MASK_MF           = (1 << 6),
+    MAP_MASK_TORVAL       = (1 << 7),
+    MAP_MASK_TEMPUS       = (1 << 8),
+    MAP_MASK_MARAXUS      = (1 << 9),
+    MAP_MASK_GS           = (1 << 10),
+    MAP_MASK_ALL          = -1
+};
+
+int mapMaskHasMask(int value, int maskValue);
+int mapIdToMask(int mapId);
+int mapMaskToId(int mapMask);
+
 #endif // _LIBDL_MAP_H_

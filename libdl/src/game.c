@@ -188,7 +188,16 @@ void endGame(int reason)
  */
 int isInGame(void)
 {
-    return GAME_ACTIVE && SCENE_LOADED;
+    return GAME_ACTIVE && SCENE_LOADED == 1;
+    
+    if (!GAME_ACTIVE || SCENE_LOADED != 1)
+        return 0;
+
+    GameSettings * gs = getGameSettings();
+    if (!gs)
+        return 0;
+
+    return getGameTime() >= gs->GameStartTime;
 }
 
 /*

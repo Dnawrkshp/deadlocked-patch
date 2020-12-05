@@ -24,6 +24,11 @@
 #include "player.h"
 #include "cheats.h"
 #include "sha1.h"
+#include "map.h"
+
+#define MAX_MAP_MOBY_DEFS		(10)
+#define MAX_WATER_RATE			(0.05)
+#define MAX_SPAWN_RATE			(TIME_SECOND * 1)
 
 typedef struct MobyDef
 {
@@ -32,6 +37,7 @@ typedef struct MobyDef
 	float ObjectScale;
 
 	short MobyId;
+	short MapMask;
 } MobyDef;
 
 /*
@@ -75,18 +81,24 @@ VECTOR StartUNK_80 = {
 	62013.9
 };
 
-VECTOR StartPos = {
-	440,
-	205,
-	106.1,
-	0
-};
+int MapMobyDefsCount = 0;
+MobyDef * MapMobyDefs[MAX_MAP_MOBY_DEFS];
 
-int MobyDefsCount = 3;
 MobyDef MobyDefs[] = {
-	{ 3, 0.5, 0.5, MOBY_ID_BETA_BOX },
-	{ 5, 0.85, 1, MOBY_ID_SARATHOS_BRIDGE },
-	{ 5, 0.85, 1, MOBY_ID_OTHER_PART_FOR_SARATHOS_BRIDGE }
+	{ 3, 0.5, 0.5, MOBY_ID_BETA_BOX, MAP_MASK_ALL },
+	//{ 5, 0.85, 1, MOBY_ID_VEHICLE_PAD, MAP_MASK_ALL },
+	//{ 3, 0.2, 0.5, MOBY_ID_TELEPORT_PAD, MAP_MASK_ALL },
+	//{ 3, 0.1, 0.5, MOBY_ID_PICKUP_PAD, MAP_MASK_ALL },
+	
+	//{ 5, 0.85, 1, MOBY_ID_PART_CATACROM_BRIDGE, MAP_MASK_CATACROM },
+
+	{ 5, 0.85, 1, MOBY_ID_SARATHOS_BRIDGE, MAP_MASK_SARATHOS },
+	{ 5, 0.85, 1, MOBY_ID_OTHER_PART_FOR_SARATHOS_BRIDGE, MAP_MASK_SARATHOS },
+
+	{ 5, 0.8, 1, MOBY_ID_DARK_CATHEDRAL_SECRET_PLATFORM, MAP_MASK_DC },
+
+	//{ 5, 0.8, 0.5, MOBY_ID_POSSIBLY_THE_BOTTOM_TO_THE_BATTLE_BOT_PRISON_CONTAINER, MAP_MASK_SHAAR },
+
 };
 
 float RandomRange(float min, float max)
@@ -176,8 +188,8 @@ void DestroyOld(void)
 void GenerateNext(struct ClimbChain * chain, MobyDef * currentItem, float scale)
 {
 	// Determine next object
-	chain->NextItem = RandomRangeShort(0, MobyDefsCount);
-	MobyDef * nextItem = &MobyDefs[chain->NextItem];
+	chain->NextItem = RandomRangeShort(0, MapMobyDefsCount);
+	MobyDef * nextItem = MapMobyDefs[chain->NextItem];
 
 	// Adjust scale by current item
 	if (currentItem)
@@ -214,7 +226,7 @@ void spawnTick(void)
 			rot[0] = RandomRange(-0.3, 0.3);
 			rot[1] = RandomRange(-0.3, 0.3);
 			rot[2] = RandomRange(-1, 1);
-			MobyDef * currentItem = &MobyDefs[chain->NextItem];
+			MobyDef * currentItem = MapMobyDefs[chain->NextItem];
 
 			// Spawn
 			spawn(currentItem, chain->CurrentPosition, rot, scale);
@@ -246,11 +258,15 @@ void spawnTick(void)
 		LastSpawn = gameTime;
 
 		++MobyCount;
-		if (SpawnRate > (TIME_SECOND * 1))
+		if (SpawnRate > MAX_SPAWN_RATE)
 			SpawnRate -= MobyCount * 5;
+		else
+			SpawnRate = MAX_SPAWN_RATE;
 
-		if (WaterRaiseRate < 0.1)
+		if (WaterRaiseRate < MAX_WATER_RATE)
 			WaterRaiseRate *= 1.1;
+		else
+			WaterRaiseRate = MAX_WATER_RATE;
 	}
 
 	WaterHeight += WaterRaiseRate;
@@ -261,60 +277,6 @@ void spawnTick(void)
 	// Set death barrier
 	setDeathHeight(WaterHeight);
 }
-
-
-/*
-const int testCount = 20;
-const float testRingCount = 30;
-int testIndex = 0;
-int testOffset = 0;
-int testLastTime = 0;
-Moby* mobies[20];
-
-void testTick(void)
-{
-	int gameTime = getGameTime();
-	VECTOR pos;
-
-	if ((gameTime - testLastTime) > (TIME_SECOND * 0.1))
-	{
-		Moby * item = mobies[testIndex];
-		if (item)
-		{
-			mobyDestroy(item);
-		}
-
-		item = spawnMoby(MOBY_ID_BETA_BOX, 0);
-		
-		float theta = ((float)(testOffset% 30) / (float)testRingCount) * MATH_TAU;
-		pos[0] = CurrentPosition[0] + 5 * cosf(theta);
-		pos[1] = CurrentPosition[1] + 5 * sinf(theta);
-		pos[2] = CurrentPosition[2] + 1;
-		vector_copy(item->Position, pos);
-
-		item->Rotation[2] = theta;
-		
-		item->UNK_30 = 0xFF;
-		item->UNK_31 = 0x01;
-		item->RenderDistance = 0x0080;
-		item->Opacity = 0x80;
-		item->UNK_20[0] = 1;
-
-		item->UNK_B8 = 1;
-		item->Scale = (float)0.05;
-		item->UNK_38[0] = 2;
-		item->UNK_38[1] = 2;
-		item->ExtraPropertiesPointer = 0;
-
-		mobies[testIndex] = item;
-		++testIndex;
-		++testOffset;
-		if (testIndex >= testCount)
-			testIndex = 0;
-		testLastTime = gameTime;
-	}
-}
-*/
 
 /*
  * NAME :		initialize
@@ -333,6 +295,9 @@ void testTick(void)
  */
 void initialize(void)
 {
+	VECTOR startPos;
+	int i;
+
 	// 
 	GameSettings * gameSettings = getGameSettings();
 
@@ -346,15 +311,105 @@ void initialize(void)
 	WaterMoby = getWaterMoby();
 	WaterHeight = ((float*)WaterMoby->PropertiesPointer)[19];
 
-	memset(Chains, 0, sizeof(Chains));
+	// 
+	switch (gameSettings->GameLevel)
+	{
+		case MAP_ID_BATTLEDOME:
+		{
+			startPos[0] = 846;
+			startPos[1] = 556.5;
+			startPos[2] = 540;
+			break;
+		}
+		case MAP_ID_CATACROM:
+		{
+			startPos[0] = 350.3;
+			startPos[1] = 254;
+			startPos[2] = 63.1;
+			break;
+		}
+		case MAP_ID_SARATHOS:
+		{
+			startPos[0] = 440;
+			startPos[1] = 205;
+			startPos[2] = 106.1;
+			break;
+		}
+		case MAP_ID_DC:
+		{
+			startPos[0] = 503;
+			startPos[1] = 493;
+			startPos[2] = 641.3;
+			break;
+		}
+		case MAP_ID_SHAAR:
+		{
+			startPos[0] = 484.5;
+			startPos[1] = 569.5;
+			startPos[2] = 509.3;
+			break;
+		}
+		case MAP_ID_VALIX:
+		{
+			startPos[0] = 311.5;
+			startPos[1] = 488.5;
+			startPos[2] = 331;
+			break;
+		}
+		case MAP_ID_MF:
+		{
+			startPos[0] = 410;
+			startPos[1] = 598;
+			startPos[2] = 434.5;
+			break;
+		}
+		case MAP_ID_TORVAL:
+		{
+			startPos[0] = 345;
+			startPos[1] = 372.5;
+			startPos[2] = 100.5;
+			break;
+		}
+		case MAP_ID_TEMPUS:
+		{
+			startPos[0] = 462;
+			startPos[1] = 512;
+			startPos[2] = 102.5;
+			break;
+		}
+		case MAP_ID_MARAXUS:
+		{
+			startPos[0] = 501;
+			startPos[1] = 766.5;
+			startPos[2] = 103.5;
+			break;
+		}
+		case MAP_ID_GS:
+		{
+			startPos[0] = 732;
+			startPos[1] = 565;
+			startPos[2] = 101.5;
+			break;
+		}
+	}
 
-	Chains[0].Active = 1;
-	vector_copy(Chains[0].CurrentPosition, StartPos);
-	Chains[0].LastBranch = getGameTime();
+	// Populate moby defs
+	int mapIdMask = mapIdToMask(gameSettings->GameLevel);
+	for (i = 0; i < sizeof(MobyDefs)/sizeof(MobyDef); ++i)
+	{
+		if (MapMobyDefsCount >= MAX_MAP_MOBY_DEFS)
+			break;
+
+		if (mapMaskHasMask(MobyDefs[i].MapMask, mapIdMask))
+			MapMobyDefs[MapMobyDefsCount++] = &MobyDefs[i];
+	}
 
 	// 
-	//memset(mobies, 0, sizeof(mobies));
-	//testIndex = 0;
+	memset(Chains, 0, sizeof(Chains));
+	Chains[0].Active = 1;
+	vector_copy(Chains[0].CurrentPosition, startPos);
+	Chains[0].LastBranch = LastSpawn = getGameTime();
+
 
 	Initialized = 1;
 }
@@ -389,8 +444,6 @@ void gameStart(void)
 
 	// Spawn tick
 	spawnTick();
-
-	//testTick();
 
 	// Fix health
 	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
