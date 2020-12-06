@@ -41,6 +41,12 @@
 
 #define ANNOUNCEMENTS_CHECK_PATCH		(*(u32*)0x00621D58)
 
+#define GAMESETTINGS_LOAD_PATCH			(*(u32*)0x0072C3FC)
+#define GAMESETTINGS_LOAD_FUNC			(0x0072EF78)
+#define GAMESETTINGS_GET_INDEX_FUNC		(0x0070C410)
+#define GAMESETTINGS_GET_VALUE_FUNC		(0x0070C538)
+
+
 // 
 void processSpectate(void);
 
@@ -93,6 +99,97 @@ void patchAnnouncements()
 	}
 }
 
+/*
+ * NAME :		patchGameSettingsLoad_Save
+ * 
+ * DESCRIPTION :
+ * 			Saves the given value to the respective game setting.
+ * 			I think this does validation depending on the input type then saves.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 			a0:					Points to the general settings area
+ * 			offset0:			Offset to game setting
+ * 			offset1:			Offset to game setting input type handler?
+ * 			value:				Value to save
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchGameSettingsLoad_Save(void * a0, int offset0, int offset1, int value)
+{
+	u32 step1 = *(u32*)((u32)a0 + offset0);
+	u32 step2 = *(u32*)(step1 + 0x58);
+	u32 step3 = *(u32*)(step2 + offset1);
+	((void (*)(u32, int))step3)(step1, value);
+}
+
+/*
+ * NAME :		patchGameSettingsLoad_Hook
+ * 
+ * DESCRIPTION :
+ * 			Called when loading previous game settings into create game.
+ * 			Reloads Survivor correctly.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchGameSettingsLoad_Hook(void * a0, void * a1)
+{
+	int index = 0;
+	int value = 0;
+
+	// Load normal
+	((void (*)(void *, void *))GAMESETTINGS_LOAD_FUNC)(a0, a1);
+
+	// Get gametype
+	index = ((int (*)(int))GAMESETTINGS_GET_INDEX_FUNC)(5);
+	value = ((int (*)(void *, int))GAMESETTINGS_GET_VALUE_FUNC)(a1, index);
+
+	// Handle each gamemode separately
+	switch (value)
+	{
+		case GAMERULE_DM:
+		{
+			// Get survivor
+			index = ((int (*)(int))GAMESETTINGS_GET_INDEX_FUNC)(9);
+			value = ((int (*)(void *, int))GAMESETTINGS_GET_VALUE_FUNC)(a1, index);
+
+			// Save survivor
+			patchGameSettingsLoad_Save(a0, 0x100, 0xA4, value);
+			break;
+		}
+	}
+}
+
+/*
+ * NAME :		patchGameSettingsLoad
+ * 
+ * DESCRIPTION :
+ * 			Patches game settings load so it reloads Survivor correctly.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchGameSettingsLoad()
+{
+	if (GAMESETTINGS_LOAD_PATCH == 0x0C1CBBDE)
+	{
+		GAMESETTINGS_LOAD_PATCH = 0x0C000000 | ((u32)&patchGameSettingsLoad_Hook >> 2);
+	}
+}
 
 /*
  * NAME :		processGameModules
@@ -202,6 +299,9 @@ int main (void)
 
 	// Patch announcements
 	patchAnnouncements();
+
+	// Patch game settings load
+	patchGameSettingsLoad();
 
 	// Process game modules
 	processGameModules();
