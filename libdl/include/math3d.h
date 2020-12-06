@@ -38,6 +38,7 @@ void vector_subtract(VECTOR output, VECTOR input0, VECTOR input1);
 void vector_add(VECTOR output, VECTOR input0, VECTOR input1);
 void vector_negate(VECTOR output, VECTOR input0);
 void vector_scale(VECTOR output, VECTOR input0, float scalar);
+void vector_print(VECTOR input0);
 
 void quaternion_fromeuler(VECTOR output, VECTOR input0);
 void quaternion_toeuler(VECTOR output, VECTOR input0);

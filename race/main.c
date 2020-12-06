@@ -33,19 +33,69 @@ typedef struct BezierPoint
 
 BezierPoint TrackPoints[] = {
 	{
-		{ 440, 200, 108, 0 },
-		{ 440, 205, 108, 0 },
-		{ 440, 210, 108, 0 }
+		{ 434.6114, 129.1436, 106.79, 0 },
+		{ 434.6114, 189.1436, 106.79, 0 },
+		{ 434.6114, 204.6036, 106.79, 0 }
 	},
 	{
-		{ 440, 230, 120, 0 },
-		{ 440, 260, 120, 0 },
-		{ 440, 290, 120, 0 }
+		{ 425.9593, 203.5597, 117.5641, 0 },
+		{ 435.4033, 218.8396, 122.49, 0 },
+		{ 444.8473, 234.1195, 127.4159, 0 }
 	},
 	{
-		{ 470, 230, 110, 0 },
-		{ 500, 230, 110, 0 },
-		{ 530, 230, 110, 0 }
+		{ 464.4416, 247.7817, 140.4637, 0 },
+		{ 483.2513, 240.1076, 142.84, 0 },
+		{ 502.0611, 232.4336, 145.2163, 0 }
+	},
+	{
+		{ 519.8095, 240.8596, 140.2249, 0 },
+		{ 522.7714, 243.9236, 142.84, 0 },
+		{ 525.7332, 246.9877, 145.4551, 0 }
+	},
+	{
+		{ 519.9028, 271.334, 105.5986, 0 },
+		{ 524.0114, 329.6436, 116.99, 0 },
+		{ 524.6643, 338.9109, 118.8005, 0 }
+	},
+	{
+		{ 528.6346, 414.5925, 124.75, 0 },
+		{ 509.3113, 435.4436, 130.29, 0 },
+		{ 502.9966, 442.2577, 132.1005, 0 }
+	},
+	{
+		{ 470.1397, 411.2581, 111.4728, 0 },
+		{ 427.9113, 456.5436, 114.91, 0 },
+		{ 383.4917, 504.1791, 118.5255, 0 }
+	},
+	{
+		{ 328.7635, 452.2501, 133.19, 0 },
+		{ 325.1114, 402.3836, 133.19, 0 },
+		{ 323.1684, 375.8547, 133.19, 0 }
+	},
+	{
+		{ 344.6641, 359.2715, 149.9785, 0 },
+		{ 356.2114, 370.8436, 153.39, 0 },
+		{ 368.2288, 382.8869, 156.9405, 0 }
+	},
+	{
+		{ 333.8216, 405.2706, 170.65, 0 },
+		{ 322.5714, 391.3736, 170.65, 0 },
+		{ 302.594, 366.6964, 170.65, 0 }
+	},
+	{
+		{ 301.1886, 319.9573, 208.39, 0 },
+		{ 303.8113, 280.1436, 208.39, 0 },
+		{ 307.0849, 230.4513, 208.39, 0 }
+	},
+	{
+		{ 269.7726, 129.7062, 123.483, 0 },
+		{ 340.5914, 127.3836, 113.62, 0 },
+		{ 357.5388, 126.8278, 111.2597, 0 }
+	},
+	{
+		{ 434.6114, 129.1436, 106.79, 0 },
+		{ 434.6114, 189.1436, 106.79, 0 },
+		{ 434.6114, 204.6036, 106.79, 0 }
 	}
 };
 
@@ -115,20 +165,39 @@ void BezierGetNormal(VECTOR out, BezierPoint * a, BezierPoint * b, float t)
 	vector_normalize(out, out);
 }
 
-Moby * spawnWithPVars(int mobyId)
+float BezierMove(float t, BezierPoint * a, BezierPoint * b, float distance)
 {
-	switch (mobyId)
+	VECTOR startPos, curPos;
+	const float step = 0.01;
+
+	// Get start position
+	BezierGetPosition(startPos, a, b, t);
+
+	while (t < 1)
 	{
-		default: return spawnMoby(mobyId, 0);
+		t += step;
+
+		// Get new position
+		BezierGetPosition(curPos, a, b, t);
+
+		// Check distance
+		vector_subtract(curPos, curPos, startPos);
+		if (vector_length(curPos) >= distance)
+			return t;
 	}
+
+	if (t > 1)
+		return 1;
+
+	return t;
 }
 
 Moby * spawn(int mobyId, VECTOR position, VECTOR rotation, float scale)
 {
 	Moby * sourceBox;
 
-	// Spawn box so we know the correct model and collision pointers
-	sourceBox = spawnWithPVars(mobyId);
+	// Spawn
+	sourceBox = spawnMoby(mobyId, 0);
 
 	// 
 	position[3] = sourceBox->Position[3];
@@ -161,15 +230,6 @@ Moby * spawn(int mobyId, VECTOR position, VECTOR rotation, float scale)
 	return sourceBox;
 }
 
-void print_vector(VECTOR v)
-{
-	printf("<%s%d.%05d> <%s%d.%05d> <%s%d.%05d> <%s%d.%05d>",
-		(v[0] < 0 ? "-" : "+"), (int)fabsf(v[0]), ((int)(fabsf(v[0]) * 100000)) % 100000,
-		(v[1] < 0 ? "-" : "+"), (int)fabsf(v[0]), ((int)(fabsf(v[1]) * 100000)) % 100000,
-		(v[2] < 0 ? "-" : "+"), (int)fabsf(v[0]), ((int)(fabsf(v[2]) * 100000)) % 100000,
-		(v[3] < 0 ? "-" : "+"), (int)fabsf(v[0]), ((int)(fabsf(v[3]) * 100000)) % 100000);
-}
-
 void spawnTrack(void)
 {
 	VECTOR euler = { 0, 0, 0, 0 };
@@ -177,14 +237,11 @@ void spawnTrack(void)
 	VECTOR tangent;
 	VECTOR normal;
 	VECTOR bitangent;
-	VECTOR right = { 1, 0, 0, 0 };
-	VECTOR forward = { 0, 1, 0, 0 };
-	VECTOR up = { 0, 0, 1, 0 };
 	VECTOR r0 = { 0, 0, 0, 1 };
 	MATRIX bezierRotationMatrix, startRotationMatrix;
 	float scale = 3;
 	float t = 0;
-	float step = 0.05;
+	float stepDistance = 1.1 * scale;
 	int b = 0;
 	int bezierCount = sizeof(TrackPoints) / sizeof(BezierPoint);
 
@@ -202,12 +259,14 @@ void spawnTrack(void)
 		printf("TRACK %d to %d\n", b, b+1);
 		#endif
 
-		for (t = 0; t <= 1; t += step)
+		t = 0;
+		while (1)
 		{
 			// Calculate bezier
 			BezierGetPosition(pos, &TrackPoints[b], &TrackPoints[b+1], t);
 			BezierGetTangent(tangent, &TrackPoints[b], &TrackPoints[b+1], t);
 			BezierGetNormal(normal, &TrackPoints[b], &TrackPoints[b+1], t);
+			vector_copy(normal, (VECTOR){ 0,0,1,0 });
 			vector_outerproduct(bitangent, normal, tangent);
 
 			// Determine euler rotation
@@ -217,6 +276,14 @@ void spawnTrack(void)
 			
 			// spawn
 			spawn(MOBY_ID_OTHER_PART_FOR_SARATHOS_BRIDGE, pos, euler, scale);
+
+			// Get next time
+			// If same as last time then break
+			float nextT = BezierMove(t, &TrackPoints[b], &TrackPoints[b+1], stepDistance);
+			if (nextT == t)
+				break;
+
+			t = nextT;
 		}
 	}
 
@@ -242,13 +309,12 @@ void spawnTrack(void)
  */
 void initialize(void)
 {
-	VECTOR rot = {0,0,0,0};
-
 	// 
 	GameSettings * gameSettings = getGameSettings();
 
 	//
-	spawnTrack();
+	if (gameSettings->GameLevel == MAP_ID_SARATHOS)
+		spawnTrack();
 
 	Initialized = 1;
 }
