@@ -21,5 +21,5 @@ inline void * memset(void * ptr, int value, int num)
 //--------------------------------------------------------
 inline void * memcpy(void * destination, const void * source, int num)
 {
-    return ((void*(*)(void*,void*,int))MEMCPY_FUNC)(destination, source, num);
+    return ((void*(*)(void*,const void*,int))MEMCPY_FUNC)(destination, source, num);
 }

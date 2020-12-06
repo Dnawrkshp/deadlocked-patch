@@ -1,7 +1,7 @@
 #include "string.h"
 #include "math.h"
 #include "math3d.h"
-
+#include "stdio.h"
   
 /*
 # _____     ___ ____     ___ ____
@@ -301,7 +301,6 @@ void quaternion_toeuler(VECTOR output, VECTOR input0)
 //--------------------------------------------------------
 void quaternion_lookrotation(VECTOR output, VECTOR input0, VECTOR input1)
 {
-    MATRIX m;
     VECTOR forward, left, up;
 
     vector_normalize(forward, input0);
@@ -362,7 +361,6 @@ void quaternion_multiply(VECTOR output, VECTOR input1, VECTOR input0)
 //--------------------------------------------------------
 void quaternion_frommatrix(VECTOR output, MATRIX input0)
 {
-    float s = 0;
     float t = input0[0] + input0[5] + input0[10];
     // we protect the division by s by ensuring that s>=1
     if (t > 0) { // by w
