@@ -46,6 +46,18 @@
 #define GAMESETTINGS_GET_INDEX_FUNC		(0x0070C410)
 #define GAMESETTINGS_GET_VALUE_FUNC		(0x0070C538)
 
+#define GAMESETTINGS_BUILD_PTR			(*(u32*)0x004B882C)
+#define GAMESETTINGS_BUILD_FUNC			(0x00712BF0)
+
+#define GAMESETTINGS_CREATE_PATCH		(*(u32*)0x0072E5B4)
+#define GAMESETTINGS_CREATE_FUNC		(0x0070B540)
+
+#define GAMESETTINGS_RESPAWN_TIME      	(*(u8*)0x0017380C)
+#define GAMESETTINGS_RESPAWN_TIME2      (*(u8*)0x012B3638)
+
+// 
+int DontResetRespawnTimer = 0;
+
 
 // 
 void processSpectate(void);
@@ -151,10 +163,10 @@ void patchGameSettingsLoad_Hook(void * a0, void * a1)
 
 	// Get gametype
 	index = ((int (*)(int))GAMESETTINGS_GET_INDEX_FUNC)(5);
-	value = ((int (*)(void *, int))GAMESETTINGS_GET_VALUE_FUNC)(a1, index);
+	int gamemode = ((int (*)(void *, int))GAMESETTINGS_GET_VALUE_FUNC)(a1, index);
 
 	// Handle each gamemode separately
-	switch (value)
+	switch (gamemode)
 	{
 		case GAMERULE_DM:
 		{
@@ -166,6 +178,12 @@ void patchGameSettingsLoad_Hook(void * a0, void * a1)
 			patchGameSettingsLoad_Save(a0, 0x100, 0xA4, value);
 			break;
 		}
+	}
+
+	if (gamemode != GAMERULE_CQ)
+	{
+		// respawn timer
+		GAMESETTINGS_RESPAWN_TIME2 = *(u8*)0x002126DC;
 	}
 }
 
@@ -188,6 +206,115 @@ void patchGameSettingsLoad()
 	if (GAMESETTINGS_LOAD_PATCH == 0x0C1CBBDE)
 	{
 		GAMESETTINGS_LOAD_PATCH = 0x0C000000 | ((u32)&patchGameSettingsLoad_Hook >> 2);
+	}
+}
+
+/*
+ * NAME :		patchPopulateCreateGame_Hook
+ * 
+ * DESCRIPTION :
+ * 			Patches create game populate setting to add respawn timer.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchPopulateCreateGame_Hook(void * a0, int settingsCount, u32 * settingsPtrs)
+{
+	u32 respawnTimerPtr = 0x012B35D8;
+	int i = 0;
+
+	// Check if already loaded
+	for (; i < settingsCount; ++i)
+	{
+		if (settingsPtrs[i] == respawnTimerPtr)
+			break;
+	}
+
+	// If not loaded then append respawn timer
+	if (i == settingsCount)
+	{
+		++settingsCount;
+		settingsPtrs[i] = respawnTimerPtr;
+	}
+
+	// Populate
+	((void (*)(void *, int, u32 *))GAMESETTINGS_BUILD_FUNC)(a0, settingsCount, settingsPtrs);
+}
+
+/*
+ * NAME :		patchPopulateCreateGame
+ * 
+ * DESCRIPTION :
+ * 			Patches create game populate setting to add respawn timer.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchPopulateCreateGame()
+{
+	// Patch function pointer
+	if (GAMESETTINGS_BUILD_PTR == GAMESETTINGS_BUILD_FUNC)
+	{
+		GAMESETTINGS_BUILD_PTR = (u32)&patchPopulateCreateGame_Hook;
+	}
+
+	// Patch default respawn timer
+
+}
+
+/*
+ * NAME :		patchCreateGame_Hook
+ * 
+ * DESCRIPTION :
+ * 			Patches create game save settings to save respawn timer.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+u64 patchCreateGame_Hook(void * a0)
+{
+	// Save respawn timer
+	GAMESETTINGS_RESPAWN_TIME = GAMESETTINGS_RESPAWN_TIME2;
+
+	// Load normal
+	return ((u64 (*)(void *))GAMESETTINGS_CREATE_FUNC)(a0);
+}
+
+/*
+ * NAME :		patchCreateGame
+ * 
+ * DESCRIPTION :
+ * 			Patches create game save settings to save respawn timer.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchCreateGame()
+{
+	// Patch function pointer
+	if (GAMESETTINGS_CREATE_PATCH == 0x0C1C2D50)
+	{
+		GAMESETTINGS_CREATE_PATCH = 0x0C000000 | ((u32)&patchCreateGame_Hook >> 2);
 	}
 }
 
@@ -300,8 +427,14 @@ int main (void)
 	// Patch announcements
 	patchAnnouncements();
 
-	// Patch game settings load
+	// Patch create game settings load
 	patchGameSettingsLoad();
+
+	// Patch populate create game
+	patchPopulateCreateGame();
+
+	// Patch save create game settings
+	patchCreateGame();
 
 	// Process game modules
 	processGameModules();
