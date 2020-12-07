@@ -25,6 +25,7 @@
 #include "cheats.h"
 #include "sha1.h"
 #include "map.h"
+#include "dialog.h"
 
 #define MAX_MAP_MOBY_DEFS		(10)
 #define MAX_WATER_RATE			(0.05)
@@ -55,6 +56,9 @@ float WaterRaiseRate = 0.1 * (1 / 60.0);
 float WaterHeight = 0;
 int MobyCount = 0;
 Moby * WaterMoby = NULL;
+int BranchDialogs[] = { DIALOG_ID_CLANK_YOU_HAVE_A_CHOICE_OF_2_PATHS, DIALOG_ID_DALLAS_WOAH_THIS_IS_GETTING_INTERESTING, DIALOG_ID_DALLAS_KICKING_PROVERBIAL_BUTT_IDK_WHAT_THAT_MEANS, DIALOG_ID_DALLAS_DARKSTAR_TIGHT_SPOTS_BEFORE  };
+int StartDialogs[] = { DIALOG_ID_TEAM_DEADSTAR, DIALOG_ID_DALLAS_SHOWTIME, DIALOG_ID_DALLAS_RATCHET_LAST_WILL_AND_TESTAMENT, DIALOG_ID_DALLAS_WHO_PACKED_YOUR_PARACHUTE, };
+int IncrementalDialogs[] = { DIALOG_ID_PLEASE_TAKE_YOUR_TIME, DIALOG_ID_DALLAS_SHOWOFF, DIALOG_ID_JUANITA_MORON, DIALOG_ID_JUANITA_I_CANT_BEAR_TO_LOOK_YES_I_CAN, DIALOG_ID_DALLAS_CARNAGE_LAST_RELATIONSHIP, DIALOG_ID_DALLAS_LOOK_AT_THAT_LITTLE_GUY_GO,  };
 
 
 struct ClimbChain
@@ -87,14 +91,15 @@ MobyDef * MapMobyDefs[MAX_MAP_MOBY_DEFS];
 MobyDef MobyDefs[] = {
 	
 	//{ 5, 0.85, 1, MOBY_ID_PART_CATACROM_BRIDGE, MAP_MASK_CATACROM },
+	{ 5, 0.8, 1, MOBY_ID_SARATHOS_BRIDGE, MAP_MASK_BATTLEDOME },
 
 	{ 5, 0.85, 1, MOBY_ID_SARATHOS_BRIDGE, MAP_MASK_SARATHOS },
 	{ 5, 0.85, 1, MOBY_ID_OTHER_PART_FOR_SARATHOS_BRIDGE, MAP_MASK_SARATHOS },
 
 	{ 5, 0.8, 1, MOBY_ID_DARK_CATHEDRAL_SECRET_PLATFORM, MAP_MASK_DC },
 
-	{ 5, 0.8, 0.5, MOBY_ID_POSSIBLY_THE_BOTTOM_TO_THE_BATTLE_BOT_PRISON_CONTAINER, MAP_MASK_SHAAR },
-
+	
+	//{ 5, 0.8, 0.5, MOBY_ID_TURRET_SHIELD_UPGRADE, MAP_MASK_ALL }, //this freezes ps2, need to fix sometime
 	{ 3, 0.5, 0.5, MOBY_ID_BETA_BOX, MAP_MASK_ALL },
 	{ 5, 0.85, 1, MOBY_ID_VEHICLE_PAD, MAP_MASK_ALL },
 	{ 3, 0.8, 0.5, MOBY_ID_TELEPORT_PAD, MAP_MASK_ALL },
@@ -126,6 +131,7 @@ Moby * spawnWithPVars(int mobyId)
 		case MOBY_ID_VEHICLE_PAD: return spawnMoby(mobyId, 0x60);
 		case MOBY_ID_PICKUP_PAD: return spawnMoby(mobyId, 0x90);
 		case MOBY_ID_TELEPORT_PAD: return spawnMoby(mobyId, 0xD0);
+		case MOBY_ID_TURRET_SHIELD_UPGRADE: return spawnMoby(mobyId, 0xD0);
 		default: return spawnMoby(mobyId, 0);
 	}
 }
@@ -191,6 +197,7 @@ void DestroyOld(void)
 			{
 				mobyDestroy(moby);
 				moby->Opacity = 0x7F;
+				--MobyCount;
 			}
 		}
 	}
@@ -255,6 +262,7 @@ void spawnTick(void)
 
 					// Determine next object
 					GenerateNext(branchChain, currentItem, scale);
+					playDialogSound(BranchDialogs[RandomRangeShort(0, sizeof(BranchDialogs)/sizeof(int)-1)], 0);
 				}
 
 				chain->LastBranch = gameTime;
@@ -262,6 +270,10 @@ void spawnTick(void)
 
 			// Determine next object
 			GenerateNext(chain, currentItem, scale);
+			if(MobyCount == 0)
+				playDialogSound(StartDialogs[RandomRangeShort(0, sizeof(BranchDialogs)/sizeof(int)-1)], 0);
+			else if(MobyCount % 20 == 0)
+				playDialogSound(IncrementalDialogs[RandomRangeShort(0, sizeof(BranchDialogs)/sizeof(int)-1)], 0);
 		}
 
 
@@ -376,9 +388,9 @@ void initialize(void)
 		}
 		case MAP_ID_TORVAL:
 		{
-			startPos[0] = 345;
-			startPos[1] = 372.5;
-			startPos[2] = 100.5;
+			startPos[0] = 300;
+			startPos[1] = 371;
+			startPos[2] = 106;
 			break;
 		}
 		case MAP_ID_TEMPUS:
