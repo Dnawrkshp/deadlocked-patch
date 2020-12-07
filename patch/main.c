@@ -41,6 +41,24 @@
 
 #define ANNOUNCEMENTS_CHECK_PATCH		(*(u32*)0x00621D58)
 
+#define GAMESETTINGS_LOAD_PATCH			(*(u32*)0x0072C3FC)
+#define GAMESETTINGS_LOAD_FUNC			(0x0072EF78)
+#define GAMESETTINGS_GET_INDEX_FUNC		(0x0070C410)
+#define GAMESETTINGS_GET_VALUE_FUNC		(0x0070C538)
+
+#define GAMESETTINGS_BUILD_PTR			(*(u32*)0x004B882C)
+#define GAMESETTINGS_BUILD_FUNC			(0x00712BF0)
+
+#define GAMESETTINGS_CREATE_PATCH		(*(u32*)0x0072E5B4)
+#define GAMESETTINGS_CREATE_FUNC		(0x0070B540)
+
+#define GAMESETTINGS_RESPAWN_TIME      	(*(u8*)0x0017380C)
+#define GAMESETTINGS_RESPAWN_TIME2      (*(u8*)0x012B3638)
+
+// 
+int DontResetRespawnTimer = 0;
+
+
 // 
 void processSpectate(void);
 
@@ -93,6 +111,212 @@ void patchAnnouncements()
 	}
 }
 
+/*
+ * NAME :		patchGameSettingsLoad_Save
+ * 
+ * DESCRIPTION :
+ * 			Saves the given value to the respective game setting.
+ * 			I think this does validation depending on the input type then saves.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 			a0:					Points to the general settings area
+ * 			offset0:			Offset to game setting
+ * 			offset1:			Offset to game setting input type handler?
+ * 			value:				Value to save
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchGameSettingsLoad_Save(void * a0, int offset0, int offset1, int value)
+{
+	u32 step1 = *(u32*)((u32)a0 + offset0);
+	u32 step2 = *(u32*)(step1 + 0x58);
+	u32 step3 = *(u32*)(step2 + offset1);
+	((void (*)(u32, int))step3)(step1, value);
+}
+
+/*
+ * NAME :		patchGameSettingsLoad_Hook
+ * 
+ * DESCRIPTION :
+ * 			Called when loading previous game settings into create game.
+ * 			Reloads Survivor correctly.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchGameSettingsLoad_Hook(void * a0, void * a1)
+{
+	int index = 0;
+	int value = 0;
+
+	// Load normal
+	((void (*)(void *, void *))GAMESETTINGS_LOAD_FUNC)(a0, a1);
+
+	// Get gametype
+	index = ((int (*)(int))GAMESETTINGS_GET_INDEX_FUNC)(5);
+	int gamemode = ((int (*)(void *, int))GAMESETTINGS_GET_VALUE_FUNC)(a1, index);
+
+	// Handle each gamemode separately
+	switch (gamemode)
+	{
+		case GAMERULE_DM:
+		{
+			// Get survivor
+			index = ((int (*)(int))GAMESETTINGS_GET_INDEX_FUNC)(9);
+			value = ((int (*)(void *, int))GAMESETTINGS_GET_VALUE_FUNC)(a1, index);
+
+			// Save survivor
+			patchGameSettingsLoad_Save(a0, 0x100, 0xA4, value);
+			break;
+		}
+	}
+
+	if (gamemode != GAMERULE_CQ)
+	{
+		// respawn timer
+		GAMESETTINGS_RESPAWN_TIME2 = *(u8*)0x002126DC;
+	}
+}
+
+/*
+ * NAME :		patchGameSettingsLoad
+ * 
+ * DESCRIPTION :
+ * 			Patches game settings load so it reloads Survivor correctly.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchGameSettingsLoad()
+{
+	if (GAMESETTINGS_LOAD_PATCH == 0x0C1CBBDE)
+	{
+		GAMESETTINGS_LOAD_PATCH = 0x0C000000 | ((u32)&patchGameSettingsLoad_Hook >> 2);
+	}
+}
+
+/*
+ * NAME :		patchPopulateCreateGame_Hook
+ * 
+ * DESCRIPTION :
+ * 			Patches create game populate setting to add respawn timer.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchPopulateCreateGame_Hook(void * a0, int settingsCount, u32 * settingsPtrs)
+{
+	u32 respawnTimerPtr = 0x012B35D8;
+	int i = 0;
+
+	// Check if already loaded
+	for (; i < settingsCount; ++i)
+	{
+		if (settingsPtrs[i] == respawnTimerPtr)
+			break;
+	}
+
+	// If not loaded then append respawn timer
+	if (i == settingsCount)
+	{
+		++settingsCount;
+		settingsPtrs[i] = respawnTimerPtr;
+	}
+
+	// Populate
+	((void (*)(void *, int, u32 *))GAMESETTINGS_BUILD_FUNC)(a0, settingsCount, settingsPtrs);
+}
+
+/*
+ * NAME :		patchPopulateCreateGame
+ * 
+ * DESCRIPTION :
+ * 			Patches create game populate setting to add respawn timer.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchPopulateCreateGame()
+{
+	// Patch function pointer
+	if (GAMESETTINGS_BUILD_PTR == GAMESETTINGS_BUILD_FUNC)
+	{
+		GAMESETTINGS_BUILD_PTR = (u32)&patchPopulateCreateGame_Hook;
+	}
+
+	// Patch default respawn timer
+
+}
+
+/*
+ * NAME :		patchCreateGame_Hook
+ * 
+ * DESCRIPTION :
+ * 			Patches create game save settings to save respawn timer.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+u64 patchCreateGame_Hook(void * a0)
+{
+	// Save respawn timer
+	GAMESETTINGS_RESPAWN_TIME = GAMESETTINGS_RESPAWN_TIME2;
+
+	// Load normal
+	return ((u64 (*)(void *))GAMESETTINGS_CREATE_FUNC)(a0);
+}
+
+/*
+ * NAME :		patchCreateGame
+ * 
+ * DESCRIPTION :
+ * 			Patches create game save settings to save respawn timer.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchCreateGame()
+{
+	// Patch function pointer
+	if (GAMESETTINGS_CREATE_PATCH == 0x0C1C2D50)
+	{
+		GAMESETTINGS_CREATE_PATCH = 0x0C000000 | ((u32)&patchCreateGame_Hook >> 2);
+	}
+}
 
 /*
  * NAME :		processGameModules
@@ -202,6 +426,15 @@ int main (void)
 
 	// Patch announcements
 	patchAnnouncements();
+
+	// Patch create game settings load
+	patchGameSettingsLoad();
+
+	// Patch populate create game
+	patchPopulateCreateGame();
+
+	// Patch save create game settings
+	patchCreateGame();
 
 	// Process game modules
 	processGameModules();
