@@ -26,6 +26,7 @@
 #include "dl.h"
 #include "spawnpoint.h"
 #include "halftime.h"
+#include "graphics.h"
 
 /*
  * Gamerule ids.
@@ -40,7 +41,8 @@ enum GameRuleIdBitMask
 	GAMERULE_NO_HB =			(1 << 3),
 	GAMERULE_VAMPIRE =			(1 << 4),
 	GAMERULE_HALFTIME =			(1 << 5),
-	GAMERULE_BETTERHILLS = 		(1 << 6)
+	GAMERULE_BETTERHILLS = 		(1 << 6),
+	GAMERULE_HEALTHBARS = 		(1 << 7)
 };
 
 /*
@@ -227,6 +229,75 @@ void betterHillsLogic(GameModule * module)
 }
 
 /*
+ * NAME :		healthbarsLogic
+ * 
+ * DESCRIPTION :
+ * 			
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void healthbarsLogic(GameModule * module)
+{
+	float distanceScale = 0;
+
+	if (isInGame())
+	{
+		Player ** players = getPlayers();
+		Player * localPlayer = (Player*)0x00347AA0;
+		int px, py, i;
+
+		for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+		{
+			Player * player = players[i];
+			VECTOR temp;
+			if (!player || isLocal(player) || player->Health <= 0)
+				continue;
+
+			// Check distance
+			vector_subtract(temp, player->PlayerPosition, localPlayer->PlayerPosition);
+			float distance = vector_length(temp);
+			if (distance > 75)
+				continue;
+			
+			// Check angle
+			if (vector_innerproduct(temp, (float*)0x0022CD20) < 0)
+				continue;
+
+			// get 0-1 based on distance
+			distanceScale = clamp((75 - distance) / 75, 0, 1);
+
+			// move position above player
+			vector_copy(temp, player->PlayerPosition);
+			temp[2] += distanceScale * 1.05;
+
+			if (gfxWorldSpaceToScreenSpace(temp, &px, &py))
+			{
+				py -= powf(distanceScale, 4) * 27;
+				float x = (float)px / SCREEN_WIDTH;
+				float y = (float)py / SCREEN_HEIGHT;
+				float health = player->Health / 50;
+				float w = (0.05 * distanceScale) + 0.02, h = 0.005, p = 0.002;
+				float right = w * health * 2;
+				u32 color = TEAM_COLORS[player->Team];
+
+				// Draw boxes
+				RECT r = { {x-w-p,y-h-p}, {x+w+p,y-h-p}, {x-w-p,y+h+p}, {x+w+p,y+h+p} };
+				gfxScreenSpaceBox(&r, 0x80000000, 0x80000000, 0x80000000, 0x80000000);
+				RECT r2 = { {x-w,y-h}, {x-w +right,y-h}, {x-w,y+h}, {x-w + right,y+h} };
+				gfxScreenSpaceBox(&r2, color, color, color, color);
+			}
+		}
+
+	}
+}
+
+/*
  * NAME :		initialize
  * 
  * DESCRIPTION :
@@ -320,6 +391,9 @@ void gameStart(GameModule * module)
 
 	if (bitmask & GAMERULE_BETTERHILLS)
 		betterHillsLogic(module);
+
+	if (bitmask & GAMERULE_HEALTHBARS)
+		healthbarsLogic(module);
 }
 
 /*

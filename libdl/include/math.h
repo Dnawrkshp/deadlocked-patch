@@ -34,6 +34,7 @@ float lerpf(float a, float b, float t);
 float signf(float a);
 float maxf(float a, float b);
 float lerpfAngle(float a, float b, float t);
+float clamp(float v, float min, float max);
 float clampAngle(float theta);
 double fmod(double x, double y);
 float atan2f(float y, float x);
