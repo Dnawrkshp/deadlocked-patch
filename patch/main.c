@@ -55,6 +55,9 @@
 #define GAMESETTINGS_RESPAWN_TIME      	(*(u8*)0x0017380C)
 #define GAMESETTINGS_RESPAWN_TIME2      (*(u8*)0x012B3638)
 
+#define FRAME_SKIP_WRITE0				(*(u32*)0x004A9400)
+#define FRAME_SKIP						(*(u32*)0x0021E1D8)
+
 // 
 int DontResetRespawnTimer = 0;
 
@@ -319,6 +322,30 @@ void patchCreateGame()
 }
 
 /*
+ * NAME :		patchFrameSkip
+ * 
+ * DESCRIPTION :
+ * 			Patches frame skip to always be off.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchFrameSkip()
+{
+	// Patch function pointer
+	if (FRAME_SKIP_WRITE0 == 0xAF848859)
+	{
+		FRAME_SKIP_WRITE0 = 0;
+		FRAME_SKIP = 0;
+	}
+}
+
+/*
  * NAME :		processGameModules
  * 
  * DESCRIPTION :
@@ -401,7 +428,6 @@ void processGameModules()
 	}
 }
 
-
 /*
  * NAME :		main
  * 
@@ -435,6 +461,9 @@ int main (void)
 
 	// Patch save create game settings
 	patchCreateGame();
+
+	// Patch frame skip
+	patchFrameSkip();
 
 	// Process game modules
 	processGameModules();
