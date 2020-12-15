@@ -268,11 +268,10 @@ void spawnTick(void)
 				chain->LastBranch = gameTime;
 			}
 
-
+			// Determine next object
+			GenerateNext(chain, currentItem, scale);
 		}
 
-		// Determine next object
-		GenerateNext(chain, currentItem, scale);
 		if(MobyCount == 0)
 			playDialogSound(StartDialogs[RandomRangeShort(0, sizeof(BranchDialogs)/sizeof(int)-1)], 0);
 		else if(MobyCount % 20 == 0)
