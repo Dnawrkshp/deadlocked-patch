@@ -28,8 +28,8 @@
 #include "dialog.h"
 
 #define MAX_MAP_MOBY_DEFS		(10)
-#define MAX_WATER_RATE			(0.05)
-#define MAX_SPAWN_RATE			(TIME_SECOND * 1)
+#define MAX_WATER_RATE			(0.03)
+#define MAX_SPAWN_RATE			(TIME_SECOND * 1.5)
 
 typedef struct MobyDef
 {
@@ -49,7 +49,7 @@ int Initialized = 0;
 /*
  *
  */
-int SpawnRate = TIME_SECOND * 4;
+int SpawnRate = TIME_SECOND * 3;
 int BranchRate = TIME_SECOND * 30;
 int LastSpawn = 0;
 float WaterRaiseRate = 0.1 * (1 / 60.0);
@@ -233,7 +233,7 @@ void spawnTick(void)
 		DestroyOld();
 
 		// 
-		for (chainIndex = 0; chainIndex < 4; ++chainIndex)
+		for (chainIndex = 0; chainIndex < 3; ++chainIndex)
 		{
 			struct ClimbChain * chain = &Chains[chainIndex];
 			if (!chain->Active)
@@ -268,13 +268,15 @@ void spawnTick(void)
 				chain->LastBranch = gameTime;
 			}
 
-			// Determine next object
-			GenerateNext(chain, currentItem, scale);
-			if(MobyCount == 0)
-				playDialogSound(StartDialogs[RandomRangeShort(0, sizeof(BranchDialogs)/sizeof(int)-1)], 0);
-			else if(MobyCount % 20 == 0)
-				playDialogSound(IncrementalDialogs[RandomRangeShort(0, sizeof(BranchDialogs)/sizeof(int)-1)], 0);
+
 		}
+
+		// Determine next object
+		GenerateNext(chain, currentItem, scale);
+		if(MobyCount == 0)
+			playDialogSound(StartDialogs[RandomRangeShort(0, sizeof(BranchDialogs)/sizeof(int)-1)], 0);
+		else if(MobyCount % 20 == 0)
+			playDialogSound(IncrementalDialogs[RandomRangeShort(0, sizeof(BranchDialogs)/sizeof(int)-1)], 0);
 
 
 		// 
@@ -282,7 +284,7 @@ void spawnTick(void)
 
 		++MobyCount;
 		if (SpawnRate > MAX_SPAWN_RATE)
-			SpawnRate -= MobyCount * 5;
+			SpawnRate -= MobyCount * 6;
 		else
 			SpawnRate = MAX_SPAWN_RATE;
 
