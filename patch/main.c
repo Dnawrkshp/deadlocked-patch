@@ -59,12 +59,7 @@
 #define FRAME_SKIP						(*(u32*)0x0021E1D8)
 
 // 
-int DontResetRespawnTimer = 0;
-
-
-// 
 void processSpectate(void);
-
 
 /*
  * NAME :		patchCameraSpeed
