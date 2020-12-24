@@ -29,7 +29,7 @@
 
 #define MAX_MAP_MOBY_DEFS		(10)
 #define MAX_WATER_RATE			(0.03)
-#define MAX_SPAWN_RATE			(TIME_SECOND * 1.5)
+#define MAX_SPAWN_RATE			(TIME_SECOND * 0.5)
 
 typedef struct MobyDef
 {
@@ -284,7 +284,7 @@ void spawnTick(void)
 
 		++MobyCount;
 		if (SpawnRate > MAX_SPAWN_RATE)
-			SpawnRate -= MobyCount * 6;
+			SpawnRate -= MobyCount * 6.5;
 		else
 			SpawnRate = MAX_SPAWN_RATE;
 
