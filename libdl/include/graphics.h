@@ -81,4 +81,7 @@ void gfxScreenSpaceBox(RECT * rect, u32 colorTL, u32 colorTR, u32 colorBL, u32 c
  */
 int gfxWorldSpaceToScreenSpace(VECTOR position, int * x, int * y);
 
+
+void gfxScreenSpacePIF(RECT * rect);
+
 #endif // _LIBDL_GRAPHICS_H_
