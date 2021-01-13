@@ -79,6 +79,21 @@ int onSetMapOverride(void * connection, void * data)
 }
 
 //------------------------------------------------------------------------------
+int onServerSentMapIrxModules(void * connection, void * data)
+{
+    printf("server sent map irx modules\n");
+
+	// initiate loading
+	if (LOAD_MODULES_STATE == 0)
+		LOAD_MODULES_STATE = 7;
+
+	// kick to logout screen
+
+
+    return 0;
+}
+
+//------------------------------------------------------------------------------
 void loadModules(void)
 {
 	if (LOAD_MODULES_STATE < 7)
@@ -530,7 +545,8 @@ void onOnlineMainMenu(void)
 	{
 		if (uiShowYesNoDialog("Enable Custom Maps", "Are you sure?") == 1)
 		{
-			
+			// request irx modules from server
+			SendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_REQUEST_MAP_IRX_MODULES, 0, 0);
 		}
 	}
 }
@@ -538,9 +554,9 @@ void onOnlineMainMenu(void)
 //------------------------------------------------------------------------------
 void runMapLoader(void)
 {
-    int r, lastResult;
-
+	// 
     InstallCustomMsgHandler(CUSTOM_MSG_ID_SET_MAP_OVERRIDE, &onSetMapOverride);
+    InstallCustomMsgHandler(CUSTOM_MSG_ID_SERVER_SENT_MAP_IRX_MODULES, &onServerSentMapIrxModules);
 
     // hook irx module loading 
     hook();
@@ -557,113 +573,4 @@ void runMapLoader(void)
 
 		initialized = 1;
 	}
-
-    // try to read modules from memory card
-    int loadModuleState = LOAD_MODULES_STATE;
-    if (loadModuleState > 0 && loadModuleState < 100)
-    {
-        // grab last result
-        if ((lastResult = McPollSema()) < 0)
-            return;
-
-        // error
-        if (lastResult < 0 && loadModuleState > 1)
-        {
-            printf("error result from %d : %d\n", loadModuleState - 1, lastResult);
-            LOAD_MODULES_STATE = -loadModuleState;
-            return;
-        }
-
-        // 
-        switch (loadModuleState)
-        {
-            case 1: // OPEN USB FS MODULE
-            {
-                // open
-                r = McOpen(0, 0, USB_FS_PATH, 1);
-                if (r < 0)
-                    break;
-                
-                ++loadModuleState;
-                break;
-            }
-            case 2: // READ USB FS MODULE
-            {
-                // set fd to last result
-                fd = lastResult;
-
-                // read
-                r = McRead(fd, USB_FS_BUFFER, USB_FS_SIZE);
-                if (r < 0)
-                    break;
-                
-                ++loadModuleState;
-                break;
-            }
-            case 3: // CLOSE USB FS MODULE
-            {
-                // 
-                if (lastResult != USB_FS_SIZE)
-                {
-                    printf("error reading %s, %d/%d bytes read\n", USB_FS_PATH, lastResult, USB_FS_SIZE);
-                    loadModuleState = -loadModuleState;
-                    break;
-                }
-
-                // close
-                r = McClose(fd);
-                if (r < 0)
-                    break;
-                
-                ++loadModuleState;
-                break;
-            }
-            case 4: // OPEN USB SERV MODULE
-            {
-                // open
-                fd = McOpen(0, 0, USB_SRV_PATH, 1);
-                if (r < 0)
-                    break;
-                
-                ++loadModuleState;
-                break;
-            }
-            case 5: // READ USB SERV MODULE
-            {
-                // set fd to last result
-                fd = lastResult;
-
-                // read
-                r = McRead(fd, USB_SRV_BUFFER, USB_SRV_SIZE);
-                if (r < 0)
-                    break;
-                
-                ++loadModuleState;
-                break;
-            }
-            case 6: // CLOSE USB SERV MODULE
-            {
-                // 
-                if (lastResult != USB_SRV_SIZE)
-                {
-                    printf("error reading %s, %d/%d bytes read\n", USB_SRV_PATH, lastResult, USB_SRV_SIZE);
-                    loadModuleState = -loadModuleState;
-                    break;
-                }
-
-                // close
-                r = McClose(fd);
-                if (r < 0)
-                    break;
-
-                printf("done\n");
-                
-                ++loadModuleState;
-                break;
-            }
-        }
-
-        // update state
-        LOAD_MODULES_STATE = loadModuleState;
-    }
 }

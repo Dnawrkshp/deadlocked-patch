@@ -29,7 +29,17 @@ typedef enum CustomMessageId
     /*
      * Info on custom map.
      */
-    CUSTOM_MSG_ID_SET_MAP_OVERRIDE,
+    CUSTOM_MSG_ID_SET_MAP_OVERRIDE = 1,
+
+    /*
+     * Sent to the server when the client wants the map loader irx modules.
+     */
+    CUSTOM_MSG_ID_CLIENT_REQUEST_MAP_IRX_MODULES = 2,
+
+    /*
+     * Sent after the server has sent all the map loader irx modules.
+     */
+    CUSTOM_MSG_ID_SERVER_SENT_MAP_IRX_MODULES = 3,
 
 } GameModuleState;
 
