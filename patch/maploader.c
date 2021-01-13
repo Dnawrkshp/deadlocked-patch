@@ -4,6 +4,9 @@
 #include "messageid.h"
 #include "mc.h"
 #include "string.h"
+#include "ui.h"
+#include "graphics.h"
+#include "pad.h"
 
 #include <sifcmd.h>
 #include <iopheap.h>
@@ -501,6 +504,38 @@ void hook(void)
 }
 
 //------------------------------------------------------------------------------
+void onOnlineMainMenu(void)
+{
+	RECT boxRect = {
+		{ 0.1, 0.75 },
+		{ 0.5, 0.75 },
+		{ 0.1, 0.8 },
+		{ 0.5, 0.8 }
+	};
+	u32 bgColor = 0x20000000;
+	int activeUi = uiGetActive();
+	if (activeUi != UI_ID_ONLINE_MAIN_MENU)
+		return;
+
+	// if already tried to install then don't show
+	if (LOAD_MODULES_STATE != 0)
+		return;
+
+	// render message
+	gfxScreenSpaceBox(&boxRect, bgColor, bgColor, bgColor, bgColor);
+	gfxScreenSpaceText(SCREEN_WIDTH * 0.3, SCREEN_HEIGHT * 0.7, 1, 1, 0x80FFFFFF, "\x16+\x15 Enable Custom Maps", -1);
+
+	// check for pad input
+	if (padGetButtonDown(0, PAD_L2 | PAD_R1))
+	{
+		if (uiShowYesNoDialog("Enable Custom Maps", "Are you sure?") == 1)
+		{
+			
+		}
+	}
+}
+
+//------------------------------------------------------------------------------
 void runMapLoader(void)
 {
     int r, lastResult;
@@ -509,6 +544,9 @@ void runMapLoader(void)
 
     // hook irx module loading 
     hook();
+
+	//
+	onOnlineMainMenu();
 
 	// 
 	if (!initialized)
@@ -522,11 +560,6 @@ void runMapLoader(void)
 
     // try to read modules from memory card
     int loadModuleState = LOAD_MODULES_STATE;
-
-    // for testing purposes kickstart to loading
-    if (loadModuleState == 0)
-        loadModuleState = 1;
-
     if (loadModuleState > 0 && loadModuleState < 100)
     {
         // grab last result
