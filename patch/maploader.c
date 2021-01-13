@@ -33,6 +33,7 @@ void hook(void);
 
 // memory card fd
 int fd;
+int initialized = 0;
 
 // 
 char membuffer[256];
@@ -466,33 +467,37 @@ u64 hookedLoadCdvd(u64 a0, u64 a1, u64 a2, u64 a3, u64 t0, u64 t1, u64 t2)
 //------------------------------------------------------------------------------
 void hook(void)
 {
-	u32 * hookloadAddr = (u32*)0x005CFB48;
-	u32 * hookcheckAddr = (u32*)0x005CF9B0;
-	u32 * loadModulesAddr = (u32*)0x00161364;
-	u32 * hookloadingScreenAddr = (u32*)0x00705554;
-	u32 * getTableAddr = (u32*)0x00159B20;
-	u32 * getMapAddr = (u32*)0x00557580;
-	u32 * getAudioAddr = (u32*)0x0053F970;
-	u32 * loadCdvdAddr = (u32*)0x00163814;
+	// 
+	u32 * hookLoadAddr = (u32*)0x005CFB48;
+	u32 * hookCheckAddr = (u32*)0x005CF9B0;
+	u32 * hookLoadingScreenAddr = (u32*)0x00705554;
+	u32 * hookTableAddr = (u32*)0x00159B20;
+	u32 * hookMapAddr = (u32*)0x00557580;
+	u32 * hookAudioAddr = (u32*)0x0053F970;
+	u32 * hookLoadCdvdAddr = (u32*)0x00163814;
+
+	// Load modules
+	u32 * hookLoadModulesAddr = (u32*)0x00161364;
 
 	// For some reason we can't load the IRX modules whenever we want
 	// So here we hook into when the game uses rpc calls
 	// This triggers when entering the online profile select, leaving profile select, and logging out.
-	if (*loadModulesAddr == 0x0C054632)
-		*loadModulesAddr = 0x0C000000 | ((u32)(&loadHookFunc) / 4);
+	if (*hookLoadModulesAddr == 0x0C054632)
+		*hookLoadModulesAddr = 0x0C000000 | ((u32)(&loadHookFunc) / 4);
 
-	if (*hookloadAddr == 0x0C058E10)
+	// Install hooks
+	if (*hookLoadAddr == 0x0C058E10)
 	{
-		*getTableAddr = 0x0C000000 | ((u32)(&hookedGetTable) / 4);
-		*hookloadAddr = 0x0C000000 | ((u32)(&hookedLoad) / 4);
-		*hookcheckAddr = 0x0C000000 | ((u32)(&hookedCheck) / 4);
-		*hookloadingScreenAddr = 0x0C000000 | ((u32)&hookedLoadingScreen / 4);
-		*loadCdvdAddr = 0x0C000000 | ((u32)&hookedLoadCdvd / 4);
+		*hookTableAddr = 0x0C000000 | ((u32)(&hookedGetTable) / 4);
+		*hookLoadingScreenAddr = 0x0C000000 | ((u32)&hookedLoadingScreen / 4);
+		*hookLoadCdvdAddr = 0x0C000000 | ((u32)&hookedLoadCdvd / 4);
+		*hookCheckAddr = 0x0C000000 | ((u32)(&hookedCheck) / 4);
+		*hookLoadAddr = 0x0C000000 | ((u32)(&hookedLoad) / 4);
 	}
 
 	// These get hooked after the map loads but before the game starts
-	if (*getMapAddr == 0x0C058E02)
-		*getMapAddr = 0x0C000000 | ((u32)(&hookedGetMap) / 4);
+	if (*hookMapAddr == 0x0C058E02)
+		*hookMapAddr = 0x0C000000 | ((u32)(&hookedGetMap) / 4);
 }
 
 //------------------------------------------------------------------------------
@@ -504,6 +509,16 @@ void runMapLoader(void)
 
     // hook irx module loading 
     hook();
+
+	// 
+	if (!initialized)
+	{
+		// Reinitialize usb if its already loaded
+		if (LOAD_MODULES_STATE == 100)
+			printf("rpcUSBInit: %d\n", rpcUSBInit());
+
+		initialized = 1;
+	}
 
     // try to read modules from memory card
     int loadModuleState = LOAD_MODULES_STATE;
