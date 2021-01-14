@@ -60,7 +60,7 @@ int SendCustomAppMessage(void * connection, u8 customMsgId, int msgSize, void * 
         memcpy(buffer + 4, payload, msgSize);
         
     buffer[0] = customMsgId;
-    SendMediusAppMessage(connection, NET_CUSTOM_MESSAGE_CLASS, NET_CUSTOM_MESSAGE_ID, msgSize + 4, buffer);
+    return SendMediusAppMessage(connection, NET_CUSTOM_MESSAGE_CLASS, NET_CUSTOM_MESSAGE_ID, msgSize + 4, buffer);
 }
 
 void* netGetLobbyServerConnection(void)

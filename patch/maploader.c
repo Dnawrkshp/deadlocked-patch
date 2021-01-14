@@ -37,6 +37,8 @@
 void hook(void);
 void loadModules(void);
 
+int readLevelVersion(char * name, int * version);
+
 // memory card fd
 int fd;
 int initialized = 0;
@@ -45,16 +47,22 @@ int installState = 0;
 // 
 char membuffer[256];
 
-// paths for level specific wad and toc
+// paths for level specific files
 char * fWad = "dl/%s.wad";
 char * fBg = "dl/%s.bg";
 char * fMap = "dl/%s.map";
+char * fVersion = "dl/%s.version";
 
 typedef struct MapOverrideMessage
 {
     u8 MapId;
     char MapName[128];
 } MapOverrideMessage;
+
+typedef struct MapOverrideResponseMessage
+{
+	int Version;
+} MapOverrideResponseMessage;
 
 struct MapLoaderState
 {
@@ -72,7 +80,6 @@ int onSetMapOverride(void * connection, void * data)
 {
     MapOverrideMessage *payload = (MapOverrideMessage*)data;
 
-    printf("MapId:%d MapName:%s\n", payload->MapId, payload->MapName);
 	if (payload->MapId == 0)
 	{
 		State.Enabled = 0;
@@ -80,12 +87,30 @@ int onSetMapOverride(void * connection, void * data)
 	}
 	else
 	{
-		State.Enabled = 1;
-		State.CheckState = 0;
-		State.MapId = payload->MapId;
-		State.LoadingFd = -1;
-		State.LoadingFileSize = -1;
-		strncpy(State.MapName, payload->MapName, 128);
+		// check for version
+		int version = -1;
+		if (LOAD_MODULES_STATE != 100)
+			version = -1;
+		else if (!readLevelVersion(payload->MapName, &version))
+			version = -2;
+
+#if DEBUG
+    	printf("MapId:%d MapName:%s Version:%d\n", payload->MapId, payload->MapName, version);
+#endif
+
+		// send response
+		SendCustomAppMessage(connection, CUSTOM_MSG_ID_SET_MAP_OVERRIDE_RESPONSE, 4, &version);
+
+		// enable
+		if (version >= 0)
+		{
+			State.Enabled = 1;
+			State.CheckState = 0;
+			State.MapId = payload->MapId;
+			State.LoadingFd = -1;
+			State.LoadingFileSize = -1;
+			strncpy(State.MapName, payload->MapName, 128);
+		}
 	}
 
     return sizeof(MapOverrideMessage);
@@ -147,6 +172,59 @@ u64 loadHookFunc(u64 a0, u64 a1)
 
 	// Loads sound driver
 	return ((u64 (*)(u64, u64))0x001518C8)(a0, a1);
+}
+
+//--------------------------------------------------------------
+int readLevelVersion(char * name, int * version)
+{
+	int r, fd, fSize;
+
+	// Generate version filename
+	sprintf(membuffer, fVersion, name);
+
+	// Open
+	rpcUSBopen(membuffer, FIO_O_RDONLY);
+	rpcUSBSync(0, NULL, &fd);
+
+	// Ensure the file was opened successfully
+	if (fd < 0)
+	{
+		printf("error opening file (%s): %d\n", membuffer, fd);
+		return 0;	
+	}
+	
+	// Get length of file
+	rpcUSBseek(fd, 0, SEEK_END);
+	rpcUSBSync(0, NULL, &fSize);
+
+	// Check the file has a valid size
+	if (fSize != 4)
+	{
+		printf("error seeking file (%s): %d\n", membuffer, fSize);
+		rpcUSBclose(fd);
+		rpcUSBSync(0, NULL, NULL);
+		return 0;
+	}
+
+	// Go back to start of file
+	rpcUSBseek(fd, 0, SEEK_SET);
+	rpcUSBSync(0, NULL, NULL);
+
+	// Read map
+	if (rpcUSBread(fd, (void*)version, 4) != 0)
+	{
+		printf("error reading from file.\n");
+		rpcUSBclose(fd);
+		rpcUSBSync(0, NULL, NULL);
+		return 0;
+	}
+	rpcUSBSync(0, NULL, &r);
+
+	// Close toc
+	rpcUSBclose(fd);
+	rpcUSBSync(0, NULL, NULL);
+
+	return 1;
 }
 
 //--------------------------------------------------------------
@@ -617,10 +695,6 @@ void runMapLoader(void)
 		State.Enabled = 0;
 		State.CheckState = 0;
 
-		// Reinitialize usb if its already loaded
-		//if (LOAD_MODULES_STATE == 100)
-		//	printf("rpcUSBInit: %d\n", rpcUSBInit());
-
 		initialized = 1;
 	}
 
@@ -628,7 +702,7 @@ void runMapLoader(void)
 	if (State.Enabled == 1 && !isInGame())
 	{
 		GameSettings * settings = getGameSettings();
-		if (settings)
+		if (settings && settings->GameLoadStartTime > 0)
 		{
 			settings->GameLevel = State.MapId;
 		}

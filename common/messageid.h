@@ -41,6 +41,11 @@ typedef enum CustomMessageId
      */
     CUSTOM_MSG_ID_SERVER_SENT_MAP_IRX_MODULES = 3,
 
+    /*
+     * Sent in response to CUSTOM_MSG_ID_SET_MAP_OVERRIDE by the client.
+     */
+    CUSTOM_MSG_ID_SET_MAP_OVERRIDE_RESPONSE = 4,
+
 } GameModuleState;
 
 #endif // _MESSAGEID_H_
