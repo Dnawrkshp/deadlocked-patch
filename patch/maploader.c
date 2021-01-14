@@ -38,11 +38,25 @@ void hook(void);
 void loadModules(void);
 
 int readLevelVersion(char * name, int * version);
+int readGlobalVersion(int * version);
+
+
+enum MenuActionId
+{
+	ACTION_ERROR_LOADING_MODULES = -1,
+
+	ACTION_MODULES_NOT_INSTALLED = 0,
+	ACTION_DOWNLOADING_MODULES = 1,
+	ACTION_MODULES_INSTALLED = 2,
+	ACTION_NEW_MAPS_UPDATE = 3,
+
+	ACTION_NONE = 100
+};
 
 // memory card fd
 int fd;
 int initialized = 0;
-int installState = 0;
+int actionState = ACTION_MODULES_NOT_INSTALLED;
 
 // 
 char membuffer[256];
@@ -52,6 +66,7 @@ char * fWad = "dl/%s.wad";
 char * fBg = "dl/%s.bg";
 char * fMap = "dl/%s.map";
 char * fVersion = "dl/%s.version";
+char * fGlobalVersion = "dl/version";
 
 typedef struct MapOverrideMessage
 {
@@ -64,6 +79,11 @@ typedef struct MapOverrideResponseMessage
 	int Version;
 } MapOverrideResponseMessage;
 
+typedef struct MapServerSentModulesMessage
+{
+	int Version;
+} MapServerSentModulesMessage;
+
 struct MapLoaderState
 {
     u8 Enabled;
@@ -73,7 +93,6 @@ struct MapLoaderState
     int LoadingFileSize;
     int LoadingFd;
 } State;
-
 
 //------------------------------------------------------------------------------
 int onSetMapOverride(void * connection, void * data)
@@ -119,7 +138,9 @@ int onSetMapOverride(void * connection, void * data)
 //------------------------------------------------------------------------------
 int onServerSentMapIrxModules(void * connection, void * data)
 {
+#if DEBUG
     printf("server sent map irx modules\n");
+#endif
 
 	// initiate loading
 	if (LOAD_MODULES_STATE == 0)
@@ -129,12 +150,34 @@ int onServerSentMapIrxModules(void * connection, void * data)
 	loadModules();
 
 	//
-	printf("rpcUSBInit: %d\n", rpcUSBInit());
+	int init = rpcUSBInit();
+
+#if DEBUG
+	printf("rpcUSBInit: %d\n", init);
+#endif
 
 	//
-	installState = 2;
+	if (init < 0)
+	{
+		actionState = ACTION_ERROR_LOADING_MODULES;
+	}
+	else
+	{
+		int remoteVersion = *(int*)data;
+		int localVersion = 0;
+		if (!readGlobalVersion(&localVersion) || localVersion != remoteVersion)
+		{
+			// Indicate new version
+			actionState = ACTION_NEW_MAPS_UPDATE;
+		}
+		else
+		{
+			// Indicate maps installed
+			actionState = ACTION_MODULES_INSTALLED;
+		}
+	}
 
-    return 0;
+    return sizeof(MapServerSentModulesMessage);
 }
 
 //------------------------------------------------------------------------------
@@ -172,6 +215,56 @@ u64 loadHookFunc(u64 a0, u64 a1)
 
 	// Loads sound driver
 	return ((u64 (*)(u64, u64))0x001518C8)(a0, a1);
+}
+
+//--------------------------------------------------------------
+int readGlobalVersion(int * version)
+{
+	int r, fd, fSize;
+
+	// Open
+	rpcUSBopen(fGlobalVersion, FIO_O_RDONLY);
+	rpcUSBSync(0, NULL, &fd);
+
+	// Ensure the file was opened successfully
+	if (fd < 0)
+	{
+		printf("error opening file (%s): %d\n", membuffer, fd);
+		return 0;	
+	}
+	
+	// Get length of file
+	rpcUSBseek(fd, 0, SEEK_END);
+	rpcUSBSync(0, NULL, &fSize);
+
+	// Check the file has a valid size
+	if (fSize != 4)
+	{
+		printf("error seeking file (%s): %d\n", membuffer, fSize);
+		rpcUSBclose(fd);
+		rpcUSBSync(0, NULL, NULL);
+		return 0;
+	}
+
+	// Go back to start of file
+	rpcUSBseek(fd, 0, SEEK_SET);
+	rpcUSBSync(0, NULL, NULL);
+
+	// Read map
+	if (rpcUSBread(fd, (void*)version, 4) != 0)
+	{
+		printf("error reading from file.\n");
+		rpcUSBclose(fd);
+		rpcUSBSync(0, NULL, NULL);
+		return 0;
+	}
+	rpcUSBSync(0, NULL, &r);
+
+	// Close toc
+	rpcUSBclose(fd);
+	rpcUSBSync(0, NULL, NULL);
+
+	return 1;
 }
 
 //--------------------------------------------------------------
@@ -598,7 +691,7 @@ void onOnlineMenu(void)
 	if (activeUi != UI_ID_ONLINE_MAIN_MENU)
 		return;
 
-	if (installState == 0)
+	if (actionState == ACTION_MODULES_NOT_INSTALLED)
 	{
 		// if already tried to install then don't show
 		if (LOAD_MODULES_STATE != 0)
@@ -615,21 +708,31 @@ void onOnlineMenu(void)
 			{
 				// request irx modules from server
 				SendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_REQUEST_MAP_IRX_MODULES, 0, 0);
-				installState = 1;
+				actionState = ACTION_DOWNLOADING_MODULES;
 			}
 		}
 	}
-	else if (installState == 1)
+	else if (actionState == ACTION_DOWNLOADING_MODULES)
 	{
 		// render message
 		gfxScreenSpaceBox(&boxRectDownload, bgColorDownload, bgColorDownload, bgColorDownload, bgColorDownload);
 		gfxScreenSpaceText(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.45, 1, 1, 0x80FFFFFF, "Downloading modules, please wait...", -1);
 	}
-	else if (installState == 2)
+	else if (actionState == ACTION_MODULES_INSTALLED)
 	{
 		uiShowOkDialog("Custom Maps", "Custom maps have been enabled.");
 
-		installState = 3;
+		actionState = ACTION_NONE;
+	}
+	else if (actionState == ACTION_NEW_MAPS_UPDATE)
+	{
+		uiShowOkDialog("Custom Maps", "New updates are available. Please download them at {}");
+		actionState = ACTION_MODULES_INSTALLED;
+	}
+	else if (actionState == ACTION_ERROR_LOADING_MODULES)
+	{
+		uiShowOkDialog("Custom Maps", "There was an error loading the custom map modules.");
+		actionState = ACTION_NONE;
 	}
 
 	return;
