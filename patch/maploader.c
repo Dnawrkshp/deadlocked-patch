@@ -191,18 +191,15 @@ void loadModules(void)
 		//
 		SifInitRpc(0);
 
-		//if (USB_FS_ID > 0)
-		//	SifUnloadModule(USB_FS_ID);
-		//if (USB_SRV_ID > 0)
-		//	SifUnloadModule(USB_SRV_ID);
-
 		// Load modules
-		printf("Loading MASS: %d\n", USB_FS_ID = SifExecModuleBuffer(USB_FS_BUFFER, USB_FS_SIZE, 0, NULL, NULL));
-		printf("Loading USBSERV: %d\n", USB_SRV_ID = SifExecModuleBuffer(USB_SRV_BUFFER, USB_SRV_SIZE, 0, NULL, NULL));
-	}
+		USB_FS_ID = SifExecModuleBuffer(USB_FS_BUFFER, USB_FS_SIZE, 0, NULL, NULL);
+		USB_SRV_ID = SifExecModuleBuffer(USB_SRV_BUFFER, USB_SRV_SIZE, 0, NULL, NULL);
 
-	// 
-	//initialized = 0;
+#if DEBUG
+		printf("Loading MASS: %d\n", USB_FS_ID);
+		printf("Loading USBSERV: %d\n", USB_SRV_ID);
+#endif
+	}
 
 	LOAD_MODULES_STATE = 100;
 }
@@ -229,7 +226,9 @@ int readGlobalVersion(int * version)
 	// Ensure the file was opened successfully
 	if (fd < 0)
 	{
+#if DEBUG
 		printf("error opening file (%s): %d\n", membuffer, fd);
+#endif
 		return 0;	
 	}
 	
@@ -240,7 +239,9 @@ int readGlobalVersion(int * version)
 	// Check the file has a valid size
 	if (fSize != 4)
 	{
+#if DEBUG
 		printf("error seeking file (%s): %d\n", membuffer, fSize);
+#endif
 		rpcUSBclose(fd);
 		rpcUSBSync(0, NULL, NULL);
 		return 0;
@@ -253,7 +254,9 @@ int readGlobalVersion(int * version)
 	// Read map
 	if (rpcUSBread(fd, (void*)version, 4) != 0)
 	{
+#if DEBUG
 		printf("error reading from file.\n");
+#endif
 		rpcUSBclose(fd);
 		rpcUSBSync(0, NULL, NULL);
 		return 0;
@@ -282,7 +285,9 @@ int readLevelVersion(char * name, int * version)
 	// Ensure the file was opened successfully
 	if (fd < 0)
 	{
+#if DEBUG
 		printf("error opening file (%s): %d\n", membuffer, fd);
+#endif
 		return 0;	
 	}
 	
@@ -293,7 +298,9 @@ int readLevelVersion(char * name, int * version)
 	// Check the file has a valid size
 	if (fSize != 4)
 	{
+#if DEBUG
 		printf("error seeking file (%s): %d\n", membuffer, fSize);
+#endif
 		rpcUSBclose(fd);
 		rpcUSBSync(0, NULL, NULL);
 		return 0;
@@ -306,7 +313,9 @@ int readLevelVersion(char * name, int * version)
 	// Read map
 	if (rpcUSBread(fd, (void*)version, 4) != 0)
 	{
+#if DEBUG
 		printf("error reading from file.\n");
+#endif
 		rpcUSBclose(fd);
 		rpcUSBSync(0, NULL, NULL);
 		return 0;
@@ -335,7 +344,9 @@ int getLevelSizeUsb()
 	// Ensure wad successfully opened
 	if (fd < 0)
 	{
+#if DEBUG
 		printf("error opening file (%s): %d\n", membuffer, fd);
+#endif
 		return 0;									
 	}
 
@@ -346,7 +357,9 @@ int getLevelSizeUsb()
 	// Check the file has a valid size
 	if (State.LoadingFileSize <= 0)
 	{
+#if DEBUG
 		printf("error seeking file (%s): %d\n", membuffer, State.LoadingFileSize);
+#endif
 		rpcUSBclose(fd);
 		rpcUSBSync(0, NULL, NULL);
 		fd = -1;
@@ -375,7 +388,9 @@ int readLevelMapUsb(u8 * buf, int size)
 	// Ensure the toc was opened successfully
 	if (fd < 0)
 	{
+#if DEBUG
 		printf("error opening file (%s): %d\n", membuffer, fd);
+#endif
 		return 0;	
 	}
 	
@@ -386,7 +401,9 @@ int readLevelMapUsb(u8 * buf, int size)
 	// Check the file has a valid size
 	if (fSize <= 0)
 	{
+#if DEBUG
 		printf("error seeking file (%s): %d\n", membuffer, fSize);
+#endif
 		rpcUSBclose(fd);
 		rpcUSBSync(0, NULL, NULL);
 		return 0;
@@ -403,7 +420,9 @@ int readLevelMapUsb(u8 * buf, int size)
 	// Read map
 	if (rpcUSBread(fd, buf, size) != 0)
 	{
+#if DEBUG
 		printf("error reading from file.\n");
+#endif
 		rpcUSBclose(fd);
 		rpcUSBSync(0, NULL, NULL);
 		return 0;
@@ -425,7 +444,9 @@ int readLevelBgUsb(u8 * buf, int size)
 	// Ensure a wad isn't already open
 	if (State.LoadingFd >= 0)
 	{
+#if DEBUG
 		printf("readLevelBgUsb() called but a file is already open (%d)!", State.LoadingFd);
+#endif
 		return 0;
 	}
 
@@ -439,14 +460,18 @@ int readLevelBgUsb(u8 * buf, int size)
 	// Ensure the toc was opened successfully
 	if (fd < 0)
 	{
+#if DEBUG
 		printf("error opening file (%s): %d\n", membuffer, fd);
+#endif
 		return 0;	
 	}
 
 	// Read bg
 	if (rpcUSBread(fd, buf, size) != 0)
 	{
+#if DEBUG
 		printf("error reading from file.\n");
+#endif
 		rpcUSBclose(fd);
 		rpcUSBSync(0, NULL, NULL);
 		return 0;
@@ -466,7 +491,9 @@ int openLevelUsb()
 	// Ensure a wad isn't already open
 	if (State.LoadingFd >= 0)
 	{
+#if DEBUG
 		printf("openLevelUsb() called but a file is already open (%d)!", State.LoadingFd);
+#endif
 		return 0;
 	}
 
@@ -480,7 +507,9 @@ int openLevelUsb()
 	// Ensure wad successfully opened
 	if (State.LoadingFd < 0)
 	{
+#if DEBUG
 		printf("error opening file (%s): %d\n", membuffer, State.LoadingFd);
+#endif
 		return 0;									
 	}
 
@@ -491,7 +520,9 @@ int openLevelUsb()
 	// Check the file has a valid size
 	if (State.LoadingFileSize <= 0)
 	{
+#if DEBUG
 		printf("error seeking file (%s): %d\n", membuffer, State.LoadingFileSize);
+#endif
 		rpcUSBclose(State.LoadingFd);
 		rpcUSBSync(0, NULL, NULL);
 		State.LoadingFd = -1;
@@ -504,7 +535,9 @@ int openLevelUsb()
 	rpcUSBseek(State.LoadingFd, 0, SEEK_SET);
 	rpcUSBSync(0, NULL, NULL);
 
+#if DEBUG
 	printf("%s is %d byte long.\n", membuffer, State.LoadingFileSize);
+#endif
 	
 	return State.LoadingFileSize;
 }
@@ -515,14 +548,18 @@ int readLevelUsb(u8 * buf)
 	// Ensure the wad is open
 	if (State.LoadingFd < 0 || State.LoadingFileSize <= 0)
 	{
+#if DEBUG
 		printf("error opening file: %d\n", State.LoadingFd);
+#endif
 		return 0;									
 	}
 
 	// Try to read from usb
 	if (rpcUSBread(State.LoadingFd, buf, State.LoadingFileSize) != 0)
 	{
+#if DEBUG
 		printf("error reading from file.\n");
+#endif
 		rpcUSBclose(State.LoadingFd);
 		rpcUSBSync(0, NULL, NULL);
 		State.LoadingFd = -1;
@@ -568,7 +605,9 @@ u32 hookedCheck(void)
 		// If the command is USBREAD close and return
 		if (cmd == 0x04)
 		{
+#if DEBUG
 			printf("finished reading %d bytes from USB\n", r);
+#endif
 			rpcUSBclose(State.LoadingFd);
 			rpcUSBSync(0, NULL, NULL);
 			State.LoadingFd = -1;
@@ -630,7 +669,9 @@ void hookedGetTable(u32 startSector, u32 sectorCount, u8 * dest, u32 levelId)
         else
         {
             State.Enabled = 0;
+#if DEBUG
             printf("Error reading level wad from usb\n");
+#endif
         }
 	}
 }
