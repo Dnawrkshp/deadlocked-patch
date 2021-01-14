@@ -7,6 +7,8 @@
 #include "ui.h"
 #include "graphics.h"
 #include "pad.h"
+#include "gamesettings.h"
+#include "game.h"
 
 #include <sifcmd.h>
 #include <iopheap.h>
@@ -33,10 +35,12 @@
 
 
 void hook(void);
+void loadModules(void);
 
 // memory card fd
 int fd;
 int initialized = 0;
+int installState = 0;
 
 // 
 char membuffer[256];
@@ -56,6 +60,7 @@ struct MapLoaderState
 {
     u8 Enabled;
     u8 MapId;
+	u8 CheckState;
     char MapName[128];
     int LoadingFileSize;
     int LoadingFd;
@@ -68,12 +73,20 @@ int onSetMapOverride(void * connection, void * data)
     MapOverrideMessage *payload = (MapOverrideMessage*)data;
 
     printf("MapId:%d MapName:%s\n", payload->MapId, payload->MapName);
-
-    State.Enabled = 1;
-    State.MapId = payload->MapId;
-    State.LoadingFd = -1;
-    State.LoadingFileSize = -1;
-    strncpy(State.MapName, payload->MapName, 128);
+	if (payload->MapId == 0)
+	{
+		State.Enabled = 0;
+		State.CheckState = 0;
+	}
+	else
+	{
+		State.Enabled = 1;
+		State.CheckState = 0;
+		State.MapId = payload->MapId;
+		State.LoadingFd = -1;
+		State.LoadingFileSize = -1;
+		strncpy(State.MapName, payload->MapName, 128);
+	}
 
     return sizeof(MapOverrideMessage);
 }
@@ -87,8 +100,14 @@ int onServerSentMapIrxModules(void * connection, void * data)
 	if (LOAD_MODULES_STATE == 0)
 		LOAD_MODULES_STATE = 7;
 
-	// kick to logout screen
+	// 
+	loadModules();
 
+	//
+	printf("rpcUSBInit: %d\n", rpcUSBInit());
+
+	//
+	installState = 2;
 
     return 0;
 }
@@ -99,28 +118,23 @@ void loadModules(void)
 	if (LOAD_MODULES_STATE < 7)
 		return;
 
-    // test
-    State.Enabled = 1;
-    State.MapId = 46;
-    State.LoadingFd = -1;
-    State.LoadingFileSize = -1;
+	if (LOAD_MODULES_STATE != 100)
+	{
+		//
+		SifInitRpc(0);
 
-    strncpy(State.MapName, "level44", 128);
+		//if (USB_FS_ID > 0)
+		//	SifUnloadModule(USB_FS_ID);
+		//if (USB_SRV_ID > 0)
+		//	SifUnloadModule(USB_SRV_ID);
 
-	//
-	SifInitRpc(0);
-
-    if (USB_FS_ID > 0)
-        SifUnloadModule(USB_FS_ID);
-    if (USB_SRV_ID > 0)
-        SifUnloadModule(USB_SRV_ID);
-
-	// Load modules
-	printf("Loading MASS: %d\n", USB_FS_ID = SifExecModuleBuffer(USB_FS_BUFFER, USB_FS_SIZE, 0, NULL, NULL));
-	printf("Loading USBSERV: %d\n", USB_SRV_ID = SifExecModuleBuffer(USB_SRV_BUFFER, USB_SRV_SIZE, 0, NULL, NULL));
+		// Load modules
+		printf("Loading MASS: %d\n", USB_FS_ID = SifExecModuleBuffer(USB_FS_BUFFER, USB_FS_SIZE, 0, NULL, NULL));
+		printf("Loading USBSERV: %d\n", USB_SRV_ID = SifExecModuleBuffer(USB_SRV_BUFFER, USB_SRV_SIZE, 0, NULL, NULL));
+	}
 
 	// 
-	printf("rpcUSBInit: %d\n", rpcUSBInit());
+	//initialized = 0;
 
 	LOAD_MODULES_STATE = 100;
 }
@@ -483,6 +497,67 @@ u64 hookedLoadCdvd(u64 a0, u64 a1, u64 a2, u64 a3, u64 t0, u64 t1, u64 t2)
 }
 
 //------------------------------------------------------------------------------
+void onOnlineMenu(void)
+{
+	// call normal draw routine
+	((void (*)(void))0x00707F28)();
+
+	RECT boxRectEnable = {
+		{ 0.1, 0.75 },
+		{ 0.5, 0.75 },
+		{ 0.1, 0.8 },
+		{ 0.5, 0.8 }
+	};
+	RECT boxRectDownload = {
+		{ 0.2, 0.35 },
+		{ 0.8, 0.35 },
+		{ 0.2, 0.65 },
+		{ 0.8, 0.65 }
+	};
+	u32 bgColorEnable = 0x20000000;
+	u32 bgColorDownload = 0x70000000;
+	int activeUi = uiGetActive();
+	if (activeUi != UI_ID_ONLINE_MAIN_MENU)
+		return;
+
+	if (installState == 0)
+	{
+		// if already tried to install then don't show
+		if (LOAD_MODULES_STATE != 0)
+			return;
+
+		// render message
+		gfxScreenSpaceBox(&boxRectEnable, bgColorEnable, bgColorEnable, bgColorEnable, bgColorEnable);
+		gfxScreenSpaceText(SCREEN_WIDTH * 0.3, SCREEN_HEIGHT * 0.7, 1, 1, 0x80FFFFFF, "\x16+\x15 Enable Custom Maps", -1);
+
+		// check for pad input
+		if (padGetButtonDown(0, PAD_L2 | PAD_R1))
+		{
+			if (uiShowYesNoDialog("Enable Custom Maps", "Are you sure?") == 1)
+			{
+				// request irx modules from server
+				SendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_REQUEST_MAP_IRX_MODULES, 0, 0);
+				installState = 1;
+			}
+		}
+	}
+	else if (installState == 1)
+	{
+		// render message
+		gfxScreenSpaceBox(&boxRectDownload, bgColorDownload, bgColorDownload, bgColorDownload, bgColorDownload);
+		gfxScreenSpaceText(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.45, 1, 1, 0x80FFFFFF, "Downloading modules, please wait...", -1);
+	}
+	else if (installState == 2)
+	{
+		uiShowOkDialog("Custom Maps", "Custom maps have been enabled.");
+
+		installState = 3;
+	}
+
+	return;
+}
+
+//------------------------------------------------------------------------------
 void hook(void)
 {
 	// 
@@ -494,17 +569,20 @@ void hook(void)
 	u32 * hookAudioAddr = (u32*)0x0053F970;
 	u32 * hookLoadCdvdAddr = (u32*)0x00163814;
 
+	// menu
+	u32 * menuAddr = (u32*)0x00594CB8;
+
 	// Load modules
 	u32 * hookLoadModulesAddr = (u32*)0x00161364;
 
 	// For some reason we can't load the IRX modules whenever we want
 	// So here we hook into when the game uses rpc calls
 	// This triggers when entering the online profile select, leaving profile select, and logging out.
-	if (*hookLoadModulesAddr == 0x0C054632)
-		*hookLoadModulesAddr = 0x0C000000 | ((u32)(&loadHookFunc) / 4);
+	//if (!initialized || *hookLoadModulesAddr == 0x0C054632)
+	//	*hookLoadModulesAddr = 0x0C000000 | ((u32)(&loadHookFunc) / 4);
 
 	// Install hooks
-	if (*hookLoadAddr == 0x0C058E10)
+	if (!initialized || *hookLoadAddr == 0x0C058E10)
 	{
 		*hookTableAddr = 0x0C000000 | ((u32)(&hookedGetTable) / 4);
 		*hookLoadingScreenAddr = 0x0C000000 | ((u32)&hookedLoadingScreen / 4);
@@ -514,41 +592,12 @@ void hook(void)
 	}
 
 	// These get hooked after the map loads but before the game starts
-	if (*hookMapAddr == 0x0C058E02)
+	if (!initialized || *hookMapAddr == 0x0C058E02)
 		*hookMapAddr = 0x0C000000 | ((u32)(&hookedGetMap) / 4);
-}
 
-//------------------------------------------------------------------------------
-void onOnlineMainMenu(void)
-{
-	RECT boxRect = {
-		{ 0.1, 0.75 },
-		{ 0.5, 0.75 },
-		{ 0.1, 0.8 },
-		{ 0.5, 0.8 }
-	};
-	u32 bgColor = 0x20000000;
-	int activeUi = uiGetActive();
-	if (activeUi != UI_ID_ONLINE_MAIN_MENU)
-		return;
-
-	// if already tried to install then don't show
-	if (LOAD_MODULES_STATE != 0)
-		return;
-
-	// render message
-	gfxScreenSpaceBox(&boxRect, bgColor, bgColor, bgColor, bgColor);
-	gfxScreenSpaceText(SCREEN_WIDTH * 0.3, SCREEN_HEIGHT * 0.7, 1, 1, 0x80FFFFFF, "\x16+\x15 Enable Custom Maps", -1);
-
-	// check for pad input
-	if (padGetButtonDown(0, PAD_L2 | PAD_R1))
-	{
-		if (uiShowYesNoDialog("Enable Custom Maps", "Are you sure?") == 1)
-		{
-			// request irx modules from server
-			SendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_REQUEST_MAP_IRX_MODULES, 0, 0);
-		}
-	}
+	// Hook menu loop
+	if (!initialized || *menuAddr == 0x0C1C1FCA)
+		*menuAddr = 0x0C000000 | ((u32)(&onOnlineMenu) / 4);
 }
 
 //------------------------------------------------------------------------------
@@ -561,16 +610,27 @@ void runMapLoader(void)
     // hook irx module loading 
     hook();
 
-	//
-	onOnlineMainMenu();
-
 	// 
 	if (!initialized)
 	{
+		// set map loader defaults
+		State.Enabled = 0;
+		State.CheckState = 0;
+
 		// Reinitialize usb if its already loaded
-		if (LOAD_MODULES_STATE == 100)
-			printf("rpcUSBInit: %d\n", rpcUSBInit());
+		//if (LOAD_MODULES_STATE == 100)
+		//	printf("rpcUSBInit: %d\n", rpcUSBInit());
 
 		initialized = 1;
+	}
+
+	// force map id to current map override if in staging
+	if (State.Enabled == 1 && !isInGame())
+	{
+		GameSettings * settings = getGameSettings();
+		if (settings)
+		{
+			settings->GameLevel = State.MapId;
+		}
 	}
 }

@@ -8,6 +8,8 @@
 #define CMD_USBREAD			0x04
 #define CMD_USBSEEK			0x05
 
+#define RPCCLIENT_INITED (*(int*)0x0009EFFC)
+
 static SifRpcClientData_t * rpcclient = (SifRpcClientData_t*)0x0009F000;
 static int Rpc_Buffer[16] 			__attribute__((aligned(64)));
 
@@ -43,14 +45,13 @@ static struct { 		// size =
 // stores command currently being executed on the iop
 static unsigned int currentCmd = 0;
 
-static int RPCclient_Inited = 0;
 
 //--------------------------------------------------------------
 int rpcUSBInit(void)
 {
 	int ret = 0;
 
-	if (RPCclient_Inited)
+	if (RPCCLIENT_INITED)
 		return -1;
 
 	SifInitRpc(0);
@@ -66,7 +67,7 @@ int rpcUSBInit(void)
 	} while (rpcclient->server == NULL);
  	
 	// successfully inited
-	RPCclient_Inited = 1;
+	RPCCLIENT_INITED = 1;
 
 	return 1;
 }
@@ -74,7 +75,7 @@ int rpcUSBInit(void)
 //--------------------------------------------------------------
 int rpcUSBReset(void)
 {
-	RPCclient_Inited = 0;
+	RPCCLIENT_INITED = 0;
 	rpcclient->server = NULL;
 	return 1; 
 }
@@ -85,7 +86,7 @@ int rpcUSBopen(char *filename, int flags)
 	int ret = 0;
 
 	// check lib is inited
-	if (!RPCclient_Inited)
+	if (!RPCCLIENT_INITED)
 		return -1;
 			
 	// set global variables
@@ -112,7 +113,7 @@ int rpcUSBwrite(int fd, u8 *buf, int size)
 	int ret = 0;
 
 	// check lib is inited
-	if (!RPCclient_Inited)
+	if (!RPCCLIENT_INITED)
 		return -1;
 			
 	// set global variables
@@ -139,7 +140,7 @@ int rpcUSBclose(int fd)
 	int ret = 0;
 
 	// check lib is inited
-	if (!RPCclient_Inited)
+	if (!RPCCLIENT_INITED)
 		return -1;
 			
 	// set global variables
@@ -160,7 +161,7 @@ int rpcUSBread(int fd, void *buf, int size)
 	int ret = 0;
 
 	// check lib is inited
-	if (!RPCclient_Inited)
+	if (!RPCCLIENT_INITED)
 		return -1;
 			
 	// set global variables
@@ -185,7 +186,7 @@ int rpcUSBseek(int fd, int offset, int whence)
 	int ret = 0;
 
 	// check lib is inited
-	if (!RPCclient_Inited)
+	if (!RPCCLIENT_INITED)
 		return -1;
 			
 	// set global variables

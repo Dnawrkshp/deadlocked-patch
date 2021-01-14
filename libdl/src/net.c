@@ -1,6 +1,7 @@
 #include <tamtypes.h>
 #include "stdio.h"
 #include "net.h"
+#include "string.h"
 
 
 #define GET_MEDIUS_APP_HANDLER_HOOK         (*(u32*)0x01EAAB10)
