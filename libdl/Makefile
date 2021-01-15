@@ -31,6 +31,7 @@ install: all
 
 clean:
 	rm -f -r $(EE_OBJS_DIR)
+	rm -f -r $(EE_LIB_DIR)
 
 sample:
 

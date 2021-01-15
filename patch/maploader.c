@@ -20,18 +20,11 @@
 #include <io_common.h>
 
 #define MAP_FRAG_PAYLOAD_MAX_SIZE               (1024)
-#define LOAD_MODULES_STATE                      (*(u8*)0x000AFF00)
+#define LOAD_MODULES_STATE                      (*(u8*)0x000EFF00)
 #define HAS_LOADED_MODULES                      (LOAD_MODULES_STATE == 100)
 
-#define USB_FS_PATH                             ("/usbhdfsd.irx")
-#define USB_FS_SIZE                             (51245)
-#define USB_FS_BUFFER                           ((void*)0x00090000)
-#define USB_FS_ID                               (*(u8*)0x000AFF04)
-
-#define USB_SRV_PATH                            ("/usbserv.irx")
-#define USB_SRV_SIZE                            (4029)
-#define USB_SRV_BUFFER                          ((void*)0x0009D000)
-#define USB_SRV_ID                              (*(u8*)0x000AFF08)
+#define USB_FS_ID                               (*(u8*)0x000EFF04)
+#define USB_SRV_ID                              (*(u8*)0x000EFF08)
 
 
 void hook(void);
@@ -40,6 +33,10 @@ void loadModules(void);
 int readLevelVersion(char * name, int * version);
 int readGlobalVersion(int * version);
 
+void * usbFsModuleStart = (void*)0x000E0000;
+int usbFsModuleSize = 0;
+void * usbSrvModuleStart = (void*)0x000ED000;
+int usbSrvModuleSize = 0;
 
 enum MenuActionId
 {
@@ -57,6 +54,7 @@ enum MenuActionId
 int fd;
 int initialized = 0;
 int actionState = ACTION_MODULES_NOT_INSTALLED;
+int rpcInit = 0;
 
 // 
 char membuffer[256];
@@ -79,9 +77,17 @@ typedef struct MapOverrideResponseMessage
 	int Version;
 } MapOverrideResponseMessage;
 
+typedef struct MapClientRequestModulesMessage
+{
+	u32 Module1Start;
+	u32 Module2Start;
+} MapClientRequestModulesMessage;
+
 typedef struct MapServerSentModulesMessage
 {
 	int Version;
+	int Module1Size;
+	int Module2Size;
 } MapServerSentModulesMessage;
 
 struct MapLoaderState
@@ -142,15 +148,21 @@ int onServerSentMapIrxModules(void * connection, void * data)
     printf("server sent map irx modules\n");
 #endif
 
+	MapServerSentModulesMessage * msg = (MapServerSentModulesMessage*)data;
+
 	// initiate loading
 	if (LOAD_MODULES_STATE == 0)
 		LOAD_MODULES_STATE = 7;
 
 	// 
+	usbFsModuleSize = msg->Module1Size;
+	usbSrvModuleSize = msg->Module2Size;
+
+	// 
 	loadModules();
 
 	//
-	int init = rpcUSBInit();
+	int init = rpcInit = rpcUSBInit();
 
 #if DEBUG
 	printf("rpcUSBInit: %d\n", init);
@@ -163,7 +175,7 @@ int onServerSentMapIrxModules(void * connection, void * data)
 	}
 	else
 	{
-		int remoteVersion = *(int*)data;
+		int remoteVersion = msg->Version;
 		int localVersion = 0;
 		if (!readGlobalVersion(&localVersion) || localVersion != remoteVersion)
 		{
@@ -192,8 +204,8 @@ void loadModules(void)
 		SifInitRpc(0);
 
 		// Load modules
-		USB_FS_ID = SifExecModuleBuffer(USB_FS_BUFFER, USB_FS_SIZE, 0, NULL, NULL);
-		USB_SRV_ID = SifExecModuleBuffer(USB_SRV_BUFFER, USB_SRV_SIZE, 0, NULL, NULL);
+		USB_FS_ID = SifExecModuleBuffer(usbFsModuleStart, usbFsModuleSize, 0, NULL, NULL);
+		USB_SRV_ID = SifExecModuleBuffer(usbSrvModuleStart, usbSrvModuleSize, 0, NULL, NULL);
 
 #if DEBUG
 		printf("Loading MASS: %d\n", USB_FS_ID);
@@ -728,9 +740,20 @@ void onOnlineMenu(void)
 	};
 	u32 bgColorEnable = 0x20000000;
 	u32 bgColorDownload = 0x70000000;
+	MapClientRequestModulesMessage request = { 0, 0 };
 	int activeUi = uiGetActive();
 	if (activeUi != UI_ID_ONLINE_MAIN_MENU)
 		return;
+
+#if DEBUG
+	if (LOAD_MODULES_STATE == 100)
+	{
+		// render message
+		gfxScreenSpaceBox(&boxRectDownload, bgColorDownload, bgColorDownload, bgColorDownload, bgColorDownload);
+		sprintf(membuffer, "FS:%d. SERV:%d, RPC:%d", USB_FS_ID, USB_SRV_ID, rpcInit);
+		gfxScreenSpaceText(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.45, 1, 1, 0x80FFFFFF, membuffer, -1);
+	}
+#endif
 
 	if (actionState == ACTION_MODULES_NOT_INSTALLED)
 	{
@@ -748,16 +771,27 @@ void onOnlineMenu(void)
 			if (uiShowYesNoDialog("Enable Custom Maps", "Are you sure?") == 1)
 			{
 				// request irx modules from server
-				SendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_REQUEST_MAP_IRX_MODULES, 0, 0);
+				request.Module1Start = (u32)usbFsModuleStart;
+				request.Module2Start = (u32)usbSrvModuleStart;
+				SendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_REQUEST_MAP_IRX_MODULES, sizeof(MapClientRequestModulesMessage), &request);
 				actionState = ACTION_DOWNLOADING_MODULES;
 			}
 		}
 	}
 	else if (actionState == ACTION_DOWNLOADING_MODULES)
 	{
-		// render message
+		// render background
 		gfxScreenSpaceBox(&boxRectDownload, bgColorDownload, bgColorDownload, bgColorDownload, bgColorDownload);
-		gfxScreenSpaceText(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.45, 1, 1, 0x80FFFFFF, "Downloading modules, please wait...", -1);
+
+		// flash color
+		u32 downloadColor = 0x80808080;
+		int gameTime = ((getGameTime()/100) % 15);
+		if (gameTime > 7)
+			gameTime = 15 - gameTime;
+		downloadColor += 0x101010 * gameTime;
+
+		// render text
+		gfxScreenSpaceText(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.45, 1, 1, downloadColor, "Downloading modules, please wait...", -1);
 	}
 	else if (actionState == ACTION_MODULES_INSTALLED)
 	{
@@ -767,7 +801,7 @@ void onOnlineMenu(void)
 	}
 	else if (actionState == ACTION_NEW_MAPS_UPDATE)
 	{
-		uiShowOkDialog("Custom Maps", "New updates are available. Please download them at {}");
+		uiShowOkDialog("Custom Maps", "New updates are available. Please download them at https://dl.uyaonline.com/maps");
 		actionState = ACTION_MODULES_INSTALLED;
 	}
 	else if (actionState == ACTION_ERROR_LOADING_MODULES)
