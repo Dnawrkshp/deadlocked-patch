@@ -23,8 +23,7 @@
 #include "stdio.h"
 #include "gamesettings.h"
 #include "dialog.h"
-
-
+#include "patch.h"
 
 /*
  * Array of game modules.
@@ -60,6 +59,7 @@
 
 // 
 void processSpectate(void);
+void runMapLoader(void);
 
 /*
  * NAME :		patchCameraSpeed
@@ -441,6 +441,12 @@ int main (void)
 {
 	// Call this first
 	dlPreUpdate();
+
+	// Patch sif rpc
+	patchSifRpc();
+
+	// Run map loader
+	runMapLoader();
 
 	// Patch camera speed
 	patchCameraSpeed();

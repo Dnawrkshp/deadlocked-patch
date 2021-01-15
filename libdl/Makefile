@@ -7,7 +7,8 @@ EE_INCS += -I./include -I$(EE_SRC_DIR)
 EE_LIB = $(EE_LIB_DIR)libdl.a
 EE_OBJS = libc.o math.o pad.o cheats.o moby.o game.o gamesettings.o \
 			sha1.o weapon.o hud.o player.o team.o math3d.o dl.o \
-			vehicle.o spawnpoint.o dialog.o map.o graphics.o
+			vehicle.o spawnpoint.o dialog.o map.o graphics.o \
+			net.o patch.o mc.o ui.o
 
 EE_OBJS := $(EE_OBJS:%=$(EE_OBJS_DIR)%)
 
@@ -30,6 +31,7 @@ install: all
 
 clean:
 	rm -f -r $(EE_OBJS_DIR)
+	rm -f -r $(EE_LIB_DIR)
 
 sample:
 
