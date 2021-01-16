@@ -54,6 +54,8 @@
 #define GAMESETTINGS_RESPAWN_TIME      	(*(u8*)0x0017380C)
 #define GAMESETTINGS_RESPAWN_TIME2      (*(u8*)0x012B3638)
 
+#define GAMESETTINGS_SURVIVOR			(*(u8*)0x00173806)
+
 #define FRAME_SKIP_WRITE0				(*(u32*)0x004A9400)
 #define FRAME_SKIP						(*(u32*)0x0021E1D8)
 
@@ -286,8 +288,9 @@ void patchPopulateCreateGame()
  */
 u64 patchCreateGame_Hook(void * a0)
 {
-	// Save respawn timer
-	GAMESETTINGS_RESPAWN_TIME = GAMESETTINGS_RESPAWN_TIME2;
+	// Save respawn timer if not survivor
+	if (!GAMESETTINGS_SURVIVOR)
+		GAMESETTINGS_RESPAWN_TIME = GAMESETTINGS_RESPAWN_TIME2;
 
 	// Load normal
 	return ((u64 (*)(void *))GAMESETTINGS_CREATE_FUNC)(a0);
