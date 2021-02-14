@@ -488,11 +488,7 @@ void lobbyStart(GameModule * module)
 	GameSettings * gameSettings = gameGetSettings();
 
 	// If we're not in staging then reset
-	if (!gameSettings)
-		return;
-
-	// Check we're not loading
-	if (gameSettings->GameLoadStartTime > 0)
+	if (gameSettings)
 		return;
 
 	// Reset
