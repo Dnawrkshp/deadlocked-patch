@@ -14,18 +14,19 @@
 #include <tamtypes.h>
 #include <string.h>
 
-#include "stdio.h"
-#include "math.h"
-#include "math3d.h"
-#include "time.h"
+#include <libdl/stdio.h>
+#include <libdl/math.h>
+#include <libdl/math3d.h>
+#include <libdl/time.h>
+#include <libdl/game.h>
+#include <libdl/gamesettings.h>
+#include <libdl/player.h>
+#include <libdl/cheats.h>
+#include <libdl/sha1.h>
+#include <libdl/map.h>
+#include <libdl/dialog.h>
+#include <libdl/ui.h>
 #include "module.h"
-#include "game.h"
-#include "gamesettings.h"
-#include "player.h"
-#include "cheats.h"
-#include "sha1.h"
-#include "map.h"
-#include "dialog.h"
 
 #define MAX_MAP_MOBY_DEFS		(10)
 #define MAX_WATER_RATE			(0.03)
@@ -128,11 +129,11 @@ Moby * spawnWithPVars(int mobyId)
 {
 	switch (mobyId)
 	{
-		case MOBY_ID_VEHICLE_PAD: return spawnMoby(mobyId, 0x60);
-		case MOBY_ID_PICKUP_PAD: return spawnMoby(mobyId, 0x90);
-		case MOBY_ID_TELEPORT_PAD: return spawnMoby(mobyId, 0xD0);
-		case MOBY_ID_TURRET_SHIELD_UPGRADE: return spawnMoby(mobyId, 0xD0);
-		default: return spawnMoby(mobyId, 0);
+		case MOBY_ID_VEHICLE_PAD: return mobySpawn(mobyId, 0x60);
+		case MOBY_ID_PICKUP_PAD: return mobySpawn(mobyId, 0x90);
+		case MOBY_ID_TELEPORT_PAD: return mobySpawn(mobyId, 0xD0);
+		case MOBY_ID_TURRET_SHIELD_UPGRADE: return mobySpawn(mobyId, 0xD0);
+		default: return mobySpawn(mobyId, 0);
 	}
 }
 
@@ -167,9 +168,7 @@ Moby * spawn(MobyDef * def, VECTOR position, VECTOR rotation, float scale)
 	sourceBox->AnimationPointer = StartUNK_80;
 
 	// 
-#if DEBUG
-	printf("source: %08x\n", (u32)sourceBox);
-#endif
+	DPRINTF("source: %08x\n", (u32)sourceBox);
 
 	return sourceBox;
 }
@@ -186,7 +185,7 @@ struct ClimbChain * GetFreeChain(void)
 
 void DestroyOld(void)
 {
-	Moby ** mobies = getLoadedMobies();
+	Moby ** mobies = mobyGetLoaded();
 	Moby * moby;
 
 	while ((moby = *mobies++))
@@ -222,7 +221,7 @@ void GenerateNext(struct ClimbChain * chain, MobyDef * currentItem, float scale)
 
 void spawnTick(void)
 {
-	int gameTime = getGameTime();
+	int gameTime = gameGetTime();
 	int chainIndex = 0;
 	VECTOR rot;
 	float scale;
@@ -262,7 +261,7 @@ void spawnTick(void)
 
 					// Determine next object
 					GenerateNext(branchChain, currentItem, scale);
-					playDialogSound(BranchDialogs[RandomRangeShort(0, sizeof(BranchDialogs)/sizeof(int)-1)], 0);
+					dialogPlaySound(BranchDialogs[RandomRangeShort(0, sizeof(BranchDialogs)/sizeof(int)-1)], 0);
 				}
 
 				chain->LastBranch = gameTime;
@@ -273,9 +272,9 @@ void spawnTick(void)
 		}
 
 		if(MobyCount == 0)
-			playDialogSound(StartDialogs[RandomRangeShort(0, sizeof(BranchDialogs)/sizeof(int)-1)], 0);
+			dialogPlaySound(StartDialogs[RandomRangeShort(0, sizeof(BranchDialogs)/sizeof(int)-1)], 0);
 		else if(MobyCount % 20 == 0)
-			playDialogSound(IncrementalDialogs[RandomRangeShort(0, sizeof(BranchDialogs)/sizeof(int)-1)], 0);
+			dialogPlaySound(IncrementalDialogs[RandomRangeShort(0, sizeof(BranchDialogs)/sizeof(int)-1)], 0);
 
 
 		// 
@@ -299,7 +298,7 @@ void spawnTick(void)
 	((float*)WaterMoby->PropertiesPointer)[19] = WaterHeight;
 
 	// Set death barrier
-	setDeathHeight(WaterHeight);
+	gameSetDeathHeight(WaterHeight);
 }
 
 /*
@@ -323,16 +322,16 @@ void initialize(void)
 	int i;
 
 	// 
-	GameSettings * gameSettings = getGameSettings();
+	GameSettings * gameSettings = gameGetSettings();
 
 	// Init seed
 	shaBuffer = (short)gameSettings->GameLoadStartTime;
 
 	// Set survivor
-	setGameSurvivor(1);
+	gameSetSurvivor(1);
 
 	// get water moby
-	WaterMoby = getWaterMoby();
+	WaterMoby = mobyGetWater();
 	WaterHeight = ((float*)WaterMoby->PropertiesPointer)[19];
 
 	// 
@@ -432,7 +431,7 @@ void initialize(void)
 	memset(Chains, 0, sizeof(Chains));
 	Chains[0].Active = 1;
 	vector_copy(Chains[0].CurrentPosition, startPos);
-	Chains[0].LastBranch = LastSpawn = getGameTime();
+	Chains[0].LastBranch = LastSpawn = gameGetTime();
 
 
 	Initialized = 1;
@@ -455,12 +454,12 @@ void initialize(void)
  */
 void gameStart(void)
 {
-	GameSettings * gameSettings = getGameSettings();
-	Player ** players = getPlayers();
+	GameSettings * gameSettings = gameGetSettings();
+	Player ** players = playerGetAll();
 	int i;
 
 	// Ensure in game
-	if (!gameSettings || !isInGame())
+	if (!gameSettings || !gameIsIn())
 		return;
 
 	if (!Initialized)

@@ -14,19 +14,19 @@
 #include <tamtypes.h>
 #include <string.h>
 
-#include "time.h"
+#include <libdl/time.h>
+#include <libdl/game.h>
+#include <libdl/gamesettings.h>
+#include <libdl/map.h>
+#include <libdl/player.h>
+#include <libdl/cheats.h>
+#include <libdl/stdio.h>
+#include <libdl/pad.h>
+#include <libdl/dl.h>
+#include <libdl/spawnpoint.h>
+#include <libdl/graphics.h>
 #include "module.h"
-#include "game.h"
-#include "gamesettings.h"
-#include "map.h"
-#include "player.h"
-#include "cheats.h"
-#include "stdio.h"
-#include "pad.h"
-#include "dl.h"
-#include "spawnpoint.h"
 #include "halftime.h"
-#include "graphics.h"
 
 /*
  * Gamerule ids.
@@ -49,6 +49,11 @@ enum GameRuleIdBitMask
  *
  */
 int Initialized = 0;
+
+/*
+ *
+ */
+int betterHillsInitialized = 0;
 
 /*
  *
@@ -163,10 +168,7 @@ enum BETTER_HILL_PTS
 	GS_23 = 20,
 	TEMPUS_16 = 21,
 	TEMPUS_17 = 22,
-	TEMPUS_18 = 23,
-
-
-
+	TEMPUS_18 = 23
 };
 
 /*
@@ -186,9 +188,9 @@ enum BETTER_HILL_PTS
 void vampireLogic(GameModule * module)
 {
 	int i;
-	Player ** playerObjects = getPlayers();
+	Player ** playerObjects = playerGetAll();
 	Player * player;
-	PlayerGameStats * stats = getPlayerGameStats();
+	PlayerGameStats * stats = gameGetPlayerStats();
 
 	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
 	{
@@ -205,8 +207,6 @@ void vampireLogic(GameModule * module)
 		}
 	}
 }
-
-int betterHillsInitialized = 0;
 
 /*
  * NAME :		betterHillsLogic
@@ -231,70 +231,70 @@ void betterHillsLogic(GameModule * module)
 	betterHillsInitialized = 1;
 
 	// 
-	switch (getGameSettings()->GameLevel)
+	switch (gameGetSettings()->GameLevel)
 	{
 		case MAP_ID_CATACROM:
 		{
-			setSpawnPoint(&BetterHillPoints[CATACROM_0D], 0x0D);
-			setSpawnPoint(&BetterHillPoints[CATACROM_11], 0x11);
+			spawnPointSet(&BetterHillPoints[CATACROM_0D], 0x0D);
+			spawnPointSet(&BetterHillPoints[CATACROM_11], 0x11);
 			break;
 		}
 		case MAP_ID_SARATHOS:
 		{
-			setSpawnPoint(&BetterHillPoints[SARATHOS_11], 0x11);
-			setSpawnPoint(&BetterHillPoints[SARATHOS_14], 0x0E);
+			spawnPointSet(&BetterHillPoints[SARATHOS_11], 0x11);
+			spawnPointSet(&BetterHillPoints[SARATHOS_14], 0x0E);
 			break;
 		}
 		case MAP_ID_DC:
 		{
-			setSpawnPoint(&BetterHillPoints[DC_11], 0x0C);
-			setSpawnPoint(&BetterHillPoints[DC_16], 0x10);
-			setSpawnPoint(&BetterHillPoints[DC_14], 0x0E);
-			setSpawnPoint(&BetterHillPoints[DC_17], 0x11);
+			spawnPointSet(&BetterHillPoints[DC_11], 0x0C);
+			spawnPointSet(&BetterHillPoints[DC_16], 0x10);
+			spawnPointSet(&BetterHillPoints[DC_14], 0x0E);
+			spawnPointSet(&BetterHillPoints[DC_17], 0x11);
 			break;
 		}
 		case MAP_ID_SHAAR: 
 		{
-			setSpawnPoint(&BetterHillPoints[SHAAR_14], 0x14);
-			setSpawnPoint(&BetterHillPoints[SHAAR_17], 0x17);
+			spawnPointSet(&BetterHillPoints[SHAAR_14], 0x14);
+			spawnPointSet(&BetterHillPoints[SHAAR_17], 0x17);
 			break;
 		}
 		case MAP_ID_VALIX: 
 		{
-			setSpawnPoint(&BetterHillPoints[VALIX_13], 0x0D);
-			setSpawnPoint(&BetterHillPoints[VALIX_16], 0x10);
+			spawnPointSet(&BetterHillPoints[VALIX_13], 0x0D);
+			spawnPointSet(&BetterHillPoints[VALIX_16], 0x10);
 			break;
 		}
 		case MAP_ID_MF:
 		{
-			setSpawnPoint(&BetterHillPoints[MF_20], 0x14);
-			setSpawnPoint(&BetterHillPoints[MF_22], 0x16);
-			setSpawnPoint(&BetterHillPoints[MF_24], 0x18);
+			spawnPointSet(&BetterHillPoints[MF_20], 0x14);
+			spawnPointSet(&BetterHillPoints[MF_22], 0x16);
+			spawnPointSet(&BetterHillPoints[MF_24], 0x18);
 			break;
 		}
 		case MAP_ID_TEMPUS:
 		{
-			setSpawnPoint(&BetterHillPoints[TEMPUS_16], 0x10);
-			setSpawnPoint(&BetterHillPoints[TEMPUS_17], 0x11);
-			setSpawnPoint(&BetterHillPoints[TEMPUS_18], 0x12);
+			spawnPointSet(&BetterHillPoints[TEMPUS_16], 0x10);
+			spawnPointSet(&BetterHillPoints[TEMPUS_17], 0x11);
+			spawnPointSet(&BetterHillPoints[TEMPUS_18], 0x12);
 			break;
 		}
 		case MAP_ID_MARAXUS: 
 		{
-			setSpawnPoint(&BetterHillPoints[MARAXUS_13], 0x13);
+			spawnPointSet(&BetterHillPoints[MARAXUS_13], 0x13);
 			break;
 		}
 		case MAP_ID_GS:
 		{
-			setSpawnPoint(&BetterHillPoints[GS_20], 0x14);
-			setSpawnPoint(&BetterHillPoints[GS_21], 0x15);
-			setSpawnPoint(&BetterHillPoints[GS_22], 0x16);
-			setSpawnPoint(&BetterHillPoints[GS_23], 0x17);
+			spawnPointSet(&BetterHillPoints[GS_20], 0x14);
+			spawnPointSet(&BetterHillPoints[GS_21], 0x15);
+			spawnPointSet(&BetterHillPoints[GS_22], 0x16);
+			spawnPointSet(&BetterHillPoints[GS_23], 0x17);
 			break;
 		}
 		case MAP_ID_TORVAL:
 		{
-			setSpawnPoint(&BetterHillPoints[TORVAL_13], 0x13);
+			spawnPointSet(&BetterHillPoints[TORVAL_13], 0x13);
 			break;
 		}
 	}
@@ -318,9 +318,9 @@ void healthbarsLogic(GameModule * module)
 {
 	float distanceScale = 0;
 
-	if (isInGame())
+	if (gameIsIn())
 	{
-		Player ** players = getPlayers();
+		Player ** players = playerGetAll();
 		Player * localPlayer = (Player*)0x00347AA0;
 		int px, py, i;
 
@@ -328,7 +328,7 @@ void healthbarsLogic(GameModule * module)
 		{
 			Player * player = players[i];
 			VECTOR temp;
-			if (!player || isLocal(player) || player->Health <= 0)
+			if (!player || playerIsLocal(player) || player->Health <= 0)
 				continue;
 
 			// Check distance
@@ -485,7 +485,7 @@ void gameStart(GameModule * module)
  */
 void lobbyStart(GameModule * module)
 {
-	GameSettings * gameSettings = getGameSettings();
+	GameSettings * gameSettings = gameGetSettings();
 
 	// If we're not in staging then reset
 	if (!gameSettings)

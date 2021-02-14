@@ -1,7 +1,6 @@
 
 
 all:
-	$(MAKE) -C libdl
 	$(MAKE) -C patch
 	$(MAKE) -C spleef
 	$(MAKE) -C infected
@@ -11,7 +10,6 @@ all:
 	$(MAKE) -C race
 	
 clean:
-	$(MAKE) -C libdl clean
 	$(MAKE) -C patch clean
 	$(MAKE) -C spleef clean
 	$(MAKE) -C infected clean

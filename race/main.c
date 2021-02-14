@@ -12,17 +12,17 @@
 #include <tamtypes.h>
 #include <string.h>
 
-#include "stdio.h"
-#include "math.h"
-#include "math3d.h"
-#include "time.h"
+#include <libdl/stdio.h>
+#include <libdl/math.h>
+#include <libdl/math3d.h>
+#include <libdl/time.h>
+#include <libdl/game.h>
+#include <libdl/gamesettings.h>
+#include <libdl/player.h>
+#include <libdl/cheats.h>
+#include <libdl/sha1.h>
+#include <libdl/map.h>
 #include "module.h"
-#include "game.h"
-#include "gamesettings.h"
-#include "player.h"
-#include "cheats.h"
-#include "sha1.h"
-#include "map.h"
 
 typedef struct BezierPoint
 {
@@ -197,7 +197,7 @@ Moby * spawn(int mobyId, VECTOR position, VECTOR rotation, float scale)
 	Moby * sourceBox;
 
 	// Spawn
-	sourceBox = spawnMoby(mobyId, 0);
+	sourceBox = mobySpawn(mobyId, 0);
 
 	// 
 	position[3] = sourceBox->Position[3];
@@ -310,7 +310,7 @@ void spawnTrack(void)
 void initialize(void)
 {
 	// 
-	GameSettings * gameSettings = getGameSettings();
+	GameSettings * gameSettings = gameGetSettings();
 
 	//
 	if (gameSettings->GameLevel == MAP_ID_SARATHOS)
@@ -336,12 +336,12 @@ void initialize(void)
  */
 void gameStart(void)
 {
-	GameSettings * gameSettings = getGameSettings();
-	Player ** players = getPlayers();
+	GameSettings * gameSettings = gameGetSettings();
+	Player ** players = playerGetAll();
 	int i;
 
 	// Ensure in game
-	if (!gameSettings || !isInGame())
+	if (!gameSettings || !gameIsIn())
 		return;
 
 	if (!Initialized)

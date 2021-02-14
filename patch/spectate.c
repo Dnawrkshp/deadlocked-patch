@@ -13,13 +13,14 @@
 
 #include <tamtypes.h>
 
-#include "string.h"
-#include "player.h"
-#include "game.h"
-#include "gamesettings.h"
-#include "stdio.h"
-#include "pad.h"
-#include "hud.h"
+#include <libdl/string.h>
+#include <libdl/player.h>
+#include <libdl/game.h>
+#include <libdl/gamesettings.h>
+#include <libdl/stdio.h>
+#include <libdl/pad.h>
+#include <libdl/hud.h>
+#include <libdl/ui.h>
 
 
 /*
@@ -100,8 +101,8 @@ void enableSpectate(Player * player, struct PlayerSpectateData * data)
     *(u32*)0x004DB88C = 0;
 
     data->Enabled = 1;
-    getPlayerHUDFlags(player->LocalPlayerIndex)->Weapons = 0;
-    getPlayerHUDFlags(player->LocalPlayerIndex)->Healthbar = 0;
+    hudGetPlayerFlags(player->LocalPlayerIndex)->Weapons = 0;
+    hudGetPlayerFlags(player->LocalPlayerIndex)->Healthbar = 0;
 }
 
 /*
@@ -118,8 +119,8 @@ void disableSpectate(Player * player, struct PlayerSpectateData * data)
     *(u32*)0x004DB88C = 0xA48200E0;
 
     data->Enabled = 0;
-    getPlayerHUDFlags(player->LocalPlayerIndex)->Weapons = 1;
-    getPlayerHUDFlags(player->LocalPlayerIndex)->Healthbar = 1;
+    hudGetPlayerFlags(player->LocalPlayerIndex)->Weapons = 1;
+    hudGetPlayerFlags(player->LocalPlayerIndex)->Healthbar = 1;
 }
 
 /*
@@ -205,7 +206,7 @@ void spectate(Player * currentPlayer, Player * playerToSpectate)
                 elevation = VEHICLE_ELEVATION[6 + isPassenger];
 
                 // Get passenger camera rotation -- only works with local
-                if (isPassenger && isLocal(playerToSpectate))
+                if (isPassenger && playerIsLocal(playerToSpectate))
                 {
                     float * props = (float*)((*(u32*)((u32)vehicleMoby->PropertiesPointer + 0x10)) + 0x180);
                     pitch = props[1];
@@ -246,7 +247,7 @@ void spectate(Player * currentPlayer, Player * playerToSpectate)
 
 int findNextPlayerIndex(int currentPlayerIndex, int currentSpectateIndex, int direction)
 {
-    Player ** players = getPlayers();
+    Player ** players = playerGetAll();
 
     int newIndex = currentSpectateIndex;
 
@@ -282,15 +283,15 @@ void initialize(void)
 
 void processSpectate(void) 
 {
-    GameSettings * gameSettings = getGameSettings();
-	Player ** players = getPlayers();
+    GameSettings * gameSettings = gameGetSettings();
+	Player ** players = playerGetAll();
     struct PlayerSpectateData * spectateData = 0;
     int i = 0;
     int direction = 0;
     int spectateIndex = 0;
 
     // First, we have to ensure we are in-game
-	if (!gameSettings || !isInGame()) 
+	if (!gameSettings || !gameIsIn()) 
     {
         SpectateData->Enabled = 0;
         Initialized = 0;
@@ -309,7 +310,7 @@ void processSpectate(void)
 		Player * player = players[i];
 
         // Next, we have to ensure the player is the local player and they are dead
-	    if (isLocal(player)) 
+	    if (playerIsLocal(player)) 
         {
             // Grab player-specific spectate data
             spectateData = SpectateData + player->LocalPlayerIndex;
@@ -324,7 +325,7 @@ void processSpectate(void)
                     if (!spectateData->HasShownEnterMsg) 
                     {
                         spectateData->HasShownEnterMsg = 1;
-                        showHelpPopup(player->LocalPlayerIndex, "Press \x13 to enter spectate mode.", 5);
+                        uiShowHelpPopup(player->LocalPlayerIndex, "Press \x13 to enter spectate mode.", 5);
                     }
 
                     // When the player presses square and spectate isn't already enabled. Try to enable it.
@@ -362,7 +363,7 @@ void processSpectate(void)
                     if (!spectateData->HasShownNavMsg) 
                     {
                         spectateData->HasShownNavMsg = 1;
-                        showHelpPopup(player->LocalPlayerIndex, "Use \x14 and \x15 to navigate between players.", 10);
+                        uiShowHelpPopup(player->LocalPlayerIndex, "Use \x14 and \x15 to navigate between players.", 10);
                     }
                     
                     // If the currently spectated player becomes null, we move forward to the next player            

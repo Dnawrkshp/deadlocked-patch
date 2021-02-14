@@ -1,14 +1,14 @@
-#include "stdio.h"
-#include "net.h"
+#include <libdl/stdio.h>
+#include <libdl/net.h>
 #include "rpc.h"
 #include "messageid.h"
-#include "mc.h"
-#include "string.h"
-#include "ui.h"
-#include "graphics.h"
-#include "pad.h"
-#include "gamesettings.h"
-#include "game.h"
+#include <libdl/mc.h>
+#include <libdl/string.h>
+#include <libdl/ui.h>
+#include <libdl/graphics.h>
+#include <libdl/pad.h>
+#include <libdl/gamesettings.h>
+#include <libdl/game.h>
 
 #include <sifcmd.h>
 #include <iopheap.h>
@@ -119,12 +119,10 @@ int onSetMapOverride(void * connection, void * data)
 		else if (!readLevelVersion(payload->MapName, &version))
 			version = -2;
 
-#if DEBUG
-    	printf("MapId:%d MapName:%s Version:%d\n", payload->MapId, payload->MapName, version);
-#endif
+    	DPRINTF("MapId:%d MapName:%s Version:%d\n", payload->MapId, payload->MapName, version);
 
 		// send response
-		SendCustomAppMessage(connection, CUSTOM_MSG_ID_SET_MAP_OVERRIDE_RESPONSE, 4, &version);
+		netSendCustomAppMessage(connection, CUSTOM_MSG_ID_SET_MAP_OVERRIDE_RESPONSE, 4, &version);
 
 		// enable
 		if (version >= 0)
@@ -144,9 +142,7 @@ int onSetMapOverride(void * connection, void * data)
 //------------------------------------------------------------------------------
 int onServerSentMapIrxModules(void * connection, void * data)
 {
-#if DEBUG
-    printf("server sent map irx modules\n");
-#endif
+    DPRINTF("server sent map irx modules\n");
 
 	MapServerSentModulesMessage * msg = (MapServerSentModulesMessage*)data;
 
@@ -164,10 +160,8 @@ int onServerSentMapIrxModules(void * connection, void * data)
 	//
 	int init = rpcInit = rpcUSBInit();
 
-#if DEBUG
-	printf("rpcUSBInit: %d\n", init);
-#endif
-
+	DPRINTF("rpcUSBInit: %d\n", init);
+	
 	//
 	if (init < 0)
 	{
@@ -207,10 +201,8 @@ void loadModules(void)
 		USB_FS_ID = SifExecModuleBuffer(usbFsModuleStart, usbFsModuleSize, 0, NULL, NULL);
 		USB_SRV_ID = SifExecModuleBuffer(usbSrvModuleStart, usbSrvModuleSize, 0, NULL, NULL);
 
-#if DEBUG
-		printf("Loading MASS: %d\n", USB_FS_ID);
-		printf("Loading USBSERV: %d\n", USB_SRV_ID);
-#endif
+		DPRINTF("Loading MASS: %d\n", USB_FS_ID);
+		DPRINTF("Loading USBSERV: %d\n", USB_SRV_ID);
 	}
 
 	LOAD_MODULES_STATE = 100;
@@ -238,9 +230,7 @@ int readGlobalVersion(int * version)
 	// Ensure the file was opened successfully
 	if (fd < 0)
 	{
-#if DEBUG
-		printf("error opening file (%s): %d\n", membuffer, fd);
-#endif
+		DPRINTF("error opening file (%s): %d\n", membuffer, fd);
 		return 0;	
 	}
 	
@@ -251,9 +241,7 @@ int readGlobalVersion(int * version)
 	// Check the file has a valid size
 	if (fSize != 4)
 	{
-#if DEBUG
-		printf("error seeking file (%s): %d\n", membuffer, fSize);
-#endif
+		DPRINTF("error seeking file (%s): %d\n", membuffer, fSize);
 		rpcUSBclose(fd);
 		rpcUSBSync(0, NULL, NULL);
 		return 0;
@@ -266,9 +254,7 @@ int readGlobalVersion(int * version)
 	// Read map
 	if (rpcUSBread(fd, (void*)version, 4) != 0)
 	{
-#if DEBUG
-		printf("error reading from file.\n");
-#endif
+		DPRINTF("error reading from file.\n");
 		rpcUSBclose(fd);
 		rpcUSBSync(0, NULL, NULL);
 		return 0;
@@ -297,9 +283,7 @@ int readLevelVersion(char * name, int * version)
 	// Ensure the file was opened successfully
 	if (fd < 0)
 	{
-#if DEBUG
-		printf("error opening file (%s): %d\n", membuffer, fd);
-#endif
+		DPRINTF("error opening file (%s): %d\n", membuffer, fd);
 		return 0;	
 	}
 	
@@ -310,9 +294,7 @@ int readLevelVersion(char * name, int * version)
 	// Check the file has a valid size
 	if (fSize != 4)
 	{
-#if DEBUG
-		printf("error seeking file (%s): %d\n", membuffer, fSize);
-#endif
+		DPRINTF("error seeking file (%s): %d\n", membuffer, fSize);
 		rpcUSBclose(fd);
 		rpcUSBSync(0, NULL, NULL);
 		return 0;
@@ -325,9 +307,7 @@ int readLevelVersion(char * name, int * version)
 	// Read map
 	if (rpcUSBread(fd, (void*)version, 4) != 0)
 	{
-#if DEBUG
-		printf("error reading from file.\n");
-#endif
+		DPRINTF("error reading from file.\n");
 		rpcUSBclose(fd);
 		rpcUSBSync(0, NULL, NULL);
 		return 0;
@@ -356,9 +336,7 @@ int getLevelSizeUsb()
 	// Ensure wad successfully opened
 	if (fd < 0)
 	{
-#if DEBUG
-		printf("error opening file (%s): %d\n", membuffer, fd);
-#endif
+		DPRINTF("error opening file (%s): %d\n", membuffer, fd);
 		return 0;									
 	}
 
@@ -369,9 +347,7 @@ int getLevelSizeUsb()
 	// Check the file has a valid size
 	if (State.LoadingFileSize <= 0)
 	{
-#if DEBUG
-		printf("error seeking file (%s): %d\n", membuffer, State.LoadingFileSize);
-#endif
+		DPRINTF("error seeking file (%s): %d\n", membuffer, State.LoadingFileSize);
 		rpcUSBclose(fd);
 		rpcUSBSync(0, NULL, NULL);
 		fd = -1;
@@ -400,9 +376,7 @@ int readLevelMapUsb(u8 * buf, int size)
 	// Ensure the toc was opened successfully
 	if (fd < 0)
 	{
-#if DEBUG
-		printf("error opening file (%s): %d\n", membuffer, fd);
-#endif
+		DPRINTF("error opening file (%s): %d\n", membuffer, fd);
 		return 0;	
 	}
 	
@@ -413,9 +387,7 @@ int readLevelMapUsb(u8 * buf, int size)
 	// Check the file has a valid size
 	if (fSize <= 0)
 	{
-#if DEBUG
-		printf("error seeking file (%s): %d\n", membuffer, fSize);
-#endif
+		DPRINTF("error seeking file (%s): %d\n", membuffer, fSize);
 		rpcUSBclose(fd);
 		rpcUSBSync(0, NULL, NULL);
 		return 0;
@@ -432,9 +404,7 @@ int readLevelMapUsb(u8 * buf, int size)
 	// Read map
 	if (rpcUSBread(fd, buf, size) != 0)
 	{
-#if DEBUG
-		printf("error reading from file.\n");
-#endif
+		DPRINTF("error reading from file.\n");
 		rpcUSBclose(fd);
 		rpcUSBSync(0, NULL, NULL);
 		return 0;
@@ -456,9 +426,7 @@ int readLevelBgUsb(u8 * buf, int size)
 	// Ensure a wad isn't already open
 	if (State.LoadingFd >= 0)
 	{
-#if DEBUG
-		printf("readLevelBgUsb() called but a file is already open (%d)!", State.LoadingFd);
-#endif
+		DPRINTF("readLevelBgUsb() called but a file is already open (%d)!", State.LoadingFd);
 		return 0;
 	}
 
@@ -472,18 +440,14 @@ int readLevelBgUsb(u8 * buf, int size)
 	// Ensure the toc was opened successfully
 	if (fd < 0)
 	{
-#if DEBUG
-		printf("error opening file (%s): %d\n", membuffer, fd);
-#endif
+		DPRINTF("error opening file (%s): %d\n", membuffer, fd);
 		return 0;	
 	}
 
 	// Read bg
 	if (rpcUSBread(fd, buf, size) != 0)
 	{
-#if DEBUG
-		printf("error reading from file.\n");
-#endif
+		DPRINTF("error reading from file.\n");
 		rpcUSBclose(fd);
 		rpcUSBSync(0, NULL, NULL);
 		return 0;
@@ -503,9 +467,7 @@ int openLevelUsb()
 	// Ensure a wad isn't already open
 	if (State.LoadingFd >= 0)
 	{
-#if DEBUG
-		printf("openLevelUsb() called but a file is already open (%d)!", State.LoadingFd);
-#endif
+		DPRINTF("openLevelUsb() called but a file is already open (%d)!", State.LoadingFd);
 		return 0;
 	}
 
@@ -519,9 +481,7 @@ int openLevelUsb()
 	// Ensure wad successfully opened
 	if (State.LoadingFd < 0)
 	{
-#if DEBUG
-		printf("error opening file (%s): %d\n", membuffer, State.LoadingFd);
-#endif
+		DPRINTF("error opening file (%s): %d\n", membuffer, State.LoadingFd);
 		return 0;									
 	}
 
@@ -532,9 +492,7 @@ int openLevelUsb()
 	// Check the file has a valid size
 	if (State.LoadingFileSize <= 0)
 	{
-#if DEBUG
-		printf("error seeking file (%s): %d\n", membuffer, State.LoadingFileSize);
-#endif
+		DPRINTF("error seeking file (%s): %d\n", membuffer, State.LoadingFileSize);
 		rpcUSBclose(State.LoadingFd);
 		rpcUSBSync(0, NULL, NULL);
 		State.LoadingFd = -1;
@@ -547,10 +505,7 @@ int openLevelUsb()
 	rpcUSBseek(State.LoadingFd, 0, SEEK_SET);
 	rpcUSBSync(0, NULL, NULL);
 
-#if DEBUG
-	printf("%s is %d byte long.\n", membuffer, State.LoadingFileSize);
-#endif
-	
+	DPRINTF("%s is %d byte long.\n", membuffer, State.LoadingFileSize);
 	return State.LoadingFileSize;
 }
 
@@ -560,18 +515,14 @@ int readLevelUsb(u8 * buf)
 	// Ensure the wad is open
 	if (State.LoadingFd < 0 || State.LoadingFileSize <= 0)
 	{
-#if DEBUG
-		printf("error opening file: %d\n", State.LoadingFd);
-#endif
+		DPRINTF("error opening file: %d\n", State.LoadingFd);
 		return 0;									
 	}
 
 	// Try to read from usb
 	if (rpcUSBread(State.LoadingFd, buf, State.LoadingFileSize) != 0)
 	{
-#if DEBUG
-		printf("error reading from file.\n");
-#endif
+		DPRINTF("error reading from file.\n");
 		rpcUSBclose(State.LoadingFd);
 		rpcUSBSync(0, NULL, NULL);
 		State.LoadingFd = -1;
@@ -617,9 +568,7 @@ u32 hookedCheck(void)
 		// If the command is USBREAD close and return
 		if (cmd == 0x04)
 		{
-#if DEBUG
-			printf("finished reading %d bytes from USB\n", r);
-#endif
+			DPRINTF("finished reading %d bytes from USB\n", r);
 			rpcUSBclose(State.LoadingFd);
 			rpcUSBSync(0, NULL, NULL);
 			State.LoadingFd = -1;
@@ -681,9 +630,7 @@ void hookedGetTable(u32 startSector, u32 sectorCount, u8 * dest, u32 levelId)
         else
         {
             State.Enabled = 0;
-#if DEBUG
-            printf("Error reading level wad from usb\n");
-#endif
+            DPRINTF("Error reading level wad from usb\n");
         }
 	}
 }
@@ -773,7 +720,7 @@ void onOnlineMenu(void)
 				// request irx modules from server
 				request.Module1Start = (u32)usbFsModuleStart;
 				request.Module2Start = (u32)usbSrvModuleStart;
-				SendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_REQUEST_MAP_IRX_MODULES, sizeof(MapClientRequestModulesMessage), &request);
+				netSendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_REQUEST_MAP_IRX_MODULES, sizeof(MapClientRequestModulesMessage), &request);
 				actionState = ACTION_DOWNLOADING_MODULES;
 			}
 		}
@@ -785,7 +732,7 @@ void onOnlineMenu(void)
 
 		// flash color
 		u32 downloadColor = 0x80808080;
-		int gameTime = ((getGameTime()/100) % 15);
+		int gameTime = ((gameGetTime()/100) % 15);
 		if (gameTime > 7)
 			gameTime = 15 - gameTime;
 		downloadColor += 0x101010 * gameTime;
@@ -860,8 +807,8 @@ void hook(void)
 void runMapLoader(void)
 {
 	// 
-    InstallCustomMsgHandler(CUSTOM_MSG_ID_SET_MAP_OVERRIDE, &onSetMapOverride);
-    InstallCustomMsgHandler(CUSTOM_MSG_ID_SERVER_SENT_MAP_IRX_MODULES, &onServerSentMapIrxModules);
+    netInstallCustomMsgHandler(CUSTOM_MSG_ID_SET_MAP_OVERRIDE, &onSetMapOverride);
+    netInstallCustomMsgHandler(CUSTOM_MSG_ID_SERVER_SENT_MAP_IRX_MODULES, &onServerSentMapIrxModules);
 
     // hook irx module loading 
     hook();
@@ -877,9 +824,9 @@ void runMapLoader(void)
 	}
 
 	// force map id to current map override if in staging
-	if (State.Enabled == 1 && !isInGame())
+	if (State.Enabled == 1 && !gameIsIn())
 	{
-		GameSettings * settings = getGameSettings();
+		GameSettings * settings = gameGetSettings();
 		if (settings && settings->GameLoadStartTime > 0)
 		{
 			settings->GameLevel = State.MapId;

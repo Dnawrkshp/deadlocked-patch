@@ -13,17 +13,17 @@
 
 #include <tamtypes.h>
 
-#include "dl.h"
-#include "player.h"
-#include "pad.h"
-#include "time.h"
+#include <libdl/dl.h>
+#include <libdl/player.h>
+#include <libdl/pad.h>
+#include <libdl/time.h>
 #include "module.h"
-#include "game.h"
-#include "string.h"
-#include "stdio.h"
-#include "gamesettings.h"
-#include "dialog.h"
-#include "patch.h"
+#include <libdl/game.h>
+#include <libdl/string.h>
+#include <libdl/stdio.h>
+#include <libdl/gamesettings.h>
+#include <libdl/dialog.h>
+#include <libdl/patch.h>
 
 /*
  * Array of game modules.
@@ -363,7 +363,7 @@ void processGameModules()
 	GameModule * module = GLOBAL_GAME_MODULES_START;
 
 	// Game settings
-	GameSettings * gamesettings = getGameSettings();
+	GameSettings * gamesettings = gameGetSettings();
 
 	// Iterate through all the game modules until we hit an empty one
 	while (module->GameEntrypoint || module->LobbyEntrypoint)
@@ -375,12 +375,12 @@ void processGameModules()
 			if (module->State > GAMEMODULE_OFF)
 			{
 				// If in game, run game entrypoint
-				if (isInGame())
+				if (gameIsIn())
 				{
 					// Check if the game hasn't ended
 					// We also give the module a second after the game has ended to
 					// do some end game logic
-					if (!hasGameEnded() || getGameTime() < (getGameFinishedExitTime() + TIME_SECOND))
+					if (!gameHasEnded() || gameGetTime() < (gameGetFinishedExitTime() + TIME_SECOND))
 					{
 						// Invoke module
 						if (module->GameEntrypoint)
@@ -396,7 +396,7 @@ void processGameModules()
 				{
 					// If the game has started and we're no longer in game
 					// Then it must have ended
-					if (gamesettings->GameStartTime > 0 && getGameTime() > gamesettings->GameStartTime && hasGameEnded() && module->State == GAMEMODULE_TEMP_ON)
+					if (gamesettings->GameStartTime > 0 && gameGetTime() > gamesettings->GameStartTime && gameHasEnded() && module->State == GAMEMODULE_TEMP_ON)
 						module->State = GAMEMODULE_OFF;
 					// Invoke lobby module if still active
 					else if (module->LobbyEntrypoint)
@@ -416,7 +416,7 @@ void processGameModules()
 		else if (module->State == GAMEMODULE_ALWAYS_ON)
 		{
 			// Invoke lobby module if still active
-			if (!isInGame() && module->LobbyEntrypoint)
+			if (!gameIsIn() && module->LobbyEntrypoint)
 			{
 				module->LobbyEntrypoint(module);
 			}

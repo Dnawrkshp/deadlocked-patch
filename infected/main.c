@@ -13,13 +13,14 @@
 
 #include <tamtypes.h>
 
-#include "stdio.h"
-#include "time.h"
+#include <libdl/stdio.h>
+#include <libdl/time.h>
 #include "module.h"
-#include "game.h"
-#include "gamesettings.h"
-#include "player.h"
-#include "cheats.h"
+#include <libdl/game.h>
+#include <libdl/gamesettings.h>
+#include <libdl/player.h>
+#include <libdl/cheats.h>
+#include <libdl/ui.h>
 
 /*
  * Infected team.
@@ -90,7 +91,7 @@ void infect(int playerId)
 {
 	InfectedMask |= (1 << playerId);
 
-	GameSettings * gameSettings = getGameSettings();
+	GameSettings * gameSettings = gameGetSettings();
 	if (!gameSettings)
 		return;
 
@@ -98,8 +99,8 @@ void infect(int playerId)
 	sprintf(InfectedPopupBuffer, InfectedPopupFormat, gameSettings->PlayerNames[playerId]);
 	InfectedPopupBuffer[63] = 0;
 
-	showPopup(0, InfectedPopupBuffer);
-	showPopup(1, InfectedPopupBuffer);
+	uiShowPopup(0, InfectedPopupBuffer);
+	uiShowPopup(1, InfectedPopupBuffer);
 }
 
 /*
@@ -123,7 +124,7 @@ void processPlayer(Player * player)
 		return;
 
 	int teamId = player->Team;
-	PlayerGameStats * stats = getPlayerGameStats();
+	PlayerGameStats * stats = gameGetPlayerStats();
 
 	// No respawn
 	player->RespawnTimer = 0x27;
@@ -134,7 +135,7 @@ void processPlayer(Player * player)
 	{
 		// If not on the right team then set it
 		if (teamId != INFECTED_TEAM)
-			changeTeam(player, INFECTED_TEAM);
+			playerSetTeam(player, INFECTED_TEAM);
 
 		player->Speed = 4.0;
 		player->DamageMultiplier = 1.001;
@@ -143,7 +144,7 @@ void processPlayer(Player * player)
 		// Force wrench
 		if (player->WeaponHeldId != WEAPON_ID_WRENCH &&
 			player->WeaponHeldId != WEAPON_ID_SWINGSHOT)
-			changeWeapon(player, WEAPON_ID_WRENCH);
+			playerSetWeapon(player, WEAPON_ID_WRENCH);
 	}
 	// If the player is already on the infected team
 	// or if they've died
@@ -176,7 +177,7 @@ void processPlayer(Player * player)
  */
 Player * getRandomSurvivor(u32 seed)
 {
-	Player ** playerObjects = getPlayers();
+	Player ** playerObjects = playerGetAll();
 
 	int value = (seed % GAME_MAX_PLAYERS) + 1;
 	int i = 0;
@@ -249,17 +250,17 @@ void gameStart(void)
 	int i = 0;
 	int infectedCount = 0;
 	int playerCount = 0;
-	GameSettings * gameSettings = getGameSettings();
-	Player ** players = getPlayers();
+	GameSettings * gameSettings = gameGetSettings();
+	Player ** players = playerGetAll();
 
 	// Ensure in game
-	if (!gameSettings || !isInGame())
+	if (!gameSettings || !gameIsIn())
 		return;
 
 	if (!Initialized)
 		initialize();
 
-	if (!hasGameEnded())
+	if (!gameHasEnded())
 	{
 		// Reset to infected team
 		// If one player isn't infected then their team
@@ -289,20 +290,20 @@ void gameStart(void)
 	}
 
 	// 
-	setWinner(WinningTeam, 1);
+	gameSetWinner(WinningTeam, 1);
 
-	if (!hasGameEnded())
+	if (!gameHasEnded())
 	{
 		// If no survivors then end game
-		if (playerCount == infectedCount && getGameTimeLimit() > 0)
+		if (playerCount == infectedCount && gameGetTimeLimit() > 0)
 		{
 			// End game
-			endGame(2);
+			gameEnd(2);
 		}
 		else if (infectedCount == 0)
 		{
 			// Infect first player after 10 seconds
-			if ((getGameTime() - gameSettings->GameStartTime) > (10 * TIME_SECOND))
+			if ((gameGetTime() - gameSettings->GameStartTime) > (10 * TIME_SECOND))
 			{
 				Player * survivor = getRandomSurvivor(gameSettings->GameStartTime);
 				if (survivor)

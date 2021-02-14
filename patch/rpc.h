@@ -9,8 +9,6 @@
 #include <libcdvd.h>
 #include <debug.h>
 
-#include "loadfile.h"
-
 
 #define USBSERV_BUFSIZE 	(1024 * 8)
 

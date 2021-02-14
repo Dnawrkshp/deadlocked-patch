@@ -14,15 +14,15 @@
 #include <tamtypes.h>
 #include <string.h>
 
-#include "stdio.h"
-#include "math.h"
-#include "math3d.h"
-#include "time.h"
+#include <libdl/stdio.h>
+#include <libdl/math.h>
+#include <libdl/math3d.h>
+#include <libdl/time.h>
 #include "module.h"
-#include "game.h"
-#include "gamesettings.h"
-#include "player.h"
-#include "cheats.h"
+#include <libdl/game.h>
+#include <libdl/gamesettings.h>
+#include <libdl/player.h>
+#include <libdl/cheats.h>
 
 /*
  *
@@ -66,8 +66,8 @@ VECTOR StartUNK_80 = {
  */
 void initialize(void)
 {
-	GameSettings * gameSettings = getGameSettings();
-	Player ** players = getPlayers();
+	GameSettings * gameSettings = gameGetSettings();
+	Player ** players = playerGetAll();
 
 	int i, j;
 	int w = 15, h = 15;
@@ -89,13 +89,13 @@ void initialize(void)
 	center[2] = StartPos[2];
 
 	// Set death barrier
-	setDeathHeight(StartPos[2] - 10);
+	gameSetDeathHeight(StartPos[2] - 10);
 
 	// Set survivor
-	setGameSurvivor(1);
+	gameSetSurvivor(1);
 	
 	// Spawn box so we know the correct model and collision pointers
-	sourceBox = spawnMoby(MOBY_ID_BETA_BOX, 0);
+	sourceBox = mobySpawn(MOBY_ID_BETA_BOX, 0);
 
 	// 
 	pos[3] = sourceBox->Position[3];
@@ -105,7 +105,7 @@ void initialize(void)
 	{
 		for (j = 0; j < h; ++j)
 		{
-			hbMoby = spawnMoby(MOBY_ID_NODE_BOLT_GUARD, 0);
+			hbMoby = mobySpawn(MOBY_ID_NODE_BOLT_GUARD, 0);
 			
 			if (hbMoby)
 			{
@@ -193,12 +193,12 @@ void initialize(void)
  */
 void gameStart(void)
 {
-	GameSettings * gameSettings = getGameSettings();
-	Player ** players = getPlayers();
+	GameSettings * gameSettings = gameGetSettings();
+	Player ** players = playerGetAll();
 	int i;
 
 	// Ensure in game
-	if (!gameSettings || !isInGame())
+	if (!gameSettings || !gameIsIn())
 		return;
 
 	if (!Initialized)

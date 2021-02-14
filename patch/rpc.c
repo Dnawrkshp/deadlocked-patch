@@ -1,4 +1,4 @@
-#include "string.h"
+#include <libdl/string.h>
 #include "rpc.h"
 
 #define CMD_NONE  			0x00
