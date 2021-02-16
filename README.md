@@ -19,7 +19,7 @@ If you want to use docker, run the following commands:
 docker pull ps2dev/ps2dev
 docker run -it --rm -v "$PWD\:/src" ps2dev/ps2dev
 cd src
-apk add bash && ./docker-init.sh
+./docker-init.sh
 ```
 
 Then you can build using:
