@@ -668,7 +668,7 @@ u64 hookedLoadCdvd(u64 a0, u64 a1, u64 a2, u64 a3, u64 t0, u64 t1, u64 t2)
 }
 
 //------------------------------------------------------------------------------
-void onOnlineMenu(void)
+void onMapLoaderOnlineMenu(void)
 {
 	// call normal draw routine
 	((void (*)(void))0x00707F28)();
@@ -772,9 +772,6 @@ void hook(void)
 	u32 * hookAudioAddr = (u32*)0x0053F970;
 	u32 * hookLoadCdvdAddr = (u32*)0x00163814;
 
-	// menu
-	u32 * menuAddr = (u32*)0x00594CB8;
-
 	// Load modules
 	u32 * hookLoadModulesAddr = (u32*)0x00161364;
 
@@ -797,10 +794,6 @@ void hook(void)
 	// These get hooked after the map loads but before the game starts
 	if (!initialized || *hookMapAddr == 0x0C058E02)
 		*hookMapAddr = 0x0C000000 | ((u32)(&hookedGetMap) / 4);
-
-	// Hook menu loop
-	if (!initialized || *menuAddr == 0x0C1C1FCA)
-		*menuAddr = 0x0C000000 | ((u32)(&onOnlineMenu) / 4);
 }
 
 //------------------------------------------------------------------------------

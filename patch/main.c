@@ -66,6 +66,10 @@
 // 
 void processSpectate(void);
 void runMapLoader(void);
+void onMapLoaderOnlineMenu(void);
+
+// 
+int hasInitialized = 0;
 
 /*
  * NAME :		patchCameraSpeed
@@ -96,7 +100,7 @@ void patchCameraSpeed()
 	}
 
 	// Patch edit profile bar
-	if (!gameIsIn())
+	if (uiGetActive() == UI_ID_EDIT_PROFILE)
 	{
 		void * editProfile = (void*)UI_POINTERS[30];
 		if (editProfile)
@@ -108,17 +112,13 @@ void patchCameraSpeed()
 				// update max value
 				*(u32*)(camSpeedElement + 0x78) = SPEED;
 
-				// render current value over bar
-				if (uiGetActive() == UI_ID_EDIT_PROFILE)
-				{
-					// get current value
-					float value = *(u32*)(camSpeedElement + 0x70) / 64.0;
+				// get current value
+				float value = *(u32*)(camSpeedElement + 0x70) / 64.0;
 
-					// render
-					sprintf(buffer, "%.0f%%\0", value*100);
-					gfxScreenSpaceText(240,   166,   1, 1, 0x80000000, buffer, -1);
-					gfxScreenSpaceText(240-1, 166-1, 1, 1, 0x80FFFFFF, buffer, -1);
-				}
+				// render
+				sprintf(buffer, "%.0f%%", value*100);
+				gfxScreenSpaceText(240,   166,   1, 1, 0x80000000, buffer, -1);
+				gfxScreenSpaceText(240-1, 166-1, 1, 1, 0x80FFFFFF, buffer, -1);
 			}
 		}
 	}
@@ -462,6 +462,33 @@ void processGameModules()
 }
 
 /*
+ * NAME :		onOnlineMenu
+ * 
+ * DESCRIPTION :
+ * 			Called every ui update.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void onOnlineMenu(void)
+{
+	//
+	if (!hasInitialized)
+	{
+		uiShowOkDialog("System", "Patch has been successfully loaded.");
+		hasInitialized = 1;
+	}
+
+	// map loader
+	onMapLoaderOnlineMenu();
+}
+
+/*
  * NAME :		main
  * 
  * DESCRIPTION :
@@ -477,11 +504,17 @@ void processGameModules()
  */
 int main (void)
 {
+
 	// Call this first
 	dlPreUpdate();
 
 	// Patch sif rpc
 	patchSifRpc();
+
+	// Hook menu loop
+	u32 * menuAddr = (u32*)0x00594CB8;
+	if (*menuAddr == 0x0C1C1FCA)
+		*menuAddr = 0x0C000000 | ((u32)(&onOnlineMenu) / 4);
 
 	// Run map loader
 	runMapLoader();
