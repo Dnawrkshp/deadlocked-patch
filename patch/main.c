@@ -96,26 +96,29 @@ void patchCameraSpeed()
 	}
 
 	// Patch edit profile bar
-	void * editProfile = UI_POINTERS[30];
-	if (editProfile)
+	if (!gameIsIn())
 	{
-		// get cam speed element
-		void * camSpeedElement = *(u32*)(editProfile + 0xC0);
-		if (camSpeedElement)
+		void * editProfile = (void*)UI_POINTERS[30];
+		if (editProfile)
 		{
-			// update max value
-			*(u32*)(camSpeedElement + 0x78) = SPEED;
-
-			// render current value over bar
-			if (uiGetActive() == UI_ID_EDIT_PROFILE)
+			// get cam speed element
+			void * camSpeedElement = (void*)*(u32*)(editProfile + 0xC0);
+			if (camSpeedElement)
 			{
-				// get current value
-				float value = *(u32*)(camSpeedElement + 0x70) / 64.0;
+				// update max value
+				*(u32*)(camSpeedElement + 0x78) = SPEED;
 
-				// render
-				sprintf(buffer, "%.0f%%\0", value*100);
-				gfxScreenSpaceText(240,   166,   1, 1, 0x80000000, buffer, -1);
-				gfxScreenSpaceText(240-1, 166-1, 1, 1, 0x80FFFFFF, buffer, -1);
+				// render current value over bar
+				if (uiGetActive() == UI_ID_EDIT_PROFILE)
+				{
+					// get current value
+					float value = *(u32*)(camSpeedElement + 0x70) / 64.0;
+
+					// render
+					sprintf(buffer, "%.0f%%\0", value*100);
+					gfxScreenSpaceText(240,   166,   1, 1, 0x80000000, buffer, -1);
+					gfxScreenSpaceText(240-1, 166-1, 1, 1, 0x80FFFFFF, buffer, -1);
+				}
 			}
 		}
 	}
