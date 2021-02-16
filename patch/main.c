@@ -24,6 +24,8 @@
 #include <libdl/gamesettings.h>
 #include <libdl/dialog.h>
 #include <libdl/patch.h>
+#include <libdl/ui.h>
+#include <libdl/graphics.h>
 
 /*
  * Array of game modules.
@@ -37,6 +39,8 @@
  */
 #define CAMERA_SPEED_PATCH_OFF1			(*(u16*)0x00561BB8)
 #define CAMERA_SPEED_PATCH_OFF2			(*(u16*)0x00561BDC)
+
+#define UI_POINTERS						((u32*)0x011C7064)
 
 #define ANNOUNCEMENTS_CHECK_PATCH		(*(u32*)0x00621D58)
 
@@ -67,7 +71,7 @@ void runMapLoader(void);
  * NAME :		patchCameraSpeed
  * 
  * DESCRIPTION :
- * 			Patches in-game camera speed setting to max out at 200%.
+ * 			Patches in-game camera speed setting to max out at 300%.
  * 
  * NOTES :
  * 
@@ -79,13 +83,41 @@ void runMapLoader(void);
  */
 void patchCameraSpeed()
 {
+	const u16 SPEED = 0x100;
+	char buffer[16];
+
 	// Check if the value is the default max of 64
 	// This is to ensure that we only write here when
 	// we're in game and the patch hasn't already been applied
 	if (CAMERA_SPEED_PATCH_OFF1 == 0x40)
 	{
-		CAMERA_SPEED_PATCH_OFF1 = 0x80;
-		CAMERA_SPEED_PATCH_OFF2 = 0x81;
+		CAMERA_SPEED_PATCH_OFF1 = SPEED;
+		CAMERA_SPEED_PATCH_OFF2 = SPEED+1;
+	}
+
+	// Patch edit profile bar
+	void * editProfile = UI_POINTERS[30];
+	if (editProfile)
+	{
+		// get cam speed element
+		void * camSpeedElement = *(u32*)(editProfile + 0xC0);
+		if (camSpeedElement)
+		{
+			// update max value
+			*(u32*)(camSpeedElement + 0x78) = SPEED;
+
+			// render current value over bar
+			if (uiGetActive() == UI_ID_EDIT_PROFILE)
+			{
+				// get current value
+				float value = *(u32*)(camSpeedElement + 0x70) / 64.0;
+
+				// render
+				sprintf(buffer, "%.0f%%\0", value*100);
+				gfxScreenSpaceText(240,   166,   1, 1, 0x80000000, buffer, -1);
+				gfxScreenSpaceText(240-1, 166-1, 1, 1, 0x80FFFFFF, buffer, -1);
+			}
+		}
 	}
 }
 
