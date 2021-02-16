@@ -379,6 +379,34 @@ void patchFrameSkip()
 }
 
 /*
+ * NAME :		patchWeaponShotNetSendFlag
+ * 
+ * DESCRIPTION :
+ * 			Patches weapon shot to be sent over TCP instead of UDP.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchWeaponShotNetSendFlag(void)
+{
+	u32* ptr = (u32*)0x00627AB4;
+	if (*ptr == 0x906407F8) {
+		// change to reliable
+		*ptr = 0x24040000 | 0x40;
+
+		// get rid of additional 3 packets sent
+		// since its reliable we don't need redundancy
+		*(u32*)0x0060F474 = 0;
+		*(u32*)0x0060F4C4 = 0;
+	}
+}
+
+/*
  * NAME :		processGameModules
  * 
  * DESCRIPTION :
@@ -478,7 +506,7 @@ void processGameModules()
 void onOnlineMenu(void)
 {
 	//
-	if (!hasInitialized)
+	if (!hasInitialized && uiGetActive() == UI_ID_ONLINE_MAIN_MENU)
 	{
 		uiShowOkDialog("System", "Patch has been successfully loaded.");
 		hasInitialized = 1;
@@ -536,6 +564,9 @@ int main (void)
 
 	// Patch frame skip
 	patchFrameSkip();
+
+	// Patch weapon shot to be sent reliably
+	patchWeaponShotNetSendFlag();
 
 	// Process game modules
 	processGameModules();
