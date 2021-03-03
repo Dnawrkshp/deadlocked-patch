@@ -325,7 +325,7 @@ void processSpectate(void)
                     if (!spectateData->HasShownEnterMsg) 
                     {
                         spectateData->HasShownEnterMsg = 1;
-                        uiShowHelpPopup(player->LocalPlayerIndex, "Press \x13 to enter spectate mode.", 5);
+                        uiShowHelpPopup(player->LocalPlayerIndex, "Press \x13 to enter spectate mode.", 5 * 30);
                     }
 
                     // When the player presses square and spectate isn't already enabled. Try to enable it.
@@ -363,7 +363,7 @@ void processSpectate(void)
                     if (!spectateData->HasShownNavMsg) 
                     {
                         spectateData->HasShownNavMsg = 1;
-                        uiShowHelpPopup(player->LocalPlayerIndex, "Use \x14 and \x15 to navigate between players.", 10);
+                        uiShowHelpPopup(player->LocalPlayerIndex, "Use \x14 and \x15 to navigate between players.", 10 * 30);
                     }
                     
                     // If the currently spectated player becomes null, we move forward to the next player            
