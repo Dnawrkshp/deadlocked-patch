@@ -1,17 +1,18 @@
 #include <tamtypes.h>
 #include <string.h>
 
-#include "time.h"
+#include <libdl/time.h>
+#include <libdl/game.h>
+#include <libdl/gamesettings.h>
+#include <libdl/map.h>
+#include <libdl/player.h>
+#include <libdl/cheats.h>
+#include <libdl/stdio.h>
+#include <libdl/pad.h>
+#include <libdl/dl.h>
+#include <libdl/spawnpoint.h>
+#include <libdl/ui.h>
 #include "module.h"
-#include "game.h"
-#include "gamesettings.h"
-#include "map.h"
-#include "player.h"
-#include "cheats.h"
-#include "stdio.h"
-#include "pad.h"
-#include "dl.h"
-#include "spawnpoint.h"
 #include "scoreboard.h"
 
 
@@ -77,7 +78,7 @@ void htReset(void)
  */
 void getFlags(void)
 {
-	Moby ** mobies = getLoadedMobies();
+	Moby ** mobies = mobyGetLoaded();
 	Moby * moby;
 
 	// reset
@@ -118,15 +119,15 @@ void htCtfBegin(void)
 	getFlags();
 
 	// Indicate when the intermission should end
-	HalfTimeEnd = getGameTime() + (TIME_SECOND * 5);
+	HalfTimeEnd = gameGetTime() + (TIME_SECOND * 5);
 	HalfTimeState = HT_INTERMISSION;
 
 	// Disable saving or pickup up flag
-	flagSetPickupDistance(0);
+	gameFlagSetPickupDistance(0);
 
 	// Show popup
-	showPopup(0, "Halftime");
-	showPopup(1, "Halftime");
+	uiShowPopup(0, "Halftime");
+	uiShowPopup(1, "Halftime");
 }
 
 
@@ -147,12 +148,12 @@ void htCtfBegin(void)
 void htCtfSwitch(void)
 {
 	int i, j;
-	Player ** players = getPlayers();
+	Player ** players = playerGetAll();
 	Player * player;
 	Moby * moby;
 	ScoreboardItem * scoreboardItem;
 	VECTOR rVector, pVector;
-	u8 * teamCaps = getTeamStatCaps();
+	u8 * teamCaps = gameGetTeamStatCaps();
 	int teams = 0;
 	u8 teamChangeMap[4] = {0,1,2,3};
 	u8 backupTeamCaps[4];
@@ -213,7 +214,7 @@ void htCtfSwitch(void)
 		if (!player)
 			continue;
 
-		if (isLocal(player))
+		if (playerIsLocal(player))
 		{
 			// Update local scoreboard
 			for (j = 0; j < scoreboardItemCount; ++j)
@@ -235,10 +236,10 @@ void htCtfSwitch(void)
 
 		// Kick from vehicle
 		if (player->Vehicle)
-			VehicleRemovePlayer(player->Vehicle, player);
+			vehicleRemovePlayer(player->Vehicle, player);
 
 		// Change to new team
-		changeTeam(player, teamChangeMap[player->Team]);
+		playerSetTeam(player, teamChangeMap[player->Team]);
 
 		// Respawn
 		playerRespawn(player);
@@ -287,7 +288,7 @@ void htCtfSwitch(void)
 void htCtfEnd(void)
 {
 	// Enable flag pickup
-	flagSetPickupDistance(2);
+	gameFlagSetPickupDistance(2);
 }
 
 
@@ -308,8 +309,8 @@ void htCtfEnd(void)
 void htCtfTick(void)
 {
 	int i;
-	Player ** players = getPlayers();
-	int gameTime = getGameTime();
+	Player ** players = playerGetAll();
+	int gameTime = gameGetTime();
 
 	// Prevent input
 	padResetInput(0);
@@ -328,8 +329,8 @@ void htCtfTick(void)
 			// Show popup
 			if (gameTime > (HalfTimeEnd - (TIME_SECOND * 2)))
 			{
-				showPopup(0, "switching sides...");
-				showPopup(1, "switching sides...");
+				uiShowPopup(0, "switching sides...");
+				uiShowPopup(1, "switching sides...");
 
 				htCtfSwitch();
 				HalfTimeState = HT_INTERMISSION2;
@@ -385,8 +386,8 @@ void htCtfTick(void)
 void halftimeLogic(GameModule * module)
 {
 	int timeLimit = gameGetRawTimeLimit();
-	int gameTime = getGameTime();
-	GameSettings * gameSettings = getGameSettings();
+	int gameTime = gameGetTime();
+	GameSettings * gameSettings = gameGetSettings();
 
 	// Check we're in game and that it is compatible
 	if (!gameSettings || gameSettings->GameRules != GAMERULE_CTF)

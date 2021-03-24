@@ -13,18 +13,19 @@
 
 #include <tamtypes.h>
 
-#include "dl.h"
-#include "player.h"
-#include "pad.h"
-#include "time.h"
+#include <libdl/dl.h>
+#include <libdl/player.h>
+#include <libdl/pad.h>
+#include <libdl/time.h>
 #include "module.h"
-#include "game.h"
-#include "string.h"
-#include "stdio.h"
-#include "gamesettings.h"
-#include "dialog.h"
-
-
+#include <libdl/game.h>
+#include <libdl/string.h>
+#include <libdl/stdio.h>
+#include <libdl/gamesettings.h>
+#include <libdl/dialog.h>
+#include <libdl/patch.h>
+#include <libdl/ui.h>
+#include <libdl/graphics.h>
 
 /*
  * Array of game modules.
@@ -38,6 +39,8 @@
  */
 #define CAMERA_SPEED_PATCH_OFF1			(*(u16*)0x00561BB8)
 #define CAMERA_SPEED_PATCH_OFF2			(*(u16*)0x00561BDC)
+
+#define UI_POINTERS						((u32*)0x011C7064)
 
 #define ANNOUNCEMENTS_CHECK_PATCH		(*(u32*)0x00621D58)
 
@@ -55,17 +58,24 @@
 #define GAMESETTINGS_RESPAWN_TIME      	(*(u8*)0x0017380C)
 #define GAMESETTINGS_RESPAWN_TIME2      (*(u8*)0x012B3638)
 
+#define GAMESETTINGS_SURVIVOR			(*(u8*)0x00173806)
+
 #define FRAME_SKIP_WRITE0				(*(u32*)0x004A9400)
 #define FRAME_SKIP						(*(u32*)0x0021E1D8)
 
 // 
 void processSpectate(void);
+void runMapLoader(void);
+void onMapLoaderOnlineMenu(void);
+
+// 
+int hasInitialized = 0;
 
 /*
  * NAME :		patchCameraSpeed
  * 
  * DESCRIPTION :
- * 			Patches in-game camera speed setting to max out at 200%.
+ * 			Patches in-game camera speed setting to max out at 300%.
  * 
  * NOTES :
  * 
@@ -77,13 +87,40 @@ void processSpectate(void);
  */
 void patchCameraSpeed()
 {
+	const u16 SPEED = 0x100;
+	char buffer[16];
+
 	// Check if the value is the default max of 64
 	// This is to ensure that we only write here when
 	// we're in game and the patch hasn't already been applied
 	if (CAMERA_SPEED_PATCH_OFF1 == 0x40)
 	{
-		CAMERA_SPEED_PATCH_OFF1 = 0x80;
-		CAMERA_SPEED_PATCH_OFF2 = 0x81;
+		CAMERA_SPEED_PATCH_OFF1 = SPEED;
+		CAMERA_SPEED_PATCH_OFF2 = SPEED+1;
+	}
+
+	// Patch edit profile bar
+	if (uiGetActive() == UI_ID_EDIT_PROFILE)
+	{
+		void * editProfile = (void*)UI_POINTERS[30];
+		if (editProfile)
+		{
+			// get cam speed element
+			void * camSpeedElement = (void*)*(u32*)(editProfile + 0xC0);
+			if (camSpeedElement)
+			{
+				// update max value
+				*(u32*)(camSpeedElement + 0x78) = SPEED;
+
+				// get current value
+				float value = *(u32*)(camSpeedElement + 0x70) / 64.0;
+
+				// render
+				sprintf(buffer, "%.0f%%", value*100);
+				gfxScreenSpaceText(240,   166,   1, 1, 0x80000000, buffer, -1);
+				gfxScreenSpaceText(240-1, 166-1, 1, 1, 0x80FFFFFF, buffer, -1);
+			}
+		}
 	}
 }
 
@@ -286,8 +323,9 @@ void patchPopulateCreateGame()
  */
 u64 patchCreateGame_Hook(void * a0)
 {
-	// Save respawn timer
-	GAMESETTINGS_RESPAWN_TIME = GAMESETTINGS_RESPAWN_TIME2;
+	// Save respawn timer if not survivor
+	if (!GAMESETTINGS_SURVIVOR)
+		GAMESETTINGS_RESPAWN_TIME = GAMESETTINGS_RESPAWN_TIME2;
 
 	// Load normal
 	return ((u64 (*)(void *))GAMESETTINGS_CREATE_FUNC)(a0);
@@ -341,6 +379,34 @@ void patchFrameSkip()
 }
 
 /*
+ * NAME :		patchWeaponShotNetSendFlag
+ * 
+ * DESCRIPTION :
+ * 			Patches weapon shot to be sent over TCP instead of UDP.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchWeaponShotNetSendFlag(void)
+{
+	u32* ptr = (u32*)0x00627AB4;
+	if (*ptr == 0x906407F8) {
+		// change to reliable
+		*ptr = 0x24040000 | 0x40;
+
+		// get rid of additional 3 packets sent
+		// since its reliable we don't need redundancy
+		*(u32*)0x0060F474 = 0;
+		*(u32*)0x0060F4C4 = 0;
+	}
+}
+
+/*
  * NAME :		processGameModules
  * 
  * DESCRIPTION :
@@ -360,7 +426,7 @@ void processGameModules()
 	GameModule * module = GLOBAL_GAME_MODULES_START;
 
 	// Game settings
-	GameSettings * gamesettings = getGameSettings();
+	GameSettings * gamesettings = gameGetSettings();
 
 	// Iterate through all the game modules until we hit an empty one
 	while (module->GameEntrypoint || module->LobbyEntrypoint)
@@ -372,12 +438,12 @@ void processGameModules()
 			if (module->State > GAMEMODULE_OFF)
 			{
 				// If in game, run game entrypoint
-				if (isInGame())
+				if (gameIsIn())
 				{
 					// Check if the game hasn't ended
 					// We also give the module a second after the game has ended to
 					// do some end game logic
-					if (!hasGameEnded() || getGameTime() < (getGameFinishedExitTime() + TIME_SECOND))
+					if (!gameHasEnded() || gameGetTime() < (gameGetFinishedExitTime() + TIME_SECOND))
 					{
 						// Invoke module
 						if (module->GameEntrypoint)
@@ -393,7 +459,7 @@ void processGameModules()
 				{
 					// If the game has started and we're no longer in game
 					// Then it must have ended
-					if (gamesettings->GameStartTime > 0 && getGameTime() > gamesettings->GameStartTime && hasGameEnded() && module->State == GAMEMODULE_TEMP_ON)
+					if (gamesettings->GameStartTime > 0 && gameGetTime() > gamesettings->GameStartTime && gameHasEnded() && module->State == GAMEMODULE_TEMP_ON)
 						module->State = GAMEMODULE_OFF;
 					// Invoke lobby module if still active
 					else if (module->LobbyEntrypoint)
@@ -413,7 +479,7 @@ void processGameModules()
 		else if (module->State == GAMEMODULE_ALWAYS_ON)
 		{
 			// Invoke lobby module if still active
-			if (!isInGame() && module->LobbyEntrypoint)
+			if (!gameIsIn() && module->LobbyEntrypoint)
 			{
 				module->LobbyEntrypoint(module);
 			}
@@ -421,6 +487,33 @@ void processGameModules()
 
 		++module;
 	}
+}
+
+/*
+ * NAME :		onOnlineMenu
+ * 
+ * DESCRIPTION :
+ * 			Called every ui update.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void onOnlineMenu(void)
+{
+	//
+	if (!hasInitialized && uiGetActive() == UI_ID_ONLINE_MAIN_MENU)
+	{
+		uiShowOkDialog("System", "Patch has been successfully loaded.");
+		hasInitialized = 1;
+	}
+
+	// map loader
+	onMapLoaderOnlineMenu();
 }
 
 /*
@@ -439,8 +532,20 @@ void processGameModules()
  */
 int main (void)
 {
+
 	// Call this first
 	dlPreUpdate();
+
+	// Patch sif rpc
+	patchSifRpc();
+
+	// Hook menu loop
+	u32 * menuAddr = (u32*)0x00594CB8;
+	if (*menuAddr == 0x0C1C1FCA)
+		*menuAddr = 0x0C000000 | ((u32)(&onOnlineMenu) / 4);
+
+	// Run map loader
+	runMapLoader();
 
 	// Patch camera speed
 	patchCameraSpeed();
@@ -459,6 +564,9 @@ int main (void)
 
 	// Patch frame skip
 	patchFrameSkip();
+
+	// Patch weapon shot to be sent reliably
+	//patchWeaponShotNetSendFlag();
 
 	// Process game modules
 	processGameModules();
