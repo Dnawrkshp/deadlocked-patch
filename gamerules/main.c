@@ -142,7 +142,7 @@ SpawnPoint BetterHillPoints[] = {
 	{ { 27.499998, 47.6314, 0, 0, -47.6314, 27.499998, 0, 0, 0, 0, 10, 0, 452, 443, 100.828125, 1 }, { 0.009090908, 0.015745917, 0, 0, -0.015745917, 0.009090908, 0, 0, 0, 0, 0.1, 0, 452, 443, 100.828125, 1 } },
 
 	// VALIX CTF SPAWN POINT 01
-	{ { 0.70710677, 0.70710677, 0, 0, -0.70710677, 0.70710677, 0, 0, 0, 0, 1, 0, 333.81165, 413.57132, 329.375, 0 }, { 0.70710677, 0.70710677, 0, 0, -0.70710677, 0.70710677, 0, 0, 0, 0, 1, 0, 333.81165, 413.57132, 329.375, 0 } }
+	{ { 0.70710677, 0.70710677, 0, 0, -0.70710677, 0.70710677, 0, 0, 0, 0, 1, 0, 333.81165, 413.57132, 329.375, 0 }, { 0.70710677, 0.70710677, 0, 0, -0.70710677, 0.70710677, 0, 0, 0, 0, 1, 0, 333.81165, 413.57132, 329.375, 0 } },
 };
 
 enum BETTER_HILL_PTS
@@ -264,9 +264,9 @@ void betterHillsLogic(GameModule * module)
 		}
 		case MAP_ID_VALIX: 
 		{
-			setSpawnPoint(&BetterHillPoints[VALIX_01], 0x01);
-			setSpawnPoint(&BetterHillPoints[VALIX_13], 0x0D);
-			setSpawnPoint(&BetterHillPoints[VALIX_16], 0x10);
+			spawnPointSet(&BetterHillPoints[VALIX_01], 0x01);
+			spawnPointSet(&BetterHillPoints[VALIX_13], 0x0D);
+			spawnPointSet(&BetterHillPoints[VALIX_16], 0x10);
 			break;
 		}
 		case MAP_ID_MF:
