@@ -579,9 +579,6 @@ u64 hookedLoadCdvd(u64 a0, u64 a1, u64 a2, u64 a3, u64 t0, u64 t1, u64 t2)
 //------------------------------------------------------------------------------
 void onMapLoaderOnlineMenu(void)
 {
-	// call normal draw routine
-	((void (*)(void))0x00707F28)();
-
 	RECT boxRectEnable = {
 		{ 0.1, 0.75 },
 		{ 0.5, 0.75 },

@@ -505,6 +505,9 @@ void processGameModules()
  */
 void onOnlineMenu(void)
 {
+	// call normal draw routine
+	((void (*)(void))0x00707F28)();
+	
 	//
 	if (!hasInitialized && uiGetActive() == UI_ID_ONLINE_MAIN_MENU)
 	{
@@ -540,9 +543,7 @@ int main (void)
 	patchSifRpc();
 
 	// Hook menu loop
-	u32 * menuAddr = (u32*)0x00594CB8;
-	if (*menuAddr == 0x0C1C1FCA)
-		*menuAddr = 0x0C000000 | ((u32)(&onOnlineMenu) / 4);
+	*(u32*)0x00594CB8 = 0x0C000000 | ((u32)(&onOnlineMenu) / 4);
 
 	// Run map loader
 	runMapLoader();
