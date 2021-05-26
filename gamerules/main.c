@@ -141,6 +141,8 @@ SpawnPoint BetterHillPoints[] = {
 	// TEMPUS ID 18
 	{ { 27.499998, 47.6314, 0, 0, -47.6314, 27.499998, 0, 0, 0, 0, 10, 0, 452, 443, 100.828125, 1 }, { 0.009090908, 0.015745917, 0, 0, -0.015745917, 0.009090908, 0, 0, 0, 0, 0.1, 0, 452, 443, 100.828125, 1 } },
 
+	// VALIX CTF SPAWN POINT 01
+	{ { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 333.81165, 413.57132, 330, 0 }, { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 333.81165, 413.57132, 330, 0 } },
 };
 
 enum BETTER_HILL_PTS
@@ -157,6 +159,7 @@ enum BETTER_HILL_PTS
 	DC_17 = 9,
 	SHAAR_14 = 10,
 	SHAAR_17 = 11,
+	VALIX_01 = 24,
 	VALIX_13 = 12,
 	VALIX_16 = 13,
 	MF_20 = 14,
@@ -261,6 +264,7 @@ void betterHillsLogic(GameModule * module)
 		}
 		case MAP_ID_VALIX: 
 		{
+			spawnPointSet(&BetterHillPoints[VALIX_01], 0x01);
 			spawnPointSet(&BetterHillPoints[VALIX_13], 0x0D);
 			spawnPointSet(&BetterHillPoints[VALIX_16], 0x10);
 			break;
