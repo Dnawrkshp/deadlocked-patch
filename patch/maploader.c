@@ -218,52 +218,89 @@ u64 loadHookFunc(u64 a0, u64 a1)
 	return ((u64 (*)(u64, u64))0x001518C8)(a0, a1);
 }
 
-//--------------------------------------------------------------
-int readGlobalVersion(int * version)
+//------------------------------------------------------------------------------
+int readFileLength(char * path)
 {
-	int r, fd, fSize;
+	int fd, fSize;
 
 	// Open
-	rpcUSBopen(fGlobalVersion, FIO_O_RDONLY);
+	rpcUSBopen(path, FIO_O_RDONLY);
 	rpcUSBSync(0, NULL, &fd);
 
 	// Ensure the file was opened successfully
 	if (fd < 0)
 	{
-		DPRINTF("error opening file (%s): %d\n", membuffer, fd);
-		return 0;	
+		DPRINTF("error opening file (%s): %d\n", path, fd);
+		return -1;
 	}
 	
 	// Get length of file
 	rpcUSBseek(fd, 0, SEEK_END);
 	rpcUSBSync(0, NULL, &fSize);
 
-	// Check the file has a valid size
-	if (fSize != 4)
+	// Close file
+	rpcUSBclose(fd);
+	rpcUSBSync(0, NULL, NULL);
+
+	return fSize;
+}
+
+//------------------------------------------------------------------------------
+int readFile(char * path, void * buffer, int length)
+{
+	int r, fd, fSize;
+
+	// Open
+	rpcUSBopen(path, FIO_O_RDONLY);
+	rpcUSBSync(0, NULL, &fd);
+
+	// Ensure the file was opened successfully
+	if (fd < 0)
 	{
-		DPRINTF("error seeking file (%s): %d\n", membuffer, fSize);
-		rpcUSBclose(fd);
-		rpcUSBSync(0, NULL, NULL);
-		return 0;
+		DPRINTF("error opening file (%s): %d\n", path, fd);
+		return -1;
 	}
+	
+	// Get length of file
+	rpcUSBseek(fd, 0, SEEK_END);
+	rpcUSBSync(0, NULL, &fSize);
+
+	// limit read length to size of file
+	if (fSize < length)
+		length = fSize;
 
 	// Go back to start of file
 	rpcUSBseek(fd, 0, SEEK_SET);
 	rpcUSBSync(0, NULL, NULL);
 
 	// Read map
-	if (rpcUSBread(fd, (void*)version, 4) != 0)
+	if (rpcUSBread(fd, (void*)buffer, length) != 0)
 	{
 		DPRINTF("error reading from file.\n");
 		rpcUSBclose(fd);
 		rpcUSBSync(0, NULL, NULL);
-		return 0;
+		return -1;
 	}
 	rpcUSBSync(0, NULL, &r);
 
-	// Close toc
+	// Close file
 	rpcUSBclose(fd);
 	rpcUSBSync(0, NULL, NULL);
+
+	return r;
+}
+
+//------------------------------------------------------------------------------
+int readGlobalVersion(int * version)
+{
+	int r;
+
+	r = readFile(fGlobalVersion, (void*)version, 4);
+	if (r != 4)
+	{
+		DPRINTF("error reading file (%s): %d\n", fGlobalVersion, fd);
+		return 0;
+	}
 
 	return 1;
 }
@@ -271,52 +308,18 @@ int readGlobalVersion(int * version)
 //--------------------------------------------------------------
 int readLevelVersion(char * name, int * version)
 {
-	int r, fd, fSize;
+	int r;
 
 	// Generate version filename
 	sprintf(membuffer, fVersion, name);
 
-	// Open
-	rpcUSBopen(membuffer, FIO_O_RDONLY);
-	rpcUSBSync(0, NULL, &fd);
-
-	// Ensure the file was opened successfully
-	if (fd < 0)
+	// read
+	r = readFile(membuffer, (void*)version, 4);
+	if (r != 4)
 	{
-		DPRINTF("error opening file (%s): %d\n", membuffer, fd);
-		return 0;	
-	}
-	
-	// Get length of file
-	rpcUSBseek(fd, 0, SEEK_END);
-	rpcUSBSync(0, NULL, &fSize);
-
-	// Check the file has a valid size
-	if (fSize != 4)
-	{
-		DPRINTF("error seeking file (%s): %d\n", membuffer, fSize);
-		rpcUSBclose(fd);
-		rpcUSBSync(0, NULL, NULL);
+		DPRINTF("error reading file (%s): %d\n", membuffer, fd);
 		return 0;
 	}
-
-	// Go back to start of file
-	rpcUSBseek(fd, 0, SEEK_SET);
-	rpcUSBSync(0, NULL, NULL);
-
-	// Read map
-	if (rpcUSBread(fd, (void*)version, 4) != 0)
-	{
-		DPRINTF("error reading from file.\n");
-		rpcUSBclose(fd);
-		rpcUSBSync(0, NULL, NULL);
-		return 0;
-	}
-	rpcUSBSync(0, NULL, &r);
-
-	// Close toc
-	rpcUSBclose(fd);
-	rpcUSBSync(0, NULL, NULL);
 
 	return 1;
 }
@@ -324,39 +327,18 @@ int readLevelVersion(char * name, int * version)
 //--------------------------------------------------------------
 int getLevelSizeUsb()
 {
-	int fd = -1;
-
 	// Generate wad filename
 	sprintf(membuffer, fWad, State.MapName);
 
-	// open wad file
-	rpcUSBopen(membuffer, FIO_O_RDONLY);
-	rpcUSBSync(0, NULL, &fd);
-	
-	// Ensure wad successfully opened
-	if (fd < 0)
-	{
-		DPRINTF("error opening file (%s): %d\n", membuffer, fd);
-		return 0;									
-	}
-
-	// Get length of file
-	rpcUSBseek(fd, 0, SEEK_END);
-	rpcUSBSync(0, NULL, &State.LoadingFileSize);
+	// get file length
+	State.LoadingFileSize = readFileLength(membuffer);
 
 	// Check the file has a valid size
 	if (State.LoadingFileSize <= 0)
 	{
 		DPRINTF("error seeking file (%s): %d\n", membuffer, State.LoadingFileSize);
-		rpcUSBclose(fd);
-		rpcUSBSync(0, NULL, NULL);
-		fd = -1;
 		return 0;
 	}
-
-	// Close wad
-	rpcUSBclose(fd);
-	rpcUSBSync(0, NULL, NULL);
 
 	return State.LoadingFileSize;
 }
@@ -364,65 +346,16 @@ int getLevelSizeUsb()
 //--------------------------------------------------------------
 int readLevelMapUsb(u8 * buf, int size)
 {
-	int r, fd, fSize;
-
 	// Generate toc filename
 	sprintf(membuffer, fMap, State.MapName);
 
-	// Open
-	rpcUSBopen(membuffer, FIO_O_RDONLY);
-	rpcUSBSync(0, NULL, &fd);
-
-	// Ensure the toc was opened successfully
-	if (fd < 0)
-	{
-		DPRINTF("error opening file (%s): %d\n", membuffer, fd);
-		return 0;	
-	}
-	
-	// Get length of file
-	rpcUSBseek(fd, 0, SEEK_END);
-	rpcUSBSync(0, NULL, &fSize);
-
-	// Check the file has a valid size
-	if (fSize <= 0)
-	{
-		DPRINTF("error seeking file (%s): %d\n", membuffer, fSize);
-		rpcUSBclose(fd);
-		rpcUSBSync(0, NULL, NULL);
-		return 0;
-	}
-
-	// Go back to start of file
-	rpcUSBseek(fd, 0, SEEK_SET);
-	rpcUSBSync(0, NULL, NULL);
-
-	// clamp size to be no larger than file size
-	if (size > fSize)
-		size = fSize;
-
-	// Read map
-	if (rpcUSBread(fd, buf, size) != 0)
-	{
-		DPRINTF("error reading from file.\n");
-		rpcUSBclose(fd);
-		rpcUSBSync(0, NULL, NULL);
-		return 0;
-	}
-	rpcUSBSync(0, NULL, &r);
-
-	// Close toc
-	rpcUSBclose(fd);
-	rpcUSBSync(0, NULL, NULL);
-
-	return 1;
+	// read
+	return readFile(membuffer, (void*)buf, size) > 0;
 }
 
 //--------------------------------------------------------------
 int readLevelBgUsb(u8 * buf, int size)
 {
-	int r, fd;
-
 	// Ensure a wad isn't already open
 	if (State.LoadingFd >= 0)
 	{
@@ -433,32 +366,8 @@ int readLevelBgUsb(u8 * buf, int size)
 	// Generate toc filename
 	sprintf(membuffer, fBg, State.MapName);
 
-	// Open
-	rpcUSBopen(membuffer, FIO_O_RDONLY);
-	rpcUSBSync(0, NULL, &fd);
-
-	// Ensure the toc was opened successfully
-	if (fd < 0)
-	{
-		DPRINTF("error opening file (%s): %d\n", membuffer, fd);
-		return 0;	
-	}
-
-	// Read bg
-	if (rpcUSBread(fd, buf, size) != 0)
-	{
-		DPRINTF("error reading from file.\n");
-		rpcUSBclose(fd);
-		rpcUSBSync(0, NULL, NULL);
-		return 0;
-	}
-	rpcUSBSync(0, NULL, &r);
-
-	// Close toc
-	rpcUSBclose(fd);
-	rpcUSBSync(0, NULL, NULL);
-
-	return 1;
+	// read
+	return readFile(membuffer, (void*)buf, size) > 0;
 }
 
 //--------------------------------------------------------------
