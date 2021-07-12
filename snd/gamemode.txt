@@ -1,0 +1,20 @@
+Search and Destroy
+
+Objectives:
+    Attacking Team:
+     - Destroy one of two defending team's bases/nodes
+     
+    Defending Team: 
+     - Kill all attacking team
+     - Prevent attackers from destroying a node within round timelimit
+     - Defuse their bomb
+
+Rules:
+    Two teams. Blue team is defenders. Red team is attackers.
+    Two nodes are spawned as blue.
+    Each team spawns next to their teammates (like CTF/CQ).
+    [?] Attacking team has to wait X seconds before they can move?
+    [?] The two nodes are chosen at random.
+    Round has a timelimit of 2 minutes.
+    Teams must win 6 rounds to win the match.
+    Teams switch every two rounds.
