@@ -22,7 +22,7 @@
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-typedef enum CustomMessageId
+enum CustomMessageId
 {
     UNUSED = 0,
 
@@ -46,6 +46,11 @@ typedef enum CustomMessageId
      */
     CUSTOM_MSG_ID_SET_MAP_OVERRIDE_RESPONSE = 4,
 
-} GameModuleState;
+    /*
+     * Sent by the host when a game lobby has started.
+     */
+    CUSTOM_MSG_ID_GAME_LOBBY_STARTED = 5,
+
+};
 
 #endif // _MESSAGEID_H_

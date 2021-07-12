@@ -17,7 +17,9 @@
 #include <libdl/player.h>
 #include <libdl/pad.h>
 #include <libdl/time.h>
+#include <libdl/net.h>
 #include "module.h"
+#include "messageid.h"
 #include <libdl/game.h>
 #include <libdl/string.h>
 #include <libdl/stdio.h>
@@ -70,6 +72,7 @@ void onMapLoaderOnlineMenu(void);
 
 // 
 int hasInitialized = 0;
+int sentGameStart = 0;
 
 /*
  * NAME :		patchCameraSpeed
@@ -489,6 +492,33 @@ void processGameModules()
 	}
 }
 
+void runGameStartMessager(void)
+{
+	GameSettings * gameSettings = gameGetSettings();
+	if (!gameSettings)
+		return;
+
+	// in staging
+	if (uiGetActive() == UI_ID_GAME_LOBBY)
+	{
+		// check if game started
+		if (!sentGameStart && gameSettings->GameLoadStartTime > 0)
+		{
+			// check if host
+			if (*(u8*)0x00172170 == 0)
+			{
+				netSendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_GAME_LOBBY_STARTED, 0, gameSettings);
+			}
+			
+			sentGameStart = 1;
+		}
+	}
+	else
+	{
+		sentGameStart = 0;
+	}
+}
+
 /*
  * NAME :		onOnlineMenu
  * 
@@ -547,6 +577,9 @@ int main (void)
 
 	// Run map loader
 	runMapLoader();
+
+	// Run game start messager
+	runGameStartMessager();
 
 	// Patch camera speed
 	patchCameraSpeed();
