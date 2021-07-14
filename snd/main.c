@@ -290,7 +290,7 @@ void hideMoby(Moby * moby)
 	// DPRINTF("moby hidden (%d) at %08x\n", moby->MobyId, (u32)moby);
 }
 
-void hideNode(Moby * nodeBaseMoby, int keepNodeAndOrb)
+void hideNode(Moby * nodeBaseMoby, int keepNode, int keepOrb)
 {
 	int i = 2;
 	NodeBasePVar_t * nodePvars = (NodeBasePVar_t*)nodeBaseMoby->PropertiesPointer;
@@ -298,11 +298,15 @@ void hideNode(Moby * nodeBaseMoby, int keepNodeAndOrb)
 	Moby ** subItems = (Moby**)nodePvars->ChildMobies;
 
 	// hide base and orb
-	if (!keepNodeAndOrb)
+	if (!keepNode)
 	{
 		hideMoby(nodeBaseMoby);
-		hideMoby(orb);
 		i = 0;
+	}
+
+	if (!keepOrb)
+	{
+		hideMoby(orb);
 	}
 
 	// hide subitems (turrets)
@@ -345,7 +349,7 @@ void hideNodes(void)
 		if (moby->MobyId == MOBY_ID_NODE_BASE)
 		{
 			int isBombSite = moby == SNDState.Nodes[0].Moby || moby == SNDState.Nodes[1].Moby;
-			hideNode(moby, isBombSite);
+			hideNode(moby, isBombSite, isBombSite);
 
 			// Move node
 			if (isBombSite)
@@ -500,7 +504,7 @@ void SNDHackerOrbEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_
 					}
 
 					// hide the other bomb site
-					hideNode(SNDState.Nodes[!nodeIndex].Moby, 0);
+					hideNode(SNDState.Nodes[!nodeIndex].Moby, 0, 0);
 				}
 				else
 				{
@@ -606,6 +610,18 @@ void GuberMobyEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_fun
 	}
 }
 
+Moby * spawnExplosion(VECTOR position, float size)
+{
+	// SpawnMoby_5025
+	u128 param_1 = *(u128*)position;
+	((Moby* (*)(u128, float, int, int, int, int, int, short, short, short, short, short, short,
+				short, short, float, float, float, int, Moby *, int, int, int, int, int, int, int, int,
+				int, short, Moby *, Moby *, u128)) (0x003c3b38))
+				(param_1, size, 0x2, 0x14, 0x10, 0x10, 0x10, 0x10, 0x2, 0, 1, 0, 0,
+				0, 0, 0, 0, 2, 0x00080800, 0, 0x00388EF7, 0x000063F7, 0x00407FFFF, 0x000020FF, 0x00008FFF, 0x003064FF, 0x7F60A0FF, 0x280000FF,
+				0x003064FF, 0, 0, 0, 0);
+}
+
 void * spawnPackHook(u16 mobyId, int pvarSize, int guberId, int arg4, int arg5)
 {
 	void * result = ((void* (*)(u16, int, int, int, int))0x0061C3A8)(mobyId, pvarSize, guberId, arg4, arg5);
@@ -655,6 +671,7 @@ void bombTimerLogic()
 	
 	if (!SNDState.BombDefused && SNDState.BombPlantedTicks > 0 && SNDState.BombPlantSiteIndex >= 0)
 	{
+		SNDNodeState_t * plantSiteNodeState = &SNDState.Nodes[SNDState.BombPlantSiteIndex];
 		int timeLeft = (SND_BOMB_TIMER_SECONDS * TIME_SECOND) - (gameTime - SNDState.BombPlantedTicks);
 		float timeSecondsLeft = timeLeft / (float)TIME_SECOND;
 		float scale = SND_BOMB_TIMER_TEXT_SCALE;
@@ -671,8 +688,11 @@ void bombTimerLogic()
 			setRoundOutcome(SND_OUTCOME_BOMB_DETONATED);
 
 			// detonate
+			for (i = 0; i < 5; ++i)
+				spawnExplosion(plantSiteNodeState->OrbGuberMoby->Moby->Position, 5);
 
 			// blow up node
+			hideNode(plantSiteNodeState->Moby, 1, 0);
 
 			// blow up defenders
 			for (i = 0; i < GAME_MAX_PLAYERS; ++i)
