@@ -24,3 +24,5 @@ This gamemode has two teams. One is the defending team and the other is the atta
 - [x] Detonate all defenders on bomb detonation
 - [x] Bomb detonation has explosion effect on bombsite
 - [x] Add half time
+- [x] Add round win/loss messages
+- [ ] Add half time message

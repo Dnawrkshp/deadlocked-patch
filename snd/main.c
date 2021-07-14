@@ -94,6 +94,12 @@
 /*
  *
  */
+#define SND_TEAM_DEFENDER_ID				(0)
+#define SND_TEAM_ATTACKER_ID				(1)
+
+/*
+ *
+ */
 #define SND_BOMB_TIMER_BASE_COLOR1			(0xFFB700B7)
 #define SND_BOMB_TIMER_BASE_COLOR2			(0xFF670067)
 #define SND_BOMB_TIMER_HIGH_COLOR			(0xFFFFFFFF)
@@ -111,6 +117,8 @@ const char * SND_BOMB_PICKED_UP = "The bomb has been picked up!";
 const char * SND_BOMB_PLANTED = "The bomb has been planted!";
 const char * SND_BOMB_DEFUSED = "Bomb defused!";
 const char * SND_BOMB_DROPPED = "The bomb has been dropped!";
+const char * SND_ROUND_WIN = "Round win!";
+const char * SND_ROUND_LOSS = "Round loss!";
 
 /*
  *
@@ -162,6 +170,7 @@ struct SNDState
 	int RoundEndTicks;
 	int RoundResult;
 	int RoundInitialized;
+	int RoundLastWinners;
 	int TeamWins[2];
 	int TeamRolesFlipped;
 	int GameOver;
@@ -169,8 +178,8 @@ struct SNDState
 	int BombPlantSiteIndex;
 	int BombPlantedTicks;
 	int BombDefused;
-	int TeamDefender;
-	int TeamAttacker;
+	int DefenderTeamId;
+	int AttackerTeamId;
 	GuberMoby * bombPackGuber;
 	Moby * bombPackMoby;
 	
@@ -481,7 +490,7 @@ void SNDHackerOrbEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_
 			// Only capture if bomb is picked up
 			if (SNDState.RoundInitialized && playerId >= 0 && !SNDState.bombPackMoby && nodeIndex >= 0)
 			{
-				if (team == SNDState.TeamAttacker)
+				if (team == SNDState.AttackerTeamId)
 				{
 					// bomb has been planted
 					uiShowPopup(0, SND_BOMB_PLANTED);
@@ -525,8 +534,8 @@ void SNDHackerOrbEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_
 			if (nodeIndex >= 0)
 			{
 				int nodeTeam = orbPvars->NodeTeam;
-				if (nodeTeam != SNDState.TeamDefender && nodeTeam != SNDState.TeamAttacker)
-					nodeCapture(moby->GuberMoby, SNDState.TeamDefender);
+				if (nodeTeam != SNDState.DefenderTeamId && nodeTeam != SNDState.AttackerTeamId)
+					nodeCapture(moby->GuberMoby, SNDState.DefenderTeamId);
 			}
 
 			return;
@@ -560,11 +569,11 @@ void SNDWeaponPackEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler
 			if (p && p->Guber.Id.GID.HostId == hostId)
 			{
 				// only allow attacking team to pickup
-				if (p->Team != SNDState.TeamAttacker)
+				if (p->Team != SNDState.AttackerTeamId)
 					return;
 				
 				// 
-				if (p != localPlayer && localPlayer->Team == SNDState.TeamAttacker)
+				if (p != localPlayer && localPlayer->Team == SNDState.AttackerTeamId)
 					uiShowPopup(localPlayer->LocalPlayerIndex, SND_BOMB_PICKED_UP);
 
 				// remove reference
@@ -629,7 +638,7 @@ void * spawnPackHook(u16 mobyId, int pvarSize, int guberId, int arg4, int arg5)
 	{
 		// only bomb pack can spawn
 		SNDState.bombPackMoby = (Moby*)(*(u32*)((u32)result + 0x18));
-		SNDState.bombPackMoby->TextureId = 0x80 + (8 * SNDState.TeamAttacker);
+		SNDState.bombPackMoby->TextureId = 0x80 + (8 * SNDState.AttackerTeamId);
 
 		DPRINTF("spawnPackHook bomb pack moby = %08x\n", (u32)SNDState.bombPackMoby);
 	}
@@ -655,6 +664,26 @@ GuberMoby * spawnPackGuber(VECTOR position, u32 mask)
 	}
 
 	return guberMoby;
+}
+
+void drawRoundMessage(const char * message)
+{
+	u32 boxColor = 0x20ffffff;
+	float scale = 1.5;
+	int fw = gfxGetFontWidth(message, -1, scale);
+	float w = fw / (2.0 * SCREEN_WIDTH);
+	float h = 36.0 / SCREEN_HEIGHT;
+	float x = 0.5;
+	float y = 0.14;
+	float yOff = -0.015;
+	float p = 0.02;
+	RECT r = { {x-w-p,y-p}, {x+w+p,y-p}, {x-w-p,y+h+p}, {x+w+p,y+h+p} };
+
+	// draw container
+	gfxScreenSpaceBox(&r, boxColor, boxColor, boxColor, boxColor);
+
+	// draw message
+	gfxScreenSpaceText(SCREEN_WIDTH * x, SCREEN_HEIGHT * (y + yOff), scale, scale * 1.5, 0x80FFFFFF, message, -1);
 }
 
 void playTimerTickSound()
@@ -699,7 +728,7 @@ void bombTimerLogic()
 				SNDPlayerState_t * player = &SNDState.Players[i];
 				if (player->Player)
 				{
-					if (player->Player->Team == SNDState.TeamDefender)
+					if (player->Player->Team == SNDState.DefenderTeamId)
 					{
 						player->Player->BlowupTimer = 1;
 					}
@@ -750,7 +779,7 @@ void playerLogic(SNDPlayerState_t * playerState, int isHost)
 				SNDState.bombPackGuber = (GuberMoby*)spawnPackGuber(playerState->Player->PlayerPosition, 1 << WEAPON_ID_HACKER_RAY);
 
 			// tell team bomb has dropped
-			if (localPlayer->Team == SNDState.TeamAttacker)
+			if (localPlayer->Team == SNDState.AttackerTeamId)
 				uiShowPopup(0, SND_BOMB_DROPPED);
 		}
 
@@ -797,7 +826,7 @@ void resetRoundState(void)
 		// Remove hacker rays
 		if (player)
 		{
-			if (player->Team == SNDState.TeamAttacker)
+			if (player->Team == SNDState.AttackerTeamId)
 			{
 				spawnPlayer(player, AttackTeamSpawnPoint);
 
@@ -820,8 +849,8 @@ void resetRoundState(void)
 		moveNode(SNDState.Nodes[1].Moby, Node2SpawnPoint);
 
 		// capture
-		nodeCapture(SNDState.Nodes[0].OrbGuberMoby, SNDState.TeamDefender);
-		nodeCapture(SNDState.Nodes[1].OrbGuberMoby, SNDState.TeamDefender);
+		nodeCapture(SNDState.Nodes[0].OrbGuberMoby, SNDState.DefenderTeamId);
+		nodeCapture(SNDState.Nodes[1].OrbGuberMoby, SNDState.DefenderTeamId);
 	}
 
 	// 
@@ -881,8 +910,8 @@ void initialize(void)
 	SNDState.Nodes[1].OrbGuberMoby = 0;
 	SNDState.bombPackMoby = 0;
 	SNDState.bombPackGuber = 0;
-	SNDState.TeamDefender = TEAM_BLUE;
-	SNDState.TeamAttacker = TEAM_RED;
+	SNDState.DefenderTeamId = TEAM_BLUE;
+	SNDState.AttackerTeamId = TEAM_RED;
 
 	// Install spawn pack hook
 	*(u32*)0x0061CDC8 = 0x0C000000 | ((u32)&spawnPackHook / 4);
@@ -1013,21 +1042,25 @@ void gameStart(void)
 					case SND_OUTCOME_BOMB_DEFUSED:
 					{
 						// defenders win
-						if (++SNDState.TeamWins[SNDState.TeamDefender] >= SND_ROUNDS_TO_WIN)
+						if (++SNDState.TeamWins[SND_TEAM_DEFENDER_ID] >= SND_ROUNDS_TO_WIN)
 						{
-							SNDState.WinningTeam = SNDState.TeamDefender;
+							SNDState.WinningTeam = SNDState.DefenderTeamId;
 							SNDState.GameOver = 1;
 						}
+
+						SNDState.RoundLastWinners = SNDState.DefenderTeamId;
 						break;
 					}
 					case SND_OUTCOME_BOMB_DETONATED:
 					{
 						// attackers win
-						if (++SNDState.TeamWins[SNDState.TeamAttacker] >= SND_ROUNDS_TO_WIN)
+						if (++SNDState.TeamWins[SND_TEAM_ATTACKER_ID] >= SND_ROUNDS_TO_WIN)
 						{
-							SNDState.WinningTeam = SNDState.TeamAttacker;
+							SNDState.WinningTeam = SNDState.AttackerTeamId;
 							SNDState.GameOver = 1;
 						}
+
+						SNDState.RoundLastWinners = SNDState.AttackerTeamId;
 						break;
 					}
 				}
@@ -1054,13 +1087,20 @@ void gameStart(void)
 					if (SNDState.RoundNumber == SND_ROUNDS_TO_FLIP && !SNDState.TeamRolesFlipped)
 					{
 						SNDState.TeamRolesFlipped = 1;
-						SNDState.TeamDefender = !SNDState.TeamDefender;
-						SNDState.TeamAttacker = !SNDState.TeamAttacker;
+						SNDState.DefenderTeamId = !SNDState.DefenderTeamId;
+						SNDState.AttackerTeamId = !SNDState.AttackerTeamId;
 					}
 
 					// reset
 					resetRoundState();
 				}
+			}
+			else
+			{
+				if (localPlayer->Team == SNDState.RoundLastWinners)
+					drawRoundMessage(SND_ROUND_WIN);
+				else
+					drawRoundMessage(SND_ROUND_LOSS);
 			}
 		}
 		else
@@ -1090,7 +1130,7 @@ void gameStart(void)
 			int hasAttackers = 0;
 			for (i = 0; i < GAME_MAX_PLAYERS; ++i)
 			{
-				if (SNDState.Players[i].Player && SNDState.Players[i].Player->Team == SNDState.TeamAttacker)
+				if (SNDState.Players[i].Player && SNDState.Players[i].Player->Team == SNDState.AttackerTeamId)
 				{
 					hasAttackers = 1;
 					if (!SNDState.Players[i].IsDead)
