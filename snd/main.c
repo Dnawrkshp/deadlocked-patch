@@ -69,7 +69,7 @@
 /*
  * Number of rounds before flipping team roles.
  */
-#define SND_ROUNDS_TO_FLIP					(SND_ROUNDS_TO_WIN - 1)
+#define SND_ROUNDS_TO_FLIP					(3)
 
 /*
  * Max number of rounds before game ends
@@ -119,6 +119,9 @@ const char * SND_BOMB_DEFUSED = "Bomb defused!";
 const char * SND_BOMB_DROPPED = "The bomb has been dropped!";
 const char * SND_ROUND_WIN = "Round win!";
 const char * SND_ROUND_LOSS = "Round loss!";
+const char * SND_HALF_TIME = "Switching sides...";
+const char * SND_DEFEND_HELLO = "Defend your bombsites!";
+const char * SND_ATTACK_HELLO = "Destroy the enemy bombsite!";
 
 /*
  *
@@ -167,6 +170,7 @@ enum SNDOutcome
 struct SNDState
 {
 	int RoundNumber;
+	int RoundStartTicks;
 	int RoundEndTicks;
 	int RoundResult;
 	int RoundInitialized;
@@ -282,8 +286,17 @@ void setRoundOutcome(int outcome)
 	if (SNDState.RoundResult)
 		return;
 
+	// 
 	SNDState.RoundResult = outcome;
 	SNDState.RoundEndTicks = gameGetTime() + SND_ROUND_TRANSITION_WAIT_MS;
+
+	// print halftime message
+	if ((SNDState.RoundNumber+1) % SND_ROUNDS_TO_FLIP == 0)
+	{
+		uiShowPopup(0, SND_HALF_TIME);
+		uiShowPopup(1, SND_HALF_TIME);
+	}
+
 	DPRINTF("outcome set to %d\n", outcome);
 }
 
@@ -666,10 +679,9 @@ GuberMoby * spawnPackGuber(VECTOR position, u32 mask)
 	return guberMoby;
 }
 
-void drawRoundMessage(const char * message)
+void drawRoundMessage(const char * message, float scale)
 {
 	u32 boxColor = 0x20ffffff;
-	float scale = 1.5;
 	int fw = gfxGetFontWidth(message, -1, scale);
 	float w = fw / (2.0 * SCREEN_WIDTH);
 	float h = 36.0 / SCREEN_HEIGHT;
@@ -794,10 +806,12 @@ void resetRoundState(void)
 	Player * player = NULL;
 	Player * localPlayer = (Player*)0x00347AA0;
 	GameData * gameData = gameGetData();
+	int gameTime = gameGetTime();
 
 	// 
 	SNDState.RoundInitialized = 0;
 	SNDState.RoundEndTicks = 0;
+	SNDState.RoundStartTicks = gameTime;
 	SNDState.RoundResult = SND_OUTCOME_INCOMPLETE;
 	SNDState.BombDefused = 0;
 	SNDState.BombPlantSiteIndex = -1;
@@ -808,7 +822,7 @@ void resetRoundState(void)
 	SNDState.Timer.Color = 0xFFFFFFFF;
 
 	// Set round time limit
-	gameData->TimeEnd = (gameGetTime() - gameData->TimeStart) + (SND_ROUND_TIMELIMIT_SECONDS * TIME_SECOND);
+	gameData->TimeEnd = (gameTime - gameData->TimeStart) + (SND_ROUND_TIMELIMIT_SECONDS * TIME_SECOND);
 	
 	// set capture time to fast (plant speed)
 	*(u16*)0x00440E68 = 0x3CA3;
@@ -1042,28 +1056,29 @@ void gameStart(void)
 					case SND_OUTCOME_BOMB_DEFUSED:
 					{
 						// defenders win
-						if (++SNDState.TeamWins[SND_TEAM_DEFENDER_ID] >= SND_ROUNDS_TO_WIN)
-						{
-							SNDState.WinningTeam = SNDState.DefenderTeamId;
+						if (++SNDState.TeamWins[SNDState.DefenderTeamId] >= SND_ROUNDS_TO_WIN)
 							SNDState.GameOver = 1;
-						}
-
+						
 						SNDState.RoundLastWinners = SNDState.DefenderTeamId;
 						break;
 					}
 					case SND_OUTCOME_BOMB_DETONATED:
 					{
 						// attackers win
-						if (++SNDState.TeamWins[SND_TEAM_ATTACKER_ID] >= SND_ROUNDS_TO_WIN)
-						{
-							SNDState.WinningTeam = SNDState.AttackerTeamId;
+						if (++SNDState.TeamWins[SNDState.AttackerTeamId] >= SND_ROUNDS_TO_WIN)
 							SNDState.GameOver = 1;
-						}
 
 						SNDState.RoundLastWinners = SNDState.AttackerTeamId;
 						break;
 					}
 				}
+
+				// update current winning team
+				SNDState.WinningTeam = -1;
+				if (SNDState.TeamWins[SNDState.DefenderTeamId] > SNDState.TeamWins[SNDState.AttackerTeamId])
+					SNDState.WinningTeam = SNDState.DefenderTeamId;
+				else if (SNDState.TeamWins[SNDState.DefenderTeamId] < SNDState.TeamWins[SNDState.AttackerTeamId])
+					SNDState.WinningTeam = SNDState.AttackerTeamId;
 				
 				ScoreboardChanged = 1;
 				SNDState.RoundResult = SND_OUTCOME_INCOMPLETE;
@@ -1084,9 +1099,9 @@ void gameStart(void)
 				else
 				{
 					// handle half time
-					if (SNDState.RoundNumber == SND_ROUNDS_TO_FLIP && !SNDState.TeamRolesFlipped)
+					if (SNDState.RoundNumber == SND_ROUNDS_TO_FLIP)
 					{
-						SNDState.TeamRolesFlipped = 1;
+						SNDState.TeamRolesFlipped = !SNDState.TeamRolesFlipped;
 						SNDState.DefenderTeamId = !SNDState.DefenderTeamId;
 						SNDState.AttackerTeamId = !SNDState.AttackerTeamId;
 					}
@@ -1098,9 +1113,9 @@ void gameStart(void)
 			else
 			{
 				if (localPlayer->Team == SNDState.RoundLastWinners)
-					drawRoundMessage(SND_ROUND_WIN);
+					drawRoundMessage(SND_ROUND_WIN, 1.5);
 				else
-					drawRoundMessage(SND_ROUND_LOSS);
+					drawRoundMessage(SND_ROUND_LOSS, 1.5);
 			}
 		}
 		else
@@ -1123,6 +1138,15 @@ void gameStart(void)
 			if (gameData->TimeEnd && gameTime > gameData->TimeEnd)
 			{
 				setRoundOutcome(SND_OUTCOME_TIME_END);
+			}
+
+			// Display hello
+			if ((SNDState.RoundNumber % SND_ROUNDS_TO_FLIP) == 0 && (gameTime - SNDState.RoundStartTicks) < (5 * TIME_SECOND))
+			{
+				if (localPlayer->Team == SNDState.DefenderTeamId)
+					drawRoundMessage(SND_DEFEND_HELLO, 1);
+				else
+					drawRoundMessage(SND_ATTACK_HELLO, 1);
 			}
 
 			int isHost = gameIsHost(localPlayer->Guber.Id.GID.HostId);

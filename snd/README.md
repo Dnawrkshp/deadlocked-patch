@@ -25,4 +25,4 @@ This gamemode has two teams. One is the defending team and the other is the atta
 - [x] Bomb detonation has explosion effect on bombsite
 - [x] Add half time
 - [x] Add round win/loss messages
-- [ ] Add half time message
+- [x] Add half time message
