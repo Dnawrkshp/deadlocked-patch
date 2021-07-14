@@ -121,7 +121,7 @@ void initialize(void)
 				hbMoby->Scale = (float)0.11;
 				hbMoby->UNK_38[0] = 2;
 				hbMoby->UNK_38[1] = 2;
-				hbMoby->ExtraPropertiesPointer = 0;
+				hbMoby->GuberMoby = 0;
 
 				// For this model the vector here is copied to 0x80 in the moby
 				// This fixes the occlusion bug

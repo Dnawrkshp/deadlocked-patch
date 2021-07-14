@@ -161,7 +161,7 @@ Moby * spawn(MobyDef * def, VECTOR position, VECTOR rotation, float scale)
 	sourceBox->Scale = (float)0.11 * scale * def->ObjectScale;
 	sourceBox->UNK_38[0] = 2;
 	sourceBox->UNK_38[1] = 2;
-	sourceBox->ExtraPropertiesPointer = 0;
+	sourceBox->GuberMoby = 0;
 
 	// For this model the vector here is copied to 0x80 in the moby
 	// This fixes the occlusion bug
@@ -185,10 +185,9 @@ struct ClimbChain * GetFreeChain(void)
 
 void DestroyOld(void)
 {
-	Moby ** mobies = mobyGetLoaded();
-	Moby * moby;
+	Moby * moby = mobyGetFirst();
 
-	while ((moby = *mobies++))
+	while (moby)
 	{
 		if (moby->Opacity == 0x7E)
 		{
@@ -199,6 +198,8 @@ void DestroyOld(void)
 				--MobyCount;
 			}
 		}
+
+		moby = moby->NextMoby;
 	}
 }
 
@@ -331,7 +332,7 @@ void initialize(void)
 	gameSetSurvivor(1);
 
 	// get water moby
-	WaterMoby = mobyGetWater();
+	WaterMoby = mobyGetFirst(); // big assumption here, could be a problem
 	WaterHeight = ((float*)WaterMoby->PropertiesPointer)[19];
 
 	// 

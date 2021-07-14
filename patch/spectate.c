@@ -101,8 +101,8 @@ void enableSpectate(Player * player, struct PlayerSpectateData * data)
     *(u32*)0x004DB88C = 0;
 
     data->Enabled = 1;
-    hudGetPlayerFlags(player->LocalPlayerIndex)->Weapons = 0;
-    hudGetPlayerFlags(player->LocalPlayerIndex)->Healthbar = 0;
+    hudGetPlayerFlags(player->LocalPlayerIndex)->Flags.Weapons = 0;
+    hudGetPlayerFlags(player->LocalPlayerIndex)->Flags.Healthbar = 0;
 }
 
 /*
@@ -119,8 +119,8 @@ void disableSpectate(Player * player, struct PlayerSpectateData * data)
     *(u32*)0x004DB88C = 0xA48200E0;
 
     data->Enabled = 0;
-    hudGetPlayerFlags(player->LocalPlayerIndex)->Weapons = 1;
-    hudGetPlayerFlags(player->LocalPlayerIndex)->Healthbar = 1;
+    hudGetPlayerFlags(player->LocalPlayerIndex)->Flags.Weapons = 1;
+    hudGetPlayerFlags(player->LocalPlayerIndex)->Flags.Healthbar = 1;
 }
 
 /*

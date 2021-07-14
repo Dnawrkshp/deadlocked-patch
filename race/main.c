@@ -216,7 +216,7 @@ Moby * spawn(int mobyId, VECTOR position, VECTOR rotation, float scale)
 	sourceBox->Scale = (float)0.11 * scale;
 	sourceBox->UNK_38[0] = 2;
 	sourceBox->UNK_38[1] = 2;
-	sourceBox->ExtraPropertiesPointer = 0;
+	sourceBox->GuberMoby = 0;
 
 	// For this model the vector here is copied to 0x80 in the moby
 	// This fixes the occlusion bug

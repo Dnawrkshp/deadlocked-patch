@@ -551,8 +551,8 @@ void gameStart(void)
 	if (!gameHasEnded() && !GameOver)
 	{
 		// Disable weapon hud
-		hudGetPlayerFlags(0)->Weapons = 0;
-		hudGetPlayerFlags(1)->Weapons = 0;
+		hudGetPlayerFlags(0)->Flags.Weapons = 0;
+		hudGetPlayerFlags(1)->Flags.Weapons = 0;
 
 		// Iterate through players
 		for (i = 0; i < GAME_MAX_PLAYERS; ++i)

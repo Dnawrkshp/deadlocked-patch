@@ -48,27 +48,7 @@ SECTIONS {
 		*(.sdata.*)
 		*(.gnu.linkonce.s*)
 	}
-
-	_edata = .;
-	PROVIDE(edata = .);
-
-	/* Uninitialized data.  */
-	.sbss ALIGN(128) : {
-		_fbss = . ;
-		*(.sbss)
-		*(.sbss.*)
-		*(.gnu.linkonce.sb*)
-		*(.scommon)
-	}
-
-	.bss ALIGN(128) : {
-		*(.bss)
-		*(.bss.*)
-		*(.gnu.linkonce.b*)
-		*(COMMON)
-	}
-	_end_bss = .;
-
+	
 	_end = . ;
 	PROVIDE(end = .);
 }

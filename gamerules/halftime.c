@@ -78,14 +78,13 @@ void htReset(void)
  */
 void getFlags(void)
 {
-	Moby ** mobies = mobyGetLoaded();
-	Moby * moby;
+	Moby * moby = mobyGetFirst();
 
 	// reset
 	CtfFlags[0] = CtfFlags[1] = CtfFlags[2] = CtfFlags[3] = 0;
 
 	// grab flags
-	while ((moby = *mobies))
+	while (moby)
 	{
 		if (moby->MobyId == MOBY_ID_BLUE_FLAG ||
 			moby->MobyId == MOBY_ID_RED_FLAG ||
@@ -95,7 +94,7 @@ void getFlags(void)
 			CtfFlags[*(u16*)(moby->PropertiesPointer + 0x14)] = moby;
 		}
 
-		++mobies;
+		moby = moby->NextMoby;
 	}
 }
 
