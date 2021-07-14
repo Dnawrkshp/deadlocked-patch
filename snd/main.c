@@ -65,13 +65,16 @@
  * Number of rounds to win.
  */
 #define SND_ROUNDS_TO_WIN					(6)
-#define SND_ROUNDS_TO_FLIP					(SND_ROUNDS_TO_WIN - 1)
-#define SND_MAX_ROUNDS						(2 * (SND_ROUNDS_TO_WIN-1))
 
 /*
  * Number of rounds before flipping team roles.
  */
-// #define SND_ROUNDS_TO_FLIP					(2)
+#define SND_ROUNDS_TO_FLIP					(SND_ROUNDS_TO_WIN - 1)
+
+/*
+ * Max number of rounds before game ends
+ */
+#define SND_MAX_ROUNDS						(2 * (SND_ROUNDS_TO_WIN-1))
 
 /*
  * Timelimit of each round in seconds.
@@ -82,12 +85,6 @@
  * Number of seconds after bomb planted before explosion.
  */
 #define SND_BOMB_TIMER_SECONDS				(3)
-
-/*
- * Search and destroy teams.
- */
-#define SND_TEAM_DEFEND						(TEAM_BLUE)
-#define SND_TEAM_ATTACK						(TEAM_RED)
 
 /*
  *
@@ -172,6 +169,8 @@ struct SNDState
 	int BombPlantSiteIndex;
 	int BombPlantedTicks;
 	int BombDefused;
+	int TeamDefender;
+	int TeamAttacker;
 	GuberMoby * bombPackGuber;
 	Moby * bombPackMoby;
 	
@@ -482,7 +481,7 @@ void SNDHackerOrbEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_
 			// Only capture if bomb is picked up
 			if (SNDState.RoundInitialized && playerId >= 0 && !SNDState.bombPackMoby && nodeIndex >= 0)
 			{
-				if (team == SND_TEAM_ATTACK)
+				if (team == SNDState.TeamAttacker)
 				{
 					// bomb has been planted
 					uiShowPopup(0, SND_BOMB_PLANTED);
@@ -526,8 +525,8 @@ void SNDHackerOrbEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_
 			if (nodeIndex >= 0)
 			{
 				int nodeTeam = orbPvars->NodeTeam;
-				if (nodeTeam != SND_TEAM_DEFEND && nodeTeam != SND_TEAM_ATTACK)
-					nodeCapture(moby->GuberMoby, SND_TEAM_DEFEND);
+				if (nodeTeam != SNDState.TeamDefender && nodeTeam != SNDState.TeamAttacker)
+					nodeCapture(moby->GuberMoby, SNDState.TeamDefender);
 			}
 
 			return;
@@ -561,11 +560,11 @@ void SNDWeaponPackEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler
 			if (p && p->Guber.Id.GID.HostId == hostId)
 			{
 				// only allow attacking team to pickup
-				if (p->Team != SND_TEAM_ATTACK)
+				if (p->Team != SNDState.TeamAttacker)
 					return;
 				
 				// 
-				if (p != localPlayer && localPlayer->Team == SND_TEAM_ATTACK)
+				if (p != localPlayer && localPlayer->Team == SNDState.TeamAttacker)
 					uiShowPopup(localPlayer->LocalPlayerIndex, SND_BOMB_PICKED_UP);
 
 				// remove reference
@@ -614,7 +613,7 @@ Moby * spawnExplosion(VECTOR position, float size)
 {
 	// SpawnMoby_5025
 	u128 param_1 = *(u128*)position;
-	((Moby* (*)(u128, float, int, int, int, int, int, short, short, short, short, short, short,
+	return ((Moby* (*)(u128, float, int, int, int, int, int, short, short, short, short, short, short,
 				short, short, float, float, float, int, Moby *, int, int, int, int, int, int, int, int,
 				int, short, Moby *, Moby *, u128)) (0x003c3b38))
 				(param_1, size, 0x2, 0x14, 0x10, 0x10, 0x10, 0x10, 0x2, 0, 1, 0, 0,
@@ -630,7 +629,7 @@ void * spawnPackHook(u16 mobyId, int pvarSize, int guberId, int arg4, int arg5)
 	{
 		// only bomb pack can spawn
 		SNDState.bombPackMoby = (Moby*)(*(u32*)((u32)result + 0x18));
-		SNDState.bombPackMoby->TextureId = 0x80 + (8 * SND_TEAM_ATTACK);
+		SNDState.bombPackMoby->TextureId = 0x80 + (8 * SNDState.TeamAttacker);
 
 		DPRINTF("spawnPackHook bomb pack moby = %08x\n", (u32)SNDState.bombPackMoby);
 	}
@@ -700,7 +699,7 @@ void bombTimerLogic()
 				SNDPlayerState_t * player = &SNDState.Players[i];
 				if (player->Player)
 				{
-					if (player->Player->Team == SND_TEAM_DEFEND)
+					if (player->Player->Team == SNDState.TeamDefender)
 					{
 						player->Player->BlowupTimer = 1;
 					}
@@ -751,7 +750,7 @@ void playerLogic(SNDPlayerState_t * playerState, int isHost)
 				SNDState.bombPackGuber = (GuberMoby*)spawnPackGuber(playerState->Player->PlayerPosition, 1 << WEAPON_ID_HACKER_RAY);
 
 			// tell team bomb has dropped
-			if (localPlayer->Team == SND_TEAM_ATTACK)
+			if (localPlayer->Team == SNDState.TeamAttacker)
 				uiShowPopup(0, SND_BOMB_DROPPED);
 		}
 
@@ -798,7 +797,7 @@ void resetRoundState(void)
 		// Remove hacker rays
 		if (player)
 		{
-			if (player->Team == SND_TEAM_ATTACK)
+			if (player->Team == SNDState.TeamAttacker)
 			{
 				spawnPlayer(player, AttackTeamSpawnPoint);
 
@@ -821,8 +820,8 @@ void resetRoundState(void)
 		moveNode(SNDState.Nodes[1].Moby, Node2SpawnPoint);
 
 		// capture
-		nodeCapture(SNDState.Nodes[0].OrbGuberMoby, SND_TEAM_DEFEND);
-		nodeCapture(SNDState.Nodes[1].OrbGuberMoby, SND_TEAM_DEFEND);
+		nodeCapture(SNDState.Nodes[0].OrbGuberMoby, SNDState.TeamDefender);
+		nodeCapture(SNDState.Nodes[1].OrbGuberMoby, SNDState.TeamDefender);
 	}
 
 	// 
@@ -882,6 +881,8 @@ void initialize(void)
 	SNDState.Nodes[1].OrbGuberMoby = 0;
 	SNDState.bombPackMoby = 0;
 	SNDState.bombPackGuber = 0;
+	SNDState.TeamDefender = TEAM_BLUE;
+	SNDState.TeamAttacker = TEAM_RED;
 
 	// Install spawn pack hook
 	*(u32*)0x0061CDC8 = 0x0C000000 | ((u32)&spawnPackHook / 4);
@@ -1012,9 +1013,9 @@ void gameStart(void)
 					case SND_OUTCOME_BOMB_DEFUSED:
 					{
 						// defenders win
-						if (++SNDState.TeamWins[SND_TEAM_DEFEND] >= SND_ROUNDS_TO_WIN)
+						if (++SNDState.TeamWins[SNDState.TeamDefender] >= SND_ROUNDS_TO_WIN)
 						{
-							SNDState.WinningTeam = SND_TEAM_DEFEND;
+							SNDState.WinningTeam = SNDState.TeamDefender;
 							SNDState.GameOver = 1;
 						}
 						break;
@@ -1022,9 +1023,9 @@ void gameStart(void)
 					case SND_OUTCOME_BOMB_DETONATED:
 					{
 						// attackers win
-						if (++SNDState.TeamWins[SND_TEAM_ATTACK] >= SND_ROUNDS_TO_WIN)
+						if (++SNDState.TeamWins[SNDState.TeamAttacker] >= SND_ROUNDS_TO_WIN)
 						{
-							SNDState.WinningTeam = SND_TEAM_ATTACK;
+							SNDState.WinningTeam = SNDState.TeamAttacker;
 							SNDState.GameOver = 1;
 						}
 						break;
@@ -1037,7 +1038,29 @@ void gameStart(void)
 
 			if (gameTime > SNDState.RoundEndTicks)
 			{
-				resetRoundState();
+				// increment round counter
+				SNDState.RoundNumber += 1;
+
+				if (SNDState.RoundNumber >= SND_MAX_ROUNDS)
+				{
+					// reach max number of rounds
+					// game must be a draw
+					SNDState.WinningTeam = -1;
+					SNDState.GameOver = 1;
+				}
+				else
+				{
+					// handle half time
+					if (SNDState.RoundNumber == SND_ROUNDS_TO_FLIP && !SNDState.TeamRolesFlipped)
+					{
+						SNDState.TeamRolesFlipped = 1;
+						SNDState.TeamDefender = !SNDState.TeamDefender;
+						SNDState.TeamAttacker = !SNDState.TeamAttacker;
+					}
+
+					// reset
+					resetRoundState();
+				}
 			}
 		}
 		else
@@ -1067,7 +1090,7 @@ void gameStart(void)
 			int hasAttackers = 0;
 			for (i = 0; i < GAME_MAX_PLAYERS; ++i)
 			{
-				if (SNDState.Players[i].Player && SNDState.Players[i].Player->Team == SND_TEAM_ATTACK)
+				if (SNDState.Players[i].Player && SNDState.Players[i].Player->Team == SNDState.TeamAttacker)
 				{
 					hasAttackers = 1;
 					if (!SNDState.Players[i].IsDead)
