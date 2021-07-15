@@ -29,6 +29,7 @@
 #include <libdl/ui.h>
 #include <libdl/guber.h>
 #include <libdl/color.h>
+#include <libdl/radar.h>
 #include "module.h"
 
 #include "include/pvars.h"
@@ -184,8 +185,10 @@ struct SNDState
 	int BombDefused;
 	int DefenderTeamId;
 	int AttackerTeamId;
-	GuberMoby * bombPackGuber;
-	Moby * bombPackMoby;
+	GuberMoby * BombPackGuber;
+	Moby * BombPackMoby;
+	Moby * RadarObjectiveMoby[2];
+	Player * BombCarrier;
 	
 	SNDNodeState_t Nodes[2];
 	SNDPlayerState_t Players[GAME_MAX_PLAYERS];
@@ -501,7 +504,7 @@ void SNDHackerOrbEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_
 			int playerId = *(int*)(event->NetEvent + 16);
 
 			// Only capture if bomb is picked up
-			if (SNDState.RoundInitialized && playerId >= 0 && !SNDState.bombPackMoby && nodeIndex >= 0)
+			if (SNDState.RoundInitialized && playerId >= 0 && !SNDState.BombPackMoby && nodeIndex >= 0)
 			{
 				if (team == SNDState.AttackerTeamId)
 				{
@@ -590,10 +593,11 @@ void SNDWeaponPackEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler
 					uiShowPopup(localPlayer->LocalPlayerIndex, SND_BOMB_PICKED_UP);
 
 				// remove reference
-				SNDState.bombPackMoby = 0;
-				SNDState.bombPackGuber = 0;
+				SNDState.BombPackMoby = 0;
+				SNDState.BombPackGuber = 0;
 
 				// set bomb carrier
+				SNDState.BombCarrier = p;
 				for (i = 0; i < GAME_MAX_PLAYERS; ++i)
 				{
 					if (SNDState.Players[i].Player == p)
@@ -635,12 +639,14 @@ Moby * spawnExplosion(VECTOR position, float size)
 {
 	// SpawnMoby_5025
 	u128 param_1 = *(u128*)position;
-	return ((Moby* (*)(u128, float, int, int, int, int, int, short, short, short, short, short, short,
+	Moby * moby = ((Moby* (*)(u128, float, int, int, int, int, int, short, short, short, short, short, short,
 				short, short, float, float, float, int, Moby *, int, int, int, int, int, int, int, int,
 				int, short, Moby *, Moby *, u128)) (0x003c3b38))
 				(param_1, size, 0x2, 0x14, 0x10, 0x10, 0x10, 0x10, 0x2, 0, 1, 0, 0,
 				0, 0, 0, 0, 2, 0x00080800, 0, 0x00388EF7, 0x000063F7, 0x00407FFFF, 0x000020FF, 0x00008FFF, 0x003064FF, 0x7F60A0FF, 0x280000FF,
 				0x003064FF, 0, 0, 0, 0);
+				
+	return moby;
 }
 
 void * spawnPackHook(u16 mobyId, int pvarSize, int guberId, int arg4, int arg5)
@@ -650,10 +656,10 @@ void * spawnPackHook(u16 mobyId, int pvarSize, int guberId, int arg4, int arg5)
 	if (mobyId == MOBY_ID_WEAPON_PACK)
 	{
 		// only bomb pack can spawn
-		SNDState.bombPackMoby = (Moby*)(*(u32*)((u32)result + 0x18));
-		SNDState.bombPackMoby->TextureId = 0x80 + (8 * SNDState.AttackerTeamId);
+		SNDState.BombPackMoby = (Moby*)(*(u32*)((u32)result + 0x18));
+		SNDState.BombPackMoby->TextureId = 0x80 + (8 * SNDState.AttackerTeamId);
 
-		DPRINTF("spawnPackHook bomb pack moby = %08x\n", (u32)SNDState.bombPackMoby);
+		DPRINTF("spawnPackHook bomb pack moby = %08x\n", (u32)SNDState.BombPackMoby);
 	}
 
 	return result;
@@ -785,10 +791,11 @@ void playerLogic(SNDPlayerState_t * playerState, int isHost)
 		if (playerState->IsBombCarrier)
 		{
 			playerState->IsBombCarrier = 0;
+			SNDState.BombCarrier = 0;
 
 			// spawn new pack if host
 			if (isHost)
-				SNDState.bombPackGuber = (GuberMoby*)spawnPackGuber(playerState->Player->PlayerPosition, 1 << WEAPON_ID_HACKER_RAY);
+				SNDState.BombPackGuber = (GuberMoby*)spawnPackGuber(playerState->Player->PlayerPosition, 1 << WEAPON_ID_HACKER_RAY);
 
 			// tell team bomb has dropped
 			if (localPlayer->Team == SNDState.AttackerTeamId)
@@ -816,6 +823,7 @@ void resetRoundState(void)
 	SNDState.BombDefused = 0;
 	SNDState.BombPlantSiteIndex = -1;
 	SNDState.BombPlantedTicks = 0;
+	SNDState.BombCarrier = 0;
 
 	// 
 	SNDState.Timer.LastPlaySoundSecond = SND_BOMB_TIMER_SECONDS;
@@ -868,16 +876,16 @@ void resetRoundState(void)
 	}
 
 	// 
-	if (SNDState.bombPackMoby)
+	if (SNDState.BombPackMoby)
 	{
-		mobyDestroy(SNDState.bombPackMoby);
-		SNDState.bombPackMoby = NULL;
+		mobyDestroy(SNDState.BombPackMoby);
+		SNDState.BombPackMoby = NULL;
 	}
 
 	// spawn hacker ray pack
 	if (gameIsHost(localPlayer->Guber.Id.GID.HostId))
 	{
-		SNDState.bombPackGuber = (GuberMoby*)spawnPackGuber(PackSpawnPoint, 1 << WEAPON_ID_HACKER_RAY);
+		SNDState.BombPackGuber = (GuberMoby*)spawnPackGuber(PackSpawnPoint, 1 << WEAPON_ID_HACKER_RAY);
 	}
 
 	SNDState.RoundInitialized = 1;
@@ -922,8 +930,8 @@ void initialize(void)
 	SNDState.Nodes[1].GuberMoby = 0;
 	SNDState.Nodes[0].OrbGuberMoby = 0;
 	SNDState.Nodes[1].OrbGuberMoby = 0;
-	SNDState.bombPackMoby = 0;
-	SNDState.bombPackGuber = 0;
+	SNDState.BombPackMoby = 0;
+	SNDState.BombPackGuber = 0;
 	SNDState.DefenderTeamId = TEAM_BLUE;
 	SNDState.AttackerTeamId = TEAM_RED;
 
@@ -967,6 +975,14 @@ void initialize(void)
 
 	// 
 	gameSetRespawnTime(0xFF);
+
+	// 
+	SNDState.RadarObjectiveMoby[0] = mobySpawn(MOBY_ID_BETA_BOX, 0);
+	SNDState.RadarObjectiveMoby[0]->ModelPointer = 0;
+	SNDState.RadarObjectiveMoby[0]->CollisionPointer = 0;
+	SNDState.RadarObjectiveMoby[1] = mobySpawn(MOBY_ID_BETA_BOX, 0);
+	SNDState.RadarObjectiveMoby[1]->ModelPointer = 0;
+	SNDState.RadarObjectiveMoby[1]->CollisionPointer = 0;
 
 	// Write patch to hook GuberMoby event handler
 	*(u32*)0x0061CB30 = 0x8C460014; // move func ptr to a2
@@ -1121,16 +1137,16 @@ void gameStart(void)
 		else
 		{
 			// Set lifetime of bomb pack moby
-			if (SNDState.bombPackMoby)
+			if (SNDState.BombPackMoby)
 			{
-				if (SNDState.bombPackMoby->MobyId != MOBY_ID_WEAPON_PACK)
+				if (SNDState.BombPackMoby->MobyId != MOBY_ID_WEAPON_PACK)
 				{
-					SNDState.bombPackMoby = NULL;
+					SNDState.BombPackMoby = NULL;
 				}
-				else if (SNDState.bombPackMoby->PropertiesPointer)
+				else if (SNDState.BombPackMoby->PropertiesPointer)
 				{
 					// set lifetime to max
-					*(u32*)((u32)SNDState.bombPackMoby->PropertiesPointer + 0x8) = 0x01ffffff;
+					*(u32*)((u32)SNDState.BombPackMoby->PropertiesPointer + 0x8) = 0x01ffffff;
 				}
 			}
 
@@ -1149,6 +1165,49 @@ void gameStart(void)
 					drawRoundMessage(SND_ATTACK_HELLO, 1);
 			}
 
+			// Draw objective
+			Moby * target[2] = {0,0};
+
+			// If bomb is planted, make objective bombsite for all
+			if (SNDState.BombPlantSiteIndex >= 0)
+			{
+				target[0] = SNDState.Nodes[SNDState.BombPlantSiteIndex].Moby;
+			}
+			else if (localPlayer->Team == SNDState.DefenderTeamId || localPlayer == SNDState.BombCarrier)
+			{
+				// Defenders and bomb carrier's targets are the two nodes
+				target[0] = SNDState.Nodes[0].Moby;
+				target[1] = SNDState.Nodes[1].Moby;
+			}
+			else
+			{
+				// If attacker draw objective where bomb is
+				if (SNDState.BombPackMoby)
+				{
+					target[0] = SNDState.BombPackMoby;
+				}
+				else if (SNDState.BombCarrier)
+				{
+					target[0] = SNDState.BombCarrier;
+				}
+			}
+
+			for (i = 0; i < 2; ++i)
+			{
+				if (target[i])
+				{
+					int blipId = radarGetBlipIndex(SNDState.RadarObjectiveMoby[i]);
+					if (blipId >= 0)
+					{
+						RadarBlip * blip = radarGetBlips() + blipId;
+						blip->X = target[i]->Position[0];
+						blip->Y = target[i]->Position[1];
+						blip->Life = 0x1F;
+						blip->Type = 0x11;
+					}
+				}
+			}
+
 			int isHost = gameIsHost(localPlayer->Guber.Id.GID.HostId);
 			int attackersAlive = 0;
 			int hasAttackers = 0;
@@ -1164,6 +1223,17 @@ void gameStart(void)
 				playerLogic(&SNDState.Players[i], isHost);
 			}
 
+#if DEBUG && FALSE
+			//
+			static int lastD = 0; 
+			if ((gameTime - lastD) > TIME_SECOND)
+			{
+				lastD = gameTime;
+				spawnExplosion(SNDState.Nodes[0].OrbGuberMoby->Moby->Position, 5);
+			}
+#endif
+
+
 			// no attackers alive and bomb hasn't been planted
 			if (hasAttackers && !attackersAlive && !SNDState.BombPlantedTicks)
 				setRoundOutcome(SND_OUTCOME_ATTACKERS_DEAD);
@@ -1175,12 +1245,12 @@ void gameStart(void)
 	else
 	{
 		// Set lifetime of bomb pack moby to 0
-		if (SNDState.bombPackMoby)
+		if (SNDState.BombPackMoby)
 		{
-			if (SNDState.bombPackMoby->MobyId == MOBY_ID_WEAPON_PACK && SNDState.bombPackMoby->PropertiesPointer)
-				*(u32*)((u32)SNDState.bombPackMoby->PropertiesPointer + 0x8) = 0;
+			if (SNDState.BombPackMoby->MobyId == MOBY_ID_WEAPON_PACK && SNDState.BombPackMoby->PropertiesPointer)
+				*(u32*)((u32)SNDState.BombPackMoby->PropertiesPointer + 0x8) = 0;
 
-			SNDState.bombPackMoby = NULL;
+			SNDState.BombPackMoby = NULL;
 		}
 
 		// set winner

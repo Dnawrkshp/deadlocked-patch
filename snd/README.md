@@ -8,7 +8,7 @@ This gamemode has two teams. One is the defending team and the other is the atta
 - [x] Spawn two nodes (bombsites)
 - [x] Spawn bomb (hacker ray) in pack in front of attackers
 - [x] Only allow attackers to pickup bomb pack
-- [ ] Highlight bomb on map (attackers only)
+- [x] Highlight bomb on map (attackers only)
 - [x] Increase bomb plant speed (make it easier to plant)
 - [x] Decrease bomb defuse speed (make it harder to defuse)
 - [x] Show bomb countdown timer
@@ -26,3 +26,4 @@ This gamemode has two teams. One is the defending team and the other is the atta
 - [x] Add half time
 - [x] Add round win/loss messages
 - [x] Add half time message
+- [ ] Add explosion sound effect
