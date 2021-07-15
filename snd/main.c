@@ -364,8 +364,7 @@ void moveNode(Moby * nodeBaseMoby, VECTOR position)
 void hideNodes(void)
 {
 	Moby * moby = mobyGetFirst();
-	int i;
-
+	
 	while (moby)
 	{
 		Moby * next = moby->NextMoby;
@@ -451,10 +450,6 @@ void SNDNodeBaseEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_f
 
 void SNDHackerOrbEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_func eventHandler)
 {
-	Player ** players = playerGetAll();
-	Player * p;
-	Player * localPlayer = (Player*)0x347AA0;
-	int i;
 	int nodeIndex = -1;
 	HackerOrbPVar_t * orbPvars = (HackerOrbPVar_t*)moby->PropertiesPointer;
 	
@@ -910,13 +905,7 @@ void resetRoundState(void)
 void initialize(void)
 {
 	int i = 0;
-	int j = 0;
-	GameSettings * gameSettings = gameGetSettings();
-	Player ** players = playerGetAll();
-	Player * localPlayer = (Player*)0x00347AA0;
-	Moby * moby = mobyGetFirst();
 	GuberMoby * guberMoby = guberMobyGetFirst();
-	VECTOR zero = {0,0,0,0};
 
 	// Reset snd state
 	SNDState.RoundNumber = 0;
@@ -991,7 +980,7 @@ void initialize(void)
 	// Use gubers to find our nodes
 	while (guberMoby)
 	{
-		GuberMoby * next = guberMoby->Guber.Prev;
+		GuberMoby * next = (GuberMoby*)guberMoby->Guber.Prev;
 
 		if (guberMoby->Moby && guberMoby->Moby->MobyId == MOBY_ID_NODE_BASE)
 		{
@@ -1041,7 +1030,6 @@ void gameStart(void)
 {
 	int i = 0;
 	GameSettings * gameSettings = gameGetSettings();
-	Player ** players = playerGetAll();
 	Player * localPlayer = (Player*)0x00347AA0;
 	GameData * gameData = gameGetData();
 	int gameTime = gameGetTime();
@@ -1188,7 +1176,7 @@ void gameStart(void)
 				}
 				else if (SNDState.BombCarrier)
 				{
-					target[0] = SNDState.BombCarrier;
+					target[0] = SNDState.BombCarrier->PlayerMoby;
 				}
 			}
 
