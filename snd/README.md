@@ -26,4 +26,4 @@ This gamemode has two teams. One is the defending team and the other is the atta
 - [x] Add half time
 - [x] Add round win/loss messages
 - [x] Add half time message
-- [ ] Add explosion sound effect
+- [x] Add explosion sound effect

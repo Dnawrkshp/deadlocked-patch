@@ -30,6 +30,7 @@
 #include <libdl/guber.h>
 #include <libdl/color.h>
 #include <libdl/radar.h>
+#include <libdl/sound.h>
 #include "module.h"
 
 #include "include/pvars.h"
@@ -229,6 +230,23 @@ VECTOR AttackTeamSpawnPoint = { 519.269, 396.575, 106.727, -1.351 };
 VECTOR Node1SpawnPoint = { 428.368, 239.646, 106.613, 0 };
 VECTOR Node2SpawnPoint = { 411.456, 143.924, 105.344, 0 };
 VECTOR PackSpawnPoint = { 526.056, 370.259, 107.271, 0 };
+
+/* 
+ * Explosion sound def
+ */
+SoundDef ExplosionSoundDef =
+{
+	1000.0,		// MinRange
+	1000.0,		// MaxRange
+	2000,		// MinVolume
+	2000,		// MaxVolume
+	0,			// MinPitch
+	0,			// MaxPitch
+	0,			// Loop
+	0x10,		// Flags
+	0xF4,		// Index
+	3			// Bank
+};
 
 /*
  * NAME :		updateScoreboard
@@ -641,6 +659,8 @@ Moby * spawnExplosion(VECTOR position, float size)
 				0, 0, 0, 0, 2, 0x00080800, 0, 0x00388EF7, 0x000063F7, 0x00407FFFF, 0x000020FF, 0x00008FFF, 0x003064FF, 0x7F60A0FF, 0x280000FF,
 				0x003064FF, 0, 0, 0, 0);
 				
+	soundPlay(&ExplosionSoundDef, 0, moby, 0, 0x400);
+
 	return moby;
 }
 
