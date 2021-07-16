@@ -51,6 +51,11 @@ enum CustomMessageId
      */
     CUSTOM_MSG_ID_GAME_LOBBY_STARTED = 5,
 
+    /*
+     *
+     */
+    CUSTOM_MSG_ID_SEARCH_AND_DESTROY_SET_OUTCOME = 6,
+
 };
 
 #endif // _MESSAGEID_H_

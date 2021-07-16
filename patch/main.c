@@ -601,7 +601,7 @@ int main (void)
 
 	// Patch weapon shot to be sent reliably
 	//patchWeaponShotNetSendFlag();
-
+	
 	// Process game modules
 	processGameModules();
 

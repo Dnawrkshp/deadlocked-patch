@@ -27,3 +27,4 @@ This gamemode has two teams. One is the defending team and the other is the atta
 - [x] Add round win/loss messages
 - [x] Add half time message
 - [x] Add explosion sound effect
+- [ ] Spawn bomb pack when bomb carrier leaves/dcs
