@@ -228,7 +228,7 @@ int BombDetonationTimer __attribute__((section(".config"))) = 30;
 int RoundsToWin __attribute__((section(".config"))) = 6;
 
 // Number of rounds before flipping team roles.
-int RoundToFlip __attribute__((section(".config"))) = 3;
+int RoundsToFlip __attribute__((section(".config"))) = 3;
 
 // Timelimit of each round in seconds.
 int RoundTimelimitSeconds __attribute__((section(".config"))) = 2 * 60;
@@ -314,7 +314,7 @@ void setRoundOutcome(int outcome)
 	SNDState.RoundEndTicks = gameGetTime() + SND_ROUND_TRANSITION_WAIT_MS;
 
 	// print halftime message
-	if ((SNDState.RoundNumber+1) % RoundToFlip == 0)
+	if ((SNDState.RoundNumber+1) % RoundsToFlip == 0)
 	{
 		uiShowPopup(0, SND_HALF_TIME);
 		uiShowPopup(1, SND_HALF_TIME);
@@ -1129,7 +1129,7 @@ void gameStart(void)
 				else
 				{
 					// handle half time
-					if (SNDState.RoundNumber == RoundToFlip)
+					if (SNDState.RoundNumber == RoundsToFlip)
 					{
 						SNDState.TeamRolesFlipped = !SNDState.TeamRolesFlipped;
 						SNDState.DefenderTeamId = !SNDState.DefenderTeamId;
@@ -1174,7 +1174,7 @@ void gameStart(void)
 			}
 
 			// Display hello
-			if ((SNDState.RoundNumber % RoundToFlip) == 0 && (gameTime - SNDState.RoundStartTicks) < (5 * TIME_SECOND))
+			if ((SNDState.RoundNumber % RoundsToFlip) == 0 && (gameTime - SNDState.RoundStartTicks) < (5 * TIME_SECOND))
 			{
 				if (localPlayer->Team == SNDState.DefenderTeamId)
 					drawRoundMessage(SND_DEFEND_HELLO, 1);
