@@ -64,29 +64,9 @@
 #define GAME_SCOREBOARD_ITEM_COUNT          (*(u32*)0x002F9FCC)
 
 /*
- * Number of rounds to win.
- */
-#define SND_ROUNDS_TO_WIN					(6)
-
-/*
- * Number of rounds before flipping team roles.
- */
-#define SND_ROUNDS_TO_FLIP					(3)
-
-/*
  * Max number of rounds before game ends
  */
-#define SND_MAX_ROUNDS						(2 * (SND_ROUNDS_TO_WIN-1))
-
-/*
- * Timelimit of each round in seconds.
- */
-#define SND_ROUND_TIMELIMIT_SECONDS			(2 * 60)
-
-/*
- * Number of seconds after bomb planted before explosion.
- */
-#define SND_BOMB_TIMER_SECONDS				(3)
+#define SND_MAX_ROUNDS						(2 * (RoundsToWin-1))
 
 /*
  *
@@ -223,13 +203,35 @@ char shaBuffer;
 void * HackerOrbCollisionPointer;
 
 /*
- * Spawn settings
+ * Configurable settings
  */
+
+// Where the defending team spawns
 VECTOR DefendTeamSpawnPoint __attribute__((section(".config"))) = { 268.386, 122.752, 103.479, 0.8 };
+
+// Where the attacking team spawns
 VECTOR AttackTeamSpawnPoint __attribute__((section(".config"))) = { 519.269, 396.575, 106.727, -1.351 };
+
+// Where the first node is positioned
 VECTOR Node1SpawnPoint __attribute__((section(".config"))) = { 428.368, 239.646, 106.613, 0 };
+
+// Where the second node is positioned
 VECTOR Node2SpawnPoint __attribute__((section(".config"))) = { 411.456, 143.924, 105.344, 0 };
+
+// Where the pack (bomb) spawns each round
 VECTOR PackSpawnPoint __attribute__((section(".config"))) = { 526.056, 370.259, 107.271, 0 };
+
+// Number of seconds after bomb planted before explosion.
+int BombDetonationTimer __attribute__((section(".config"))) = 30;
+
+// Number of rounds to win.
+int RoundsToWin __attribute__((section(".config"))) = 6;
+
+// Number of rounds before flipping team roles.
+int RoundToFlip __attribute__((section(".config"))) = 3;
+
+// Timelimit of each round in seconds.
+int RoundTimelimitSeconds __attribute__((section(".config"))) = 2 * 60;
 
 /* 
  * Explosion sound def
@@ -312,7 +314,7 @@ void setRoundOutcome(int outcome)
 	SNDState.RoundEndTicks = gameGetTime() + SND_ROUND_TRANSITION_WAIT_MS;
 
 	// print halftime message
-	if ((SNDState.RoundNumber+1) % SND_ROUNDS_TO_FLIP == 0)
+	if ((SNDState.RoundNumber+1) % RoundToFlip == 0)
 	{
 		uiShowPopup(0, SND_HALF_TIME);
 		uiShowPopup(1, SND_HALF_TIME);
@@ -737,7 +739,7 @@ void bombTimerLogic()
 	if (!SNDState.BombDefused && SNDState.BombPlantedTicks > 0 && SNDState.BombPlantSiteIndex >= 0)
 	{
 		SNDNodeState_t * plantSiteNodeState = &SNDState.Nodes[SNDState.BombPlantSiteIndex];
-		int timeLeft = (SND_BOMB_TIMER_SECONDS * TIME_SECOND) - (gameTime - SNDState.BombPlantedTicks);
+		int timeLeft = (BombDetonationTimer * TIME_SECOND) - (gameTime - SNDState.BombPlantedTicks);
 		float timeSecondsLeft = timeLeft / (float)TIME_SECOND;
 		float scale = SND_BOMB_TIMER_TEXT_SCALE;
 		u32 color = 0xFFFFFFFF;
@@ -845,11 +847,11 @@ void resetRoundState(void)
 	SNDState.BombCarrier = 0;
 
 	// 
-	SNDState.Timer.LastPlaySoundSecond = SND_BOMB_TIMER_SECONDS;
+	SNDState.Timer.LastPlaySoundSecond = BombDetonationTimer;
 	SNDState.Timer.Color = 0xFFFFFFFF;
 
 	// Set round time limit
-	gameData->TimeEnd = (gameTime - gameData->TimeStart) + (SND_ROUND_TIMELIMIT_SECONDS * TIME_SECOND);
+	gameData->TimeEnd = (gameTime - gameData->TimeStart) + (RoundTimelimitSeconds * TIME_SECOND);
 	
 	// set capture time to fast (plant speed)
 	*(u16*)0x00440E68 = 0x3CA3;
@@ -1084,7 +1086,7 @@ void gameStart(void)
 					case SND_OUTCOME_BOMB_DEFUSED:
 					{
 						// defenders win
-						if (++SNDState.TeamWins[SNDState.DefenderTeamId] >= SND_ROUNDS_TO_WIN)
+						if (++SNDState.TeamWins[SNDState.DefenderTeamId] >= RoundsToWin)
 							SNDState.GameOver = 1;
 						
 						SNDState.RoundLastWinners = SNDState.DefenderTeamId;
@@ -1093,7 +1095,7 @@ void gameStart(void)
 					case SND_OUTCOME_BOMB_DETONATED:
 					{
 						// attackers win
-						if (++SNDState.TeamWins[SNDState.AttackerTeamId] >= SND_ROUNDS_TO_WIN)
+						if (++SNDState.TeamWins[SNDState.AttackerTeamId] >= RoundsToWin)
 							SNDState.GameOver = 1;
 
 						SNDState.RoundLastWinners = SNDState.AttackerTeamId;
@@ -1127,7 +1129,7 @@ void gameStart(void)
 				else
 				{
 					// handle half time
-					if (SNDState.RoundNumber == SND_ROUNDS_TO_FLIP)
+					if (SNDState.RoundNumber == RoundToFlip)
 					{
 						SNDState.TeamRolesFlipped = !SNDState.TeamRolesFlipped;
 						SNDState.DefenderTeamId = !SNDState.DefenderTeamId;
@@ -1172,7 +1174,7 @@ void gameStart(void)
 			}
 
 			// Display hello
-			if ((SNDState.RoundNumber % SND_ROUNDS_TO_FLIP) == 0 && (gameTime - SNDState.RoundStartTicks) < (5 * TIME_SECOND))
+			if ((SNDState.RoundNumber % RoundToFlip) == 0 && (gameTime - SNDState.RoundStartTicks) < (5 * TIME_SECOND))
 			{
 				if (localPlayer->Team == SNDState.DefenderTeamId)
 					drawRoundMessage(SND_DEFEND_HELLO, 1);
@@ -1287,7 +1289,7 @@ void gameStart(void)
 	{
 		GAME_SCOREBOARD_ITEM_COUNT = 2;
 		GAME_SCOREBOARD_NODE_TARGET = SND_MAX_ROUNDS;
-		GAME_SCOREBOARD_TARGET = SND_ROUNDS_TO_WIN;
+		GAME_SCOREBOARD_TARGET = RoundsToWin;
 		GAME_SCOREBOARD_REFRESH_FLAG = 1;
 		ScoreboardChanged = 0;
 	}
