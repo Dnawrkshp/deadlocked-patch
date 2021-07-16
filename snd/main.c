@@ -225,11 +225,11 @@ void * HackerOrbCollisionPointer;
 /*
  * Spawn settings
  */
-VECTOR DefendTeamSpawnPoint = { 268.386, 122.752, 103.479, 0.8 };
-VECTOR AttackTeamSpawnPoint = { 519.269, 396.575, 106.727, -1.351 };
-VECTOR Node1SpawnPoint = { 428.368, 239.646, 106.613, 0 };
-VECTOR Node2SpawnPoint = { 411.456, 143.924, 105.344, 0 };
-VECTOR PackSpawnPoint = { 526.056, 370.259, 107.271, 0 };
+VECTOR DefendTeamSpawnPoint __attribute__((section(".config"))) = { 268.386, 122.752, 103.479, 0.8 };
+VECTOR AttackTeamSpawnPoint __attribute__((section(".config"))) = { 519.269, 396.575, 106.727, -1.351 };
+VECTOR Node1SpawnPoint __attribute__((section(".config"))) = { 428.368, 239.646, 106.613, 0 };
+VECTOR Node2SpawnPoint __attribute__((section(".config"))) = { 411.456, 143.924, 105.344, 0 };
+VECTOR PackSpawnPoint __attribute__((section(".config"))) = { 526.056, 370.259, 107.271, 0 };
 
 /* 
  * Explosion sound def
@@ -531,6 +531,10 @@ void SNDHackerOrbEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_
 					// set state
 					SNDState.BombPlantedTicks = gameGetTime();
 					SNDState.BombPlantSiteIndex = nodeIndex;
+
+					// turn off game timer
+					GameData * gameData = gameGetData();
+					gameData->TimeEnd = -1;
 
 					// remove hacker ray from bomb holder
 					if (playerId >= 0 && playerId < GAME_MAX_PLAYERS)
@@ -1159,7 +1163,7 @@ void gameStart(void)
 			}
 
 			// End round
-			if (gameData->TimeEnd && gameTime > gameData->TimeEnd)
+			if (gameData->TimeEnd > 0 && gameTime > gameData->TimeEnd)
 			{
 				setRoundOutcome(SND_OUTCOME_TIME_END);
 			}

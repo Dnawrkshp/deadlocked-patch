@@ -17,6 +17,7 @@ SECTIONS {
 	.text 0x000D8000: {
 		_ftext = . ;
 		*(.text)
+		KEEP(*(.config))
 		*(.text.*)
 		*(.gnu.linkonce.t*)
 		QUAD(0)
