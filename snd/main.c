@@ -379,7 +379,7 @@ void moveNode(Moby * nodeBaseMoby, VECTOR position)
 			vector_copy(subItems[i]->Position, position);
 }
 
-void hideNodes(void)
+void hideNodes(int ignoreNodeBase)
 {
 	Moby * moby = mobyGetFirst();
 	
@@ -387,7 +387,7 @@ void hideNodes(void)
 	{
 		Moby * next = moby->NextMoby;
 
-		if (moby->MobyId == MOBY_ID_NODE_BASE)
+		if (!ignoreNodeBase && moby->MobyId == MOBY_ID_NODE_BASE)
 		{
 			int isBombSite = moby == SNDState.Nodes[0].Moby || moby == SNDState.Nodes[1].Moby;
 			hideNode(moby, isBombSite, isBombSite);
@@ -404,7 +404,7 @@ void hideNodes(void)
 		else if (  moby->MobyId == MOBY_ID_BLUE_TEAM_HEALTH_PAD 
 				|| moby->MobyId == MOBY_ID_PLAYER_TURRET 
 				|| moby->MobyId == MOBY_ID_PICKUP_PAD
-				|| moby->MobyId == MOBY_ID_CONQUEST_TURRET_HOLDER_TRIANGLE_THING
+				// || moby->MobyId == MOBY_ID_CONQUEST_TURRET_HOLDER_TRIANGLE_THING
 				|| moby->MobyId == MOBY_ID_CONQUEST_NODE_TURRET
 				|| moby->MobyId == MOBY_ID_CONQUEST_POWER_TURRET
 				|| moby->MobyId == MOBY_ID_CONQUEST_ROCKET_TURRET
@@ -461,7 +461,7 @@ void SNDNodeBaseEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_f
 {
 	u32 eventId = event->NetEvent[0] & 0xF;
 	if (eventId == 0)
-		hideNodes();
+		hideNodes(0);
 
 	eventHandler(moby, event);
 }
@@ -1026,7 +1026,7 @@ void initialize(void)
 	}
 	
 	// Disable all other nodes
-	hideNodes();
+	hideNodes(0);
 
 	// reset snd round state
 	resetRoundState();
@@ -1148,6 +1148,9 @@ void gameStart(void)
 		}
 		else
 		{
+			// Disable all other nodes
+			hideNodes(1);
+
 			// Set lifetime of bomb pack moby
 			if (SNDState.BombPackMoby)
 			{
@@ -1235,7 +1238,7 @@ void gameStart(void)
 				playerLogic(&SNDState.Players[i], isHost);
 			}
 
-#if DEBUG && FALSE
+#if DEBUGa
 			//
 			static int lastD = 0; 
 			if ((gameTime - lastD) > TIME_SECOND)
