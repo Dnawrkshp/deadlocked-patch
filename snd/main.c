@@ -331,14 +331,6 @@ void hideMoby(Moby * moby)
 	moby->Opacity = 0;
 	vector_add(moby->Position, moby->Position, add);
 	//moby->RenderDistance = 0;
-	if (moby->MobyId == MOBY_ID_CONQUEST_NODE_TURRET
-		|| moby->MobyId == MOBY_ID_CONQUEST_POWER_TURRET
-		|| moby->MobyId == MOBY_ID_CONQUEST_ROCKET_TURRET
-		|| moby->MobyId == MOBY_ID_PLAYER_TURRET)
-	{
-		//vector_add(moby->Position, moby->Position, add);
-	}
-	// DPRINTF("moby hidden (%d) at %08x\n", moby->MobyId, (u32)moby);
 }
 
 void hideNode(Moby * nodeBaseMoby, int keepNode, int keepOrb)
@@ -415,14 +407,6 @@ void hideNodes(int ignoreNodeBase)
 				|| moby->MobyId == MOBY_ID_PLAYER_TURRET 
 				|| moby->MobyId == MOBY_ID_PICKUP_PAD
 				|| moby->MobyId == MOBY_ID_CONQUEST_TURRET_HOLDER_TRIANGLE_THING
-				)
-		{
-			hideMoby(moby);
-		}
-		else if (
-				moby->MobyId == MOBY_ID_CONQUEST_NODE_TURRET
-				|| moby->MobyId == MOBY_ID_CONQUEST_POWER_TURRET
-				|| moby->MobyId == MOBY_ID_CONQUEST_ROCKET_TURRET
 				)
 		{
 			hideMoby(moby);
@@ -650,10 +634,6 @@ void GuberMobyEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_fun
 		case MOBY_ID_CONQUEST_HACKER_ORB: SNDHackerOrbEventHandler(moby, event, eventHandler); break;
 		case MOBY_ID_WEAPON_PACK: SNDWeaponPackEventHandler(moby, event, eventHandler); break;
 		case MOBY_ID_NODE_BASE: SNDNodeBaseEventHandler(moby, event, eventHandler); break;
-		// case MOBY_ID_CONQUEST_TURRET_HOLDER_TRIANGLE_THING:
-		case MOBY_ID_CONQUEST_NODE_TURRET:
-		case MOBY_ID_CONQUEST_POWER_TURRET:
-		case MOBY_ID_CONQUEST_ROCKET_TURRET:
 			SNDHideMobyEventHandler(moby, event, eventHandler);
 			break;
 		default:
@@ -1071,6 +1051,12 @@ void initialize(void)
 	*(u32*)0x006219B8 = 0;	// survivor (8)
 	*(u32*)0x00620F54 = 0;	// time end (1)
 	*(u32*)0x00621240 = 0;	// homenode (4)
+
+	// Disable node pieces
+	*(u32*)0x003cff24 = 0;	// node turret 1
+	*(u32*)0x003cfdd8 = 0;	// node turret 2
+	*(u32*)0x003CFC78 = 0x2C620001;	// other node pieces
+	*(u32*)0x003D1C68 = 0;	// node triangle holder things
 
 
 	// Overwrite 'you picked up a weapon pack' string to pickup bomb message
