@@ -181,6 +181,8 @@ struct SNDState
 	Moby * BombPackMoby;
 	Moby * RadarObjectiveMoby[2];
 	Player * BombCarrier;
+
+	VECTOR SpawnPackAt;
 	
 	SNDNodeState_t Nodes[2];
 	SNDPlayerState_t Players[GAME_MAX_PLAYERS];
@@ -669,6 +671,29 @@ Moby * spawnExplosion(VECTOR position, float size)
 	return moby;
 }
 
+void setPackLifetime(int lifetime)
+{
+	// Set lifetime of bomb pack moby
+	if (SNDState.BombPackMoby)
+	{
+		if (SNDState.BombPackMoby->MobyId == MOBY_ID_WEAPON_PACK && SNDState.BombPackMoby->PropertiesPointer)
+			*(u32*)((u32)SNDState.BombPackMoby->PropertiesPointer + 0x8) = lifetime;
+	}
+}
+
+void killPack()
+{
+	// Set lifetime of bomb pack moby
+	if (SNDState.BombPackMoby)
+	{
+		if (SNDState.BombPackMoby->MobyId == MOBY_ID_WEAPON_PACK && SNDState.BombPackMoby->PropertiesPointer)
+			*(u32*)((u32)SNDState.BombPackMoby->PropertiesPointer + 0x8) = 0xFFFFFFFF;
+		
+		SNDState.BombPackMoby = NULL;
+		SNDState.BombPackGuber = NULL;
+	}
+}
+
 void * spawnPackHook(u16 mobyId, int pvarSize, int guberId, int arg4, int arg5)
 {
 	void * result = ((void* (*)(u16, int, int, int, int))0x0061C3A8)(mobyId, pvarSize, guberId, arg4, arg5);
@@ -683,16 +708,6 @@ void * spawnPackHook(u16 mobyId, int pvarSize, int guberId, int arg4, int arg5)
 	}
 
 	return result;
-}
-
-void setPackLifetime(int lifetime)
-{
-	// Set lifetime of bomb pack moby
-	if (SNDState.BombPackMoby)
-	{
-		if (SNDState.BombPackMoby->MobyId == MOBY_ID_WEAPON_PACK && SNDState.BombPackMoby->PropertiesPointer)
-			*(u32*)((u32)SNDState.BombPackMoby->PropertiesPointer + 0x8) = lifetime;
-	}
 }
 
 GuberMoby * spawnPackGuber(VECTOR position, u32 mask)
@@ -873,7 +888,13 @@ void playerLogic(SNDPlayerState_t * playerState)
 		{
 			playerState->IsBombCarrier = 0;
 			SNDState.BombCarrier = 0;
-			SNDState.BombPackGuber = (GuberMoby*)spawnPackGuber(PackSpawnPoint, 1 << WEAPON_ID_HACKER_RAY);
+
+			// Indicate time to spawn
+			if (SNDState.IsHost)
+			{
+				vector_copy(SNDState.SpawnPackAt, PackSpawnPoint);
+				SNDState.SpawnPackAt[3] = 1;
+			}
 			
 			// tell team bomb has dropped
 			if (localPlayer->Team == SNDState.AttackerTeamId)
@@ -911,9 +932,13 @@ void playerLogic(SNDPlayerState_t * playerState)
 					|| player->PlayerState == 123 // death lava
 					|| player->PlayerState == 148 // death no fall
 					)
-					SNDState.BombPackGuber = (GuberMoby*)spawnPackGuber(PackSpawnPoint, 1 << WEAPON_ID_HACKER_RAY);
+					vector_copy(SNDState.SpawnPackAt, PackSpawnPoint);
+					//SNDState.BombPackGuber = (GuberMoby*)spawnPackGuber(PackSpawnPoint, 1 << WEAPON_ID_HACKER_RAY);
 				else
-					SNDState.BombPackGuber = (GuberMoby*)spawnPackGuber(playerState->Player->PlayerPosition, 1 << WEAPON_ID_HACKER_RAY);
+					vector_copy(SNDState.SpawnPackAt, playerState->Player->PlayerPosition);
+					//SNDState.BombPackGuber = (GuberMoby*)spawnPackGuber(playerState->Player->PlayerPosition, 1 << WEAPON_ID_HACKER_RAY);
+
+				SNDState.SpawnPackAt[3] = 1;
 			}
 
 			// tell team bomb has dropped
@@ -942,6 +967,7 @@ void resetRoundState(void)
 	SNDState.BombPlantSiteIndex = -1;
 	SNDState.BombPlantedTicks = 0;
 	SNDState.BombCarrier = 0;
+	SNDState.SpawnPackAt[3] = 0;
 
 	// 
 	SNDState.Timer.LastPlaySoundSecond = BombDetonationTimer;
@@ -993,10 +1019,8 @@ void resetRoundState(void)
 		nodeCapture(SNDState.Nodes[1].OrbGuberMoby, SNDState.DefenderTeamId);
 	}
 
-	// Set lifetime of bomb pack moby to 0
-	setPackLifetime(-1);
-	SNDState.BombPackMoby = NULL;
-	SNDState.BombPackGuber = NULL;
+	// Kill pack
+	killPack();
 
 	// spawn hacker ray pack
 	if (SNDState.IsHost)
@@ -1183,12 +1207,7 @@ void gameStart(void)
 			gameData->TimeEnd = -1;
 
 			// Destroy pack
-			if (SNDState.BombPackMoby)
-			{
-				setPackLifetime(-1);
-				SNDState.BombPackMoby = NULL;
-				SNDState.BombPackGuber = NULL;
-			}
+			killPack();
 
 			// Handle game outcome
 			if (SNDState.RoundResult)
@@ -1339,6 +1358,8 @@ void gameStart(void)
 			for (i = 0; i < GAME_MAX_PLAYERS; ++i)
 			{
 				Player * p = SNDState.Players[i].Player;
+				playerLogic(&SNDState.Players[i]);
+
 				if (p)
 				{
 					if (p->Team == SNDState.AttackerTeamId)
@@ -1354,8 +1375,6 @@ void gameStart(void)
 							defendersAlive = 1;
 					}
 				}
-
-				playerLogic(&SNDState.Players[i]);
 			}
 
 			// host specific logic
@@ -1387,6 +1406,13 @@ void gameStart(void)
 					else
 						setRoundOutcome(SND_OUTCOME_BOMB_DETONATED);
 				}
+
+				// Handle spawning pack
+				if (!SNDState.RoundEndTicks && SNDState.SpawnPackAt[3] > 0)
+				{
+					SNDState.SpawnPackAt[3] = 0;
+					SNDState.BombPackGuber = (GuberMoby*)spawnPackGuber(SNDState.SpawnPackAt, 1 << WEAPON_ID_HACKER_RAY);
+				}
 			}
 
 			if (SNDState.BombPlantedTicks)
@@ -1400,10 +1426,8 @@ void gameStart(void)
 	}
 	else
 	{
-		// Set lifetime of bomb pack moby to 0
-		setPackLifetime(-1);
-		SNDState.BombPackMoby = NULL;
-		SNDState.BombPackGuber = NULL;
+		// Kill pack
+		killPack();
 
 		// set winner
 		gameSetWinner(SNDState.WinningTeam, 1);
