@@ -1017,6 +1017,7 @@ void initialize(void)
 {
 	int i = 0;
 	GuberMoby * guberMoby = guberMobyGetFirst();
+	GameOptions * gameOptions = gameGetOptions();
 
 	// Reset snd state
 	SNDState.RoundNumber = 0;
@@ -1074,16 +1075,16 @@ void initialize(void)
 	ScoreboardChanged = 1;
 
 	// Set kill target to 0 (disable)
-	gameSetKillsToWin(0);
+	gameOptions->GameFlags.MultiplayerGameFlags.KillsToWin = 0;
+
+	// Enable survivor
+	gameOptions->GameFlags.MultiplayerGameFlags.Survivor = 1;
+
+	// Disable respawn
+	gameOptions->GameFlags.MultiplayerGameFlags.RespawnTime = 0xFF;
 
 	// Disable packs
 	cheatsApplyNoPacks();
-
-	// Enable survivor
-	gameSetSurvivor(1);
-
-	// 
-	gameSetRespawnTime(0xFF);
 
 	// 
 	SNDState.RadarObjectiveMoby[0] = mobySpawn(MOBY_ID_BETA_BOX, 0);
@@ -1445,5 +1446,20 @@ void gameStart(void)
  */
 void lobbyStart(void)
 {
-	
+	// conquest homenodes options
+	static char cqOptions[] = { 
+		1, 1, 			// 0x06 - 0x08
+		0, 1, 1, 0, 	// 0x08 - 0x0C
+		0, 1, 1, 1,  	// 0x0C - 0x10
+		1, 1, 0, 0,		// 0x10 - 0x14
+		-1, -1, 1, 1,	// 0x14 - 0x18
+	};
+
+	// set game options
+	GameOptions * gameOptions = gameGetOptions();
+	if (!gameOptions)
+		return;
+		
+	// set to conquest homenodes
+	memcpy((void*)&gameOptions->GameFlags.Raw[6], (void*)cqOptions, sizeof(cqOptions)/sizeof(char));
 }
