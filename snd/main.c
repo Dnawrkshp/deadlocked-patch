@@ -1375,10 +1375,13 @@ void gameStart(void)
 					setRoundOutcome(SND_OUTCOME_BOMB_DETONATED);
 				}
 
-				// no defenders alive and no attackers alive and bomb has not been planted
-				if (!defendersAlive && !attackersAlive && !SNDState.BombPlantedTicks)
+				// no defenders alive and no attackers alive so just finish the round
+				if (!defendersAlive && !attackersAlive)
 				{
-					setRoundOutcome(SND_OUTCOME_ATTACKERS_DEAD);
+					if (!SNDState.BombPlantedTicks)
+						setRoundOutcome(SND_OUTCOME_ATTACKERS_DEAD);
+					else
+						setRoundOutcome(SND_OUTCOME_BOMB_DETONATED);
 				}
 			}
 
