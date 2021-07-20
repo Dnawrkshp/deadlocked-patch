@@ -984,7 +984,7 @@ void resetRoundState(void)
 	}
 
 	// Set lifetime of bomb pack moby to 0
-	setPackLifetime(0);
+	setPackLifetime(-1);
 	SNDState.BombPackMoby = NULL;
 	SNDState.BombPackGuber = NULL;
 
@@ -1178,6 +1178,14 @@ void gameStart(void)
 			// Disable timer
 			gameData->TimeEnd = -1;
 
+			// Destroy pack
+			if (SNDState.BombPackMoby)
+			{
+				setPackLifetime(-1);
+				SNDState.BombPackMoby = NULL;
+				SNDState.BombPackGuber = NULL;
+			}
+
 			// Handle game outcome
 			if (SNDState.RoundResult)
 			{
@@ -1366,6 +1374,12 @@ void gameStart(void)
 				{
 					setRoundOutcome(SND_OUTCOME_BOMB_DETONATED);
 				}
+
+				// no defenders alive and no attackers alive and bomb has not been planted
+				if (!defendersAlive && !attackersAlive && !SNDState.BombPlantedTicks)
+				{
+					setRoundOutcome(SND_OUTCOME_ATTACKERS_DEAD);
+				}
 			}
 
 			if (SNDState.BombPlantedTicks)
@@ -1380,7 +1394,7 @@ void gameStart(void)
 	else
 	{
 		// Set lifetime of bomb pack moby to 0
-		setPackLifetime(0);
+		setPackLifetime(-1);
 		SNDState.BombPackMoby = NULL;
 		SNDState.BombPackGuber = NULL;
 
