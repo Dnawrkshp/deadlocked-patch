@@ -406,7 +406,6 @@ void hideNodes(int ignoreNodeBase)
 		else if (  moby->MobyId == MOBY_ID_BLUE_TEAM_HEALTH_PAD 
 				|| moby->MobyId == MOBY_ID_PLAYER_TURRET 
 				|| moby->MobyId == MOBY_ID_PICKUP_PAD
-				|| moby->MobyId == MOBY_ID_CONQUEST_TURRET_HOLDER_TRIANGLE_THING
 				)
 		{
 			hideMoby(moby);
@@ -1053,13 +1052,6 @@ void initialize(void)
 	*(u32*)0x00620F54 = 0;	// time end (1)
 	*(u32*)0x00621240 = 0;	// homenode (4)
 
-	// Disable node pieces
-	*(u32*)0x003cff24 = 0;	// node turret 1
-	*(u32*)0x003cfdd8 = 0;	// node turret 2
-	*(u32*)0x003CFC78 = 0x2C620001;	// other node pieces
-	*(u32*)0x003D1C68 = 0;	// node triangle holder things
-
-
 	// Overwrite 'you picked up a weapon pack' string to pickup bomb message
 	replaceString(0x2331, SND_BOMB_YOU_PICKED_UP);
 
@@ -1450,8 +1442,8 @@ void lobbyStart(void)
 	static char cqOptions[] = { 
 		1, 1, 			// 0x06 - 0x08
 		0, 1, 1, 0, 	// 0x08 - 0x0C
-		0, 1, 1, 1,  	// 0x0C - 0x10
-		1, 1, 0, 0,		// 0x10 - 0x14
+		0, 0, 0, 0,  	// 0x0C - 0x10
+		0, 0, 0, 0,		// 0x10 - 0x14
 		-1, -1, 1, 1,	// 0x14 - 0x18
 	};
 
