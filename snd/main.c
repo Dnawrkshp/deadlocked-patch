@@ -214,6 +214,11 @@ char shaBuffer;
 void * HackerOrbCollisionPointer;
 
 /*
+ * Needed when moving hacker orbs
+ */
+void * NodeBaseCollisionPointer;
+
+/*
  * Configurable settings
  */
 
@@ -368,6 +373,8 @@ void moveNode(Moby * nodeBaseMoby, VECTOR position)
 	nodeBaseMoby->UNK_2C[2] |= 1;
 	nodeBaseMoby->UNK_34[0] &= ~4;
 	nodeBaseMoby->RenderDistance = 0xFF;
+	nodeBaseMoby->Opacity = 0x80;
+	nodeBaseMoby->CollisionPointer = NodeBaseCollisionPointer;
 	if (orb)
 	{
 		vector_copy(orb->Position, position);
@@ -457,6 +464,10 @@ void SNDHideMobyEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_f
 
 void SNDNodeBaseEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_func eventHandler)
 {
+	// 
+	if (!NodeBaseCollisionPointer)
+		NodeBaseCollisionPointer = moby->CollisionPointer;
+
 	u32 eventId = event->NetEvent[0] & 0xF;
 	if (eventId == 0)
 		hideNodes(0);
