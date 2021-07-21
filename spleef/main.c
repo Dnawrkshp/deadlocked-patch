@@ -67,6 +67,7 @@ VECTOR StartUNK_80 = {
 void initialize(void)
 {
 	GameSettings * gameSettings = gameGetSettings();
+	GameOptions * gameOptions = gameGetOptions();
 	Player ** players = playerGetAll();
 
 	int i, j;
@@ -92,7 +93,7 @@ void initialize(void)
 	gameSetDeathHeight(StartPos[2] - 10);
 
 	// Set survivor
-	gameSetSurvivor(1);
+	gameOptions->GameFlags.MultiplayerGameFlags.Survivor = 1;
 	
 	// Spawn box so we know the correct model and collision pointers
 	sourceBox = mobySpawn(MOBY_ID_BETA_BOX, 0);

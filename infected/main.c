@@ -251,6 +251,7 @@ void gameStart(void)
 	int infectedCount = 0;
 	int playerCount = 0;
 	GameSettings * gameSettings = gameGetSettings();
+	GameOptions * gameOptions = gameGetOptions();
 	Player ** players = playerGetAll();
 
 	// Ensure in game
@@ -295,7 +296,7 @@ void gameStart(void)
 	if (!gameHasEnded())
 	{
 		// If no survivors then end game
-		if (playerCount == infectedCount && gameGetTimeLimit() > 0)
+		if (playerCount == infectedCount && gameOptions->GameFlags.MultiplayerGameFlags.Timelimit > 0)
 		{
 			// End game
 			gameEnd(2);

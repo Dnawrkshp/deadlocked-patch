@@ -324,12 +324,13 @@ void initialize(void)
 
 	// 
 	GameSettings * gameSettings = gameGetSettings();
+	GameOptions * gameOptions = gameGetOptions();
 
 	// Init seed
 	shaBuffer = (short)gameSettings->GameLoadStartTime;
 
 	// Set survivor
-	gameSetSurvivor(1);
+	gameOptions->GameFlags.MultiplayerGameFlags.Survivor = 1;
 
 	// get water moby
 	WaterMoby = mobyGetFirst(); // big assumption here, could be a problem

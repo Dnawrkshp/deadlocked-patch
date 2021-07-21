@@ -432,6 +432,7 @@ void initialize(void)
 	u8 rngSeed[12];
 	u8 rngBuf[12];
 	GameSettings * gameSettings = gameGetSettings();
+	GameOptions * gameOptions = gameGetOptions();
 	Player ** players = playerGetAll();
 
 	// Reset states to 0
@@ -503,10 +504,10 @@ void initialize(void)
 	cheatsApplyNoPacks();
 
 	// Set respawn time to 2
-	gameSetRespawnTime(2);
+	gameOptions->GameFlags.MultiplayerGameFlags.RespawnTime = 2;
 
 	// Set kill target to 0 (disable)
-	gameSetKillsToWin(0);
+	gameOptions->GameFlags.MultiplayerGameFlags.KillsToWin = 0;
 
 	// Set holoshields to instant kill
 	weaponSetDamage(WEAPON_ID_OMNI_SHIELD, 0, 50);
