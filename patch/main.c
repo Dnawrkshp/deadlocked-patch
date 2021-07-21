@@ -65,6 +65,8 @@
 #define FRAME_SKIP_WRITE0				(*(u32*)0x004A9400)
 #define FRAME_SKIP						(*(u32*)0x0021E1D8)
 
+#define EXCEPTION_DISPLAY_ADDR			(0x000BA000)
+
 // 
 void processSpectate(void);
 void runMapLoader(void);
@@ -574,6 +576,10 @@ int main (void)
 
 	// Hook menu loop
 	*(u32*)0x00594CB8 = 0x0C000000 | ((u32)(&onOnlineMenu) / 4);
+
+	// invoke exception display installer
+	if (*(u32*)EXCEPTION_DISPLAY_ADDR != 0)
+		((void (*)(void))EXCEPTION_DISPLAY_ADDR)();
 
 	// Run map loader
 	runMapLoader();

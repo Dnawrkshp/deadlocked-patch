@@ -328,7 +328,7 @@ void updateScoreboard(void)
 	}
 }
 
-void hideMoby(Moby * moby)
+void hideMoby(Moby * moby, int move)
 {
 	static VECTOR add = {-1000,-1000,-1000,0};
 	if (!moby)
@@ -336,11 +336,12 @@ void hideMoby(Moby * moby)
 
 	moby->CollisionPointer = NULL;
 	moby->Opacity = 0;
-	vector_add(moby->Position, moby->Position, add);
+	if (move)
+		vector_add(moby->Position, moby->Position, add);
 	//moby->RenderDistance = 0;
 }
 
-void hideNode(Moby * nodeBaseMoby, int keepNode, int keepOrb)
+void hideNode(Moby * nodeBaseMoby, int keepNode, int keepOrb, int move)
 {
 	int i = 2;
 	NodeBasePVar_t * nodePvars = (NodeBasePVar_t*)nodeBaseMoby->PropertiesPointer;
@@ -350,18 +351,18 @@ void hideNode(Moby * nodeBaseMoby, int keepNode, int keepOrb)
 	// hide base and orb
 	if (!keepNode)
 	{
-		hideMoby(nodeBaseMoby);
+		hideMoby(nodeBaseMoby, move);
 		i = 0;
 	}
 
 	if (!keepOrb)
 	{
-		hideMoby(orb);
+		hideMoby(orb, move);
 	}
 
 	// hide subitems (turrets)
 	for (; i < 4; ++i)
-		hideMoby(subItems[i]);
+		hideMoby(subItems[i], 1);
 }
 
 void moveNode(Moby * nodeBaseMoby, VECTOR position)
@@ -401,7 +402,7 @@ void hideNodes(int ignoreNodeBase)
 		if (!ignoreNodeBase && moby->MobyId == MOBY_ID_NODE_BASE)
 		{
 			int isBombSite = moby == SNDState.Nodes[0].Moby || moby == SNDState.Nodes[1].Moby;
-			hideNode(moby, isBombSite, isBombSite);
+			hideNode(moby, isBombSite, isBombSite, 1);
 
 			// Move node
 			if (isBombSite)
@@ -417,7 +418,7 @@ void hideNodes(int ignoreNodeBase)
 				|| moby->MobyId == MOBY_ID_PICKUP_PAD
 				)
 		{
-			hideMoby(moby);
+			hideMoby(moby, 1);
 		}
 
 		moby = next;
@@ -461,7 +462,7 @@ void replaceString(int textId, const char * str)
 void SNDHideMobyEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_func eventHandler)
 {
 	eventHandler(moby, event);
-	hideMoby(moby);
+	hideMoby(moby, 1);
 }
 
 void SNDNodeBaseEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_func eventHandler)
@@ -485,6 +486,7 @@ void SNDHackerOrbEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_
 	/*
 	DPRINTF("Hacker Orb Event: %08x\n\t", (u32)moby);
 	u32 * buffer = (u32*)event->NetEvent;
+	int i;
 	for (i = 0; i < sizeof(event->NetEvent)/4; ++i)
 		DPRINTF("%08X ", buffer[i]);
 	DPRINTF("\n");
@@ -546,13 +548,18 @@ void SNDHackerOrbEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_
 					// remove hacker ray from bomb holder
 					if (playerId >= 0 && playerId < GAME_MAX_PLAYERS)
 					{
-						SNDState.Players[playerId].IsBombCarrier = 0;
+						SNDPlayerState_t * p = &SNDState.Players[playerId];
+						p->IsBombCarrier = 0;
 						PlayerWeaponData * wepData = playerGetWeaponData(playerId);
 						wepData[WEAPON_ID_HACKER_RAY].Level = -1;
+
+						// unequip hacker ray if equipped
+						if (p->Player->WeaponHeldGun == WEAPON_ID_HACKER_RAY)
+							playerSetWeapon(p->Player, WEAPON_ID_WRENCH);
 					}
 
 					// hide the other bomb site
-					hideNode(SNDState.Nodes[!nodeIndex].Moby, 0, 0);
+					hideNode(SNDState.Nodes[!nodeIndex].Moby, 0, 0, 0);
 				}
 				else
 				{
@@ -562,7 +569,6 @@ void SNDHackerOrbEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_
 
 					// set state
 					setRoundOutcome(SND_OUTCOME_BOMB_DEFUSED);
-					SNDState.BombDefused = 1;
 				}
 			}
 			break;
@@ -767,7 +773,7 @@ void onSetRoundOutcome(int outcome)
 			spawnExplosion(plantSiteNodeState->OrbGuberMoby->Moby->Position, 5);
 
 		// blow up node
-		hideNode(plantSiteNodeState->Moby, 1, 0);
+		hideNode(plantSiteNodeState->Moby, 1, 0, 0);
 
 		// blow up defenders
 		for (i = 0; i < GAME_MAX_PLAYERS; ++i)
@@ -781,6 +787,10 @@ void onSetRoundOutcome(int outcome)
 				}
 			}
 		}
+	}
+	else if (outcome == SND_OUTCOME_BOMB_DEFUSED)
+	{
+		SNDState.BombDefused = 1;
 	}
 
 	// 
@@ -933,10 +943,8 @@ void playerLogic(SNDPlayerState_t * playerState)
 					|| player->PlayerState == 148 // death no fall
 					)
 					vector_copy(SNDState.SpawnPackAt, PackSpawnPoint);
-					//SNDState.BombPackGuber = (GuberMoby*)spawnPackGuber(PackSpawnPoint, 1 << WEAPON_ID_HACKER_RAY);
 				else
 					vector_copy(SNDState.SpawnPackAt, playerState->Player->PlayerPosition);
-					//SNDState.BombPackGuber = (GuberMoby*)spawnPackGuber(playerState->Player->PlayerPosition, 1 << WEAPON_ID_HACKER_RAY);
 
 				SNDState.SpawnPackAt[3] = 1;
 			}
@@ -1262,7 +1270,7 @@ void gameStart(void)
 				else
 				{
 					// handle half time
-					if (SNDState.RoundNumber == RoundsToFlip)
+					if ((SNDState.RoundNumber % RoundsToFlip) == 0)
 					{
 						SNDState.TeamRolesFlipped = !SNDState.TeamRolesFlipped;
 						SNDState.DefenderTeamId = !SNDState.DefenderTeamId;
