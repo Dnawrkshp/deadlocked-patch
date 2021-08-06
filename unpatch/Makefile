@@ -8,10 +8,12 @@ EE_INCS := -I../common -I../libdl/include
 EE_LDFLAGS = -fno-builtin -nostdlib -nostartfiles -L. -L../libdl/lib -L$(PS2SDK)/ee/lib
 #EE_DEFS = -DDEBUG
 
-all: $(EE_BIN) clean
+all: $(EE_BIN) clean copy
 
 clean:
 	rm -f *.irx *.o
 
 include ${CURDIR}/../Makefile.pref
 include ${CURDIR}/../Makefile.eeglobal
+include ${CURDIR}/../Makefile.rules
+
