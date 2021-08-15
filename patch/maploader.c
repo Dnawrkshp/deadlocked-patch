@@ -69,7 +69,8 @@ char * fGlobalVersion = "dl/version";
 typedef struct MapOverrideMessage
 {
     u8 MapId;
-    char MapName[128];
+    char MapName[32];
+    char MapFileName[128];
 } MapOverrideMessage;
 
 typedef struct MapOverrideResponseMessage
@@ -94,8 +95,9 @@ struct MapLoaderState
 {
     u8 Enabled;
     u8 MapId;
-	u8 CheckState;
-    char MapName[128];
+		u8 CheckState;
+    char MapName[32];
+    char MapFileName[128];
     int LoadingFileSize;
     int LoadingFd;
 } State;
@@ -116,10 +118,11 @@ int onSetMapOverride(void * connection, void * data)
 		int version = -1;
 		if (LOAD_MODULES_STATE != 100)
 			version = -1;
-		else if (!readLevelVersion(payload->MapName, &version))
+		else if (!readLevelVersion(payload->MapFileName, &version))
 			version = -2;
 
-    	DPRINTF("MapId:%d MapName:%s Version:%d\n", payload->MapId, payload->MapName, version);
+		// print
+		DPRINTF("MapId:%d MapName:%s MapFileName:%s Version:%d\n", payload->MapId, payload->MapName, payload->MapFileName, version);
 
 		// send response
 		netSendCustomAppMessage(connection, CUSTOM_MSG_ID_SET_MAP_OVERRIDE_RESPONSE, 4, &version);
@@ -132,17 +135,18 @@ int onSetMapOverride(void * connection, void * data)
 			State.MapId = payload->MapId;
 			State.LoadingFd = -1;
 			State.LoadingFileSize = -1;
-			strncpy(State.MapName, payload->MapName, 128);
+			strncpy(State.MapName, payload->MapName, 32);
+			strncpy(State.MapFileName, payload->MapFileName, 128);
 		}
 	}
 
-    return sizeof(MapOverrideMessage);
+	return sizeof(MapOverrideMessage);
 }
 
 //------------------------------------------------------------------------------
 int onServerSentMapIrxModules(void * connection, void * data)
 {
-    DPRINTF("server sent map irx modules\n");
+	DPRINTF("server sent map irx modules\n");
 
 	MapServerSentModulesMessage * msg = (MapServerSentModulesMessage*)data;
 
@@ -183,7 +187,7 @@ int onServerSentMapIrxModules(void * connection, void * data)
 		}
 	}
 
-    return sizeof(MapServerSentModulesMessage);
+	return sizeof(MapServerSentModulesMessage);
 }
 
 //------------------------------------------------------------------------------
@@ -328,7 +332,7 @@ int readLevelVersion(char * name, int * version)
 int getLevelSizeUsb()
 {
 	// Generate wad filename
-	sprintf(membuffer, fWad, State.MapName);
+	sprintf(membuffer, fWad, State.MapFileName);
 
 	// get file length
 	State.LoadingFileSize = readFileLength(membuffer);
@@ -347,7 +351,7 @@ int getLevelSizeUsb()
 int readLevelMapUsb(u8 * buf, int size)
 {
 	// Generate toc filename
-	sprintf(membuffer, fMap, State.MapName);
+	sprintf(membuffer, fMap, State.MapFileName);
 
 	// read
 	return readFile(membuffer, (void*)buf, size) > 0;
@@ -364,7 +368,7 @@ int readLevelBgUsb(u8 * buf, int size)
 	}
 
 	// Generate toc filename
-	sprintf(membuffer, fBg, State.MapName);
+	sprintf(membuffer, fBg, State.MapFileName);
 
 	// read
 	return readFile(membuffer, (void*)buf, size) > 0;
@@ -381,7 +385,7 @@ int openLevelUsb()
 	}
 
 	// Generate wad filename
-	sprintf(membuffer, fWad, State.MapName);
+	sprintf(membuffer, fWad, State.MapFileName);
 
 	// open wad file
 	rpcUSBopen(membuffer, FIO_O_RDONLY);
@@ -577,6 +581,13 @@ u64 hookedLoadCdvd(u64 a0, u64 a1, u64 a2, u64 a3, u64 t0, u64 t1, u64 t2)
 }
 
 //------------------------------------------------------------------------------
+char* hookedLoadScreenMapNameString(char * dest, char * src)
+{
+	strncpy(dest, State.MapName, 32);
+	return dest;
+}
+
+//------------------------------------------------------------------------------
 void onMapLoaderOnlineMenu(void)
 {
 	RECT boxRectEnable = {
@@ -677,6 +688,7 @@ void hook(void)
 	u32 * hookMapAddr = (u32*)0x00557580;
 	u32 * hookAudioAddr = (u32*)0x0053F970;
 	u32 * hookLoadCdvdAddr = (u32*)0x00163814;
+	u32 * hookLoadScreenMapNameStringAddr = (u32*)0x007055B4;
 
 	// Load modules
 	u32 * hookLoadModulesAddr = (u32*)0x00161364;
@@ -699,7 +711,10 @@ void hook(void)
 
 	// These get hooked after the map loads but before the game starts
 	if (!initialized || *hookMapAddr == 0x0C058E02)
+	{
 		*hookMapAddr = 0x0C000000 | ((u32)(&hookedGetMap) / 4);
+		*hookLoadScreenMapNameStringAddr = 0x0C000000 | ((u32)(&hookedLoadScreenMapNameString) / 4);
+	}
 }
 
 //------------------------------------------------------------------------------
