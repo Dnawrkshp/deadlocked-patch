@@ -71,10 +71,17 @@
 void processSpectate(void);
 void runMapLoader(void);
 void onMapLoaderOnlineMenu(void);
+void onSettingsOnlineMenu(void);
+
+// 
+extern struct PatchSettings_t;
 
 // 
 int hasInitialized = 0;
 int sentGameStart = 0;
+
+// 
+//PatchSettings_t * settings = (PatchSettings_t*)0x000D7F00;
 
 /*
  * NAME :		patchCameraSpeed
@@ -541,14 +548,24 @@ void onOnlineMenu(void)
 	((void (*)(void))0x00707F28)();
 	
 	//
-	if (!hasInitialized && uiGetActive() == UI_ID_ONLINE_MAIN_MENU)
+	if (!hasInitialized)
+	{
+		*(u32*)0x0021DDCC = 0x001EE600; // re-enable pad
+		hasInitialized = 1;
+	}
+
+	// 
+	if (hasInitialized == 1 && uiGetActive() == UI_ID_ONLINE_MAIN_MENU)
 	{
 		uiShowOkDialog("System", "Patch has been successfully loaded.");
-		hasInitialized = 1;
+		hasInitialized = 2;
 	}
 
 	// map loader
 	onMapLoaderOnlineMenu();
+
+	// settings
+	onSettingsOnlineMenu();
 }
 
 /*
@@ -570,9 +587,6 @@ int main (void)
 
 	// Call this first
 	dlPreUpdate();
-
-	// Patch sif rpc
-	patchSifRpc();
 
 	// Hook menu loop
 	*(u32*)0x00594CB8 = 0x0C000000 | ((u32)(&onOnlineMenu) / 4);

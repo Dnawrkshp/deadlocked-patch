@@ -193,6 +193,7 @@ int onServerSentMapIrxModules(void * connection, void * data)
 //------------------------------------------------------------------------------
 void loadModules(void)
 {
+	int mod_res = 0;
 	if (LOAD_MODULES_STATE < 7)
 		return;
 
@@ -202,8 +203,8 @@ void loadModules(void)
 		SifInitRpc(0);
 
 		// Load modules
-		USB_FS_ID = SifExecModuleBuffer(usbFsModuleStart, usbFsModuleSize, 0, NULL, NULL);
-		USB_SRV_ID = SifExecModuleBuffer(usbSrvModuleStart, usbSrvModuleSize, 0, NULL, NULL);
+		USB_FS_ID = SifExecModuleBuffer(usbFsModuleStart, usbFsModuleSize, 0, NULL, &mod_res);
+		USB_SRV_ID = SifExecModuleBuffer(usbSrvModuleStart, usbSrvModuleSize, 0, NULL, &mod_res);
 
 		DPRINTF("Loading MASS: %d\n", USB_FS_ID);
 		DPRINTF("Loading USBSERV: %d\n", USB_SRV_ID);

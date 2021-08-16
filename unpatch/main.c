@@ -70,8 +70,8 @@ void onOnlineMenu(void)
 	((void (*)(void))0x00707F28)();
 
 	// only show on main menu
-	//if (uiGetActive() != UI_ID_ONLINE_MAIN_MENU)
-	//	return;
+	if (uiGetActive() != UI_ID_ONLINE_MAIN_MENU)
+		return;
 
 	// render background
 	gfxScreenSpaceBox(&boxRectDownload, bgColorDownload, bgColorDownload, bgColorDownload, bgColorDownload);
@@ -113,6 +113,10 @@ int main (void)
 
 	// Hook menu loop
 	*(u32*)0x00594CB8 = 0x0C000000 | ((u32)(&onOnlineMenu) / 4);
+
+	// disable pad on online main menu
+	if (uiGetActive() == UI_ID_ONLINE_MAIN_MENU)
+		*(u32*)0x0021DDCC = 0;
 
 	return 0;
 }
