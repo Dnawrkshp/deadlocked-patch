@@ -20,6 +20,7 @@
 #include <libdl/net.h>
 #include "module.h"
 #include "messageid.h"
+#include "include/config.h"
 #include <libdl/game.h>
 #include <libdl/string.h>
 #include <libdl/stdio.h>
@@ -71,17 +72,19 @@
 void processSpectate(void);
 void runMapLoader(void);
 void onMapLoaderOnlineMenu(void);
-void onSettingsOnlineMenu(void);
-
-// 
-extern struct PatchSettings_t;
+void onConfigOnlineMenu(void);
 
 // 
 int hasInitialized = 0;
 int sentGameStart = 0;
 
 // 
-//PatchSettings_t * settings = (PatchSettings_t*)0x000D7F00;
+PatchConfig_t config __attribute__((section(".config"))) = {
+	0,
+	0,
+	0,
+	0
+};
 
 /*
  * NAME :		patchCameraSpeed
@@ -129,8 +132,8 @@ void patchCameraSpeed()
 
 				// render
 				sprintf(buffer, "%.0f%%", value*100);
-				gfxScreenSpaceText(240,   166,   1, 1, 0x80000000, buffer, -1);
-				gfxScreenSpaceText(240-1, 166-1, 1, 1, 0x80FFFFFF, buffer, -1);
+				gfxScreenSpaceText(240,   166,   1, 1, 0x80000000, buffer, -1, 1);
+				gfxScreenSpaceText(240-1, 166-1, 1, 1, 0x80FFFFFF, buffer, -1, 1);
 			}
 		}
 	}
@@ -152,10 +155,11 @@ void patchCameraSpeed()
  */
 void patchAnnouncements()
 {
-	if (ANNOUNCEMENTS_CHECK_PATCH == 0x907E01A9)
-	{
+	u32 addrValue = ANNOUNCEMENTS_CHECK_PATCH;
+	if (config.enableGamemodeAnnouncements && addrValue == 0x907E01A9)
 		ANNOUNCEMENTS_CHECK_PATCH = 0x241E0000;
-	}
+	else if (!config.enableGamemodeAnnouncements && addrValue == 0x241E0000)
+		ANNOUNCEMENTS_CHECK_PATCH = 0x907E01A9;
 }
 
 /*
@@ -382,11 +386,16 @@ void patchCreateGame()
  */
 void patchFrameSkip()
 {
-	// Patch function pointer
-	if (FRAME_SKIP_WRITE0 == 0xAF848859)
+	int addrValue = FRAME_SKIP_WRITE0;
+	
+	if (config.disableFramelimiter && addrValue == 0xAF848859)
 	{
 		FRAME_SKIP_WRITE0 = 0;
 		FRAME_SKIP = 0;
+	}
+	else if (!config.disableFramelimiter && addrValue == 0)
+	{
+		FRAME_SKIP_WRITE0 = 0xAF848859;
 	}
 }
 
@@ -550,7 +559,7 @@ void onOnlineMenu(void)
 	//
 	if (!hasInitialized)
 	{
-		*(u32*)0x0021DDCC = 0x001EE600; // re-enable pad
+		padEnableInput();
 		hasInitialized = 1;
 	}
 
@@ -565,7 +574,7 @@ void onOnlineMenu(void)
 	onMapLoaderOnlineMenu();
 
 	// settings
-	onSettingsOnlineMenu();
+	onConfigOnlineMenu();
 }
 
 /*
@@ -626,7 +635,8 @@ int main (void)
 	processGameModules();
 
 	// Process spectate
-	processSpectate();
+	if (config.enableSpectate)
+		processSpectate();
 
 	// Call this last
 	dlPostUpdate();

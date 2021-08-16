@@ -39,6 +39,7 @@ const int patches[][2] = {
 	{ 0x005CF9B0, 0x0C058E4A }, // hookCheckAddr
 	{ 0x00159B20, 0x0C056680 }, // hookTableAddr
 	{ 0x00159B20, 0x0C056680 }, // hookTableAddr
+	{ 0x007055B4, 0x0C046A7B }, // hook loading screen map name strcpy
 };
 
 /*
@@ -83,7 +84,7 @@ void onOnlineMenu(void)
 	downloadColor += 0x101010 * gameTime;
 
 	// render text
-	gfxScreenSpaceText(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.45, 1, 1, downloadColor, "Downloading patch, please wait...", -1);
+	gfxScreenSpaceText(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.45, 1, 1, downloadColor, "Downloading patch, please wait...", -1, 1);
 }
 
 /*
@@ -116,7 +117,7 @@ int main (void)
 
 	// disable pad on online main menu
 	if (uiGetActive() == UI_ID_ONLINE_MAIN_MENU)
-		*(u32*)0x0021DDCC = 0;
+		padDisableInput();
 
 	return 0;
 }

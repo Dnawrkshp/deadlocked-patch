@@ -2,7 +2,7 @@
 #include "rpc.h"
 
 #define CMD_NONE  			0x00
-#define CMD_USBOPEN		  	0x01
+#define CMD_USBOPEN		  0x01
 #define CMD_USBWRITE		0x02
 #define CMD_USBCLOSE		0x03
 #define CMD_USBREAD			0x04

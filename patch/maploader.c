@@ -51,7 +51,7 @@ enum MenuActionId
 };
 
 // memory card fd
-int fd;
+int fd = 0;
 int initialized = 0;
 int actionState = ACTION_MODULES_NOT_INSTALLED;
 int rpcInit = 0;
@@ -592,62 +592,50 @@ char* hookedLoadScreenMapNameString(char * dest, char * src)
 }
 
 //------------------------------------------------------------------------------
+int mapsHasTriedLoading(void)
+{
+	return LOAD_MODULES_STATE != 0;
+}
+
+//------------------------------------------------------------------------------
+int mapsDownloadingModules(void)
+{
+	return actionState == ACTION_DOWNLOADING_MODULES;
+}
+
+//------------------------------------------------------------------------------
+int mapsPromptEnableCustomMaps(void)
+{
+	MapClientRequestModulesMessage request = { 0, 0 };
+	if (uiShowYesNoDialog("Enable Custom Maps", "Are you sure?") == 1)
+	{
+		// request irx modules from server
+		request.Module1Start = (u32)usbFsModuleStart;
+		request.Module2Start = (u32)usbSrvModuleStart;
+		netSendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_REQUEST_MAP_IRX_MODULES, sizeof(MapClientRequestModulesMessage), &request);
+		actionState = ACTION_DOWNLOADING_MODULES;
+		return 1;
+	}
+
+	return 0;
+}
+
+//------------------------------------------------------------------------------
 void onMapLoaderOnlineMenu(void)
 {
-	RECT boxRectEnable = {
-		{ 0.1, 0.75 },
-		{ 0.5, 0.75 },
-		{ 0.1, 0.8 },
-		{ 0.5, 0.8 }
-	};
 	RECT boxRectDownload = {
 		{ 0.2, 0.35 },
 		{ 0.8, 0.35 },
 		{ 0.2, 0.65 },
 		{ 0.8, 0.65 }
 	};
-	u32 bgColorEnable = 0x20000000;
 	u32 bgColorDownload = 0x70000000;
-	MapClientRequestModulesMessage request = { 0, 0 };
-	int activeUi = uiGetActive();
-	if (activeUi != UI_ID_ONLINE_MAIN_MENU)
-		return;
 
-#if DEBUG
-	if (LOAD_MODULES_STATE == 100)
+	if (actionState == ACTION_DOWNLOADING_MODULES)
 	{
-		// render message
-		gfxScreenSpaceBox(&boxRectDownload, bgColorDownload, bgColorDownload, bgColorDownload, bgColorDownload);
-		sprintf(membuffer, "FS:%d. SERV:%d, RPC:%d", USB_FS_ID, USB_SRV_ID, rpcInit);
-		gfxScreenSpaceText(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.45, 1, 1, 0x80FFFFFF, membuffer, -1);
-	}
-#endif
+		// disable input
+		padDisableInput();
 
-	if (actionState == ACTION_MODULES_NOT_INSTALLED)
-	{
-		// if already tried to install then don't show
-		if (LOAD_MODULES_STATE != 0)
-			return;
-
-		// render message
-		gfxScreenSpaceBox(&boxRectEnable, bgColorEnable, bgColorEnable, bgColorEnable, bgColorEnable);
-		gfxScreenSpaceText(SCREEN_WIDTH * 0.3, SCREEN_HEIGHT * 0.7, 1, 1, 0x80FFFFFF, "\x16+\x15 Enable Custom Maps", -1);
-
-		// check for pad input
-		if (padGetButtonDown(0, PAD_L2 | PAD_R1))
-		{
-			if (uiShowYesNoDialog("Enable Custom Maps", "Are you sure?") == 1)
-			{
-				// request irx modules from server
-				request.Module1Start = (u32)usbFsModuleStart;
-				request.Module2Start = (u32)usbSrvModuleStart;
-				netSendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_REQUEST_MAP_IRX_MODULES, sizeof(MapClientRequestModulesMessage), &request);
-				actionState = ACTION_DOWNLOADING_MODULES;
-			}
-		}
-	}
-	else if (actionState == ACTION_DOWNLOADING_MODULES)
-	{
 		// render background
 		gfxScreenSpaceBox(&boxRectDownload, bgColorDownload, bgColorDownload, bgColorDownload, bgColorDownload);
 
@@ -659,21 +647,30 @@ void onMapLoaderOnlineMenu(void)
 		downloadColor += 0x101010 * gameTime;
 
 		// render text
-		gfxScreenSpaceText(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.45, 1, 1, downloadColor, "Downloading modules, please wait...", -1);
+		gfxScreenSpaceText(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.45, 1, 1, downloadColor, "Downloading modules, please wait...", -1, 1);
 	}
 	else if (actionState == ACTION_MODULES_INSTALLED)
 	{
+		// enable input
+		padEnableInput();
+
 		uiShowOkDialog("Custom Maps", "Custom maps have been enabled.");
 
 		actionState = ACTION_NONE;
 	}
 	else if (actionState == ACTION_NEW_MAPS_UPDATE)
 	{
+		// enable input
+		padEnableInput();
+		
 		uiShowOkDialog("Custom Maps", "New updates are available. Please download them at https://dl.uyaonline.com/maps");
 		actionState = ACTION_MODULES_INSTALLED;
 	}
 	else if (actionState == ACTION_ERROR_LOADING_MODULES)
 	{
+		// enable input
+		padEnableInput();
+		
 		uiShowOkDialog("Custom Maps", "There was an error loading the custom map modules.");
 		actionState = ACTION_NONE;
 	}

@@ -56,6 +56,11 @@ enum CustomMessageId
      */
     CUSTOM_MSG_ID_SEARCH_AND_DESTROY_SET_OUTCOME = 6,
 
+    /*
+     * Sent from the client to the server when the client has updated their patch config.
+     */
+    CUSTOM_MSG_ID_CLIENT_USER_CONFIG = 7,
+
 };
 
 #endif // _MESSAGEID_H_
