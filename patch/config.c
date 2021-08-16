@@ -3,6 +3,7 @@
 #include <libdl/graphics.h>
 #include <libdl/stdio.h>
 #include <libdl/net.h>
+#include <libdl/color.h>
 #include "include/config.h"
 #include "messageid.h"
 
@@ -46,13 +47,14 @@ const float lineHeight = 0.05;
 const char footerText[] = "\x12 Close";
 
 // menu display properties
-u32 colorBg = 0x80404040;
-u32 colorRed = 0x80000040;
-u32 colorSelected = 0x80606060;
-u32 colorButtonBg = 0x80303030;
-u32 colorButtonFg = 0x80505050;
-u32 colorText = 0x80FFFFFF;
-u32 colorOpenBg = 0x20000000;
+const u32 colorBlack = 0x80000000;
+const u32 colorBg = 0x80404040;
+const u32 colorRed = 0x80000040;
+const u32 colorSelected = 0x80606060;
+const u32 colorButtonBg = 0x80303030;
+const u32 colorButtonFg = 0x80505050;
+const u32 colorText = 0x80FFFFFF;
+const u32 colorOpenBg = 0x20000000;
 RECT rectBgBox = {
   { 0.2, 0.15 },
   { 0.8, 0.15 },
@@ -90,23 +92,24 @@ MenuElem_t menuElements[] = {
 void drawToggleMenuElement(MenuElem_t* element, RECT* rect)
 {
   float x,y;
-  u32 colorDenominator = element->enabled ? 1 : 2;
+  float lerp = element->enabled ? 0.0 : 0.5;
+  u32 color = colorLerp(colorText, 0, lerp);
 
   // draw name
   x = (rect->TopLeft[0] * SCREEN_WIDTH) + 5;
   y = (rect->TopLeft[1] * 440.0) + 5;
-  gfxScreenSpaceText(x, y, 1, 1, colorText / colorDenominator, element->name, -1, 6);
+  gfxScreenSpaceText(x, y, 1, 1, color, element->name, -1, 6);
 
   // draw value
   x = (rect->TopRight[0] * SCREEN_WIDTH) - 5;
-  gfxScreenSpaceText(x, y, 1, 1, colorText / colorDenominator, *(char*)element->userdata ? "On" : "Off", -1, 8);
+  gfxScreenSpaceText(x, y, 1, 1, color, *(char*)element->userdata ? "On" : "Off", -1, 8);
 }
 
 //------------------------------------------------------------------------------
 void drawButtonMenuElement(MenuElem_t* element, RECT* rect)
 {
   float x,y,b = 0.005;
-  u32 colorDenominator = element->enabled ? 1 : 2;
+  float lerp = element->enabled ? 0.0 : 0.5;
   u32 color;
   RECT rBg = {
     { rect->TopLeft[0] + 0.05, rect->TopLeft[1] },
@@ -122,17 +125,17 @@ void drawButtonMenuElement(MenuElem_t* element, RECT* rect)
   };
 
   // bg
-  color = colorButtonBg / colorDenominator;
+  color = colorLerp(colorButtonBg, 0, lerp);
 	gfxScreenSpaceBox(&rBg, color, color, color, color);
 
   // fg
-  color = colorButtonFg / colorDenominator;
+  color = colorLerp(colorButtonFg, 0, lerp);
 	gfxScreenSpaceBox(&rFg, color, color, color, color);
 
   // draw name
   x = 0.5 * SCREEN_WIDTH;
   y = ((rFg.TopLeft[1] + rFg.BottomLeft[1]) * 440.0 * 0.5);
-  gfxScreenSpaceText(x, y, 1, 1, colorText / colorDenominator, element->name, -1, 7);
+  gfxScreenSpaceText(x, y, 1, 1, colorLerp(colorText, 0, lerp), element->name, -1, 7);
 
   // add some padding
   rect->TopLeft[1] += 0.01;

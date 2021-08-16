@@ -870,8 +870,8 @@ void bombTimerLogic()
 			scale *= (1.0 + (0.3 * x));
 
 			// update color
-			color = lerpColor(SND_BOMB_TIMER_BASE_COLOR1, SND_BOMB_TIMER_BASE_COLOR2, fabsf(sinf(gameTime * 10)));
-			color = lerpColor(color, SND_BOMB_TIMER_HIGH_COLOR, x);
+			color = colorLerp(SND_BOMB_TIMER_BASE_COLOR1, SND_BOMB_TIMER_BASE_COLOR2, fabsf(sinf(gameTime * 10)));
+			color = colorLerp(color, SND_BOMB_TIMER_HIGH_COLOR, x);
 
 			// draw timer
 			sprintf(strBuf, "%.02f", timeLeft / (float)TIME_SECOND);
