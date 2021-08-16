@@ -583,7 +583,10 @@ u64 hookedLoadCdvd(u64 a0, u64 a1, u64 a2, u64 a3, u64 t0, u64 t1, u64 t2)
 //------------------------------------------------------------------------------
 char* hookedLoadScreenMapNameString(char * dest, char * src)
 {
-	strncpy(dest, State.MapName, 32);
+	if (State.Enabled)
+		strncpy(dest, State.MapName, 32);
+	else
+		strncpy(dest, src, 32);
 	return dest;
 }
 
@@ -713,6 +716,10 @@ void hook(void)
 	if (!initialized || *hookMapAddr == 0x0C058E02)
 	{
 		*hookMapAddr = 0x0C000000 | ((u32)(&hookedGetMap) / 4);
+	}
+
+	if (!initialized || *hookLoadScreenMapNameStringAddr == 0x0C046A7B)
+	{
 		*hookLoadScreenMapNameStringAddr = 0x0C000000 | ((u32)(&hookedLoadScreenMapNameString) / 4);
 	}
 }
