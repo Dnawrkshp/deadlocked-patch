@@ -46,7 +46,7 @@ u32 padPointer = 0;
 
 // constants
 const float lineHeight = 0.05;
-const char footerText[] = "\x10 SELECT     \x12 BACK";
+const char footerText[] = "\x14 HIDE     \x10 SELECT     \x12 BACK";
 
 // menu display properties
 const u32 colorBlack = 0x80000000;
@@ -269,31 +269,35 @@ void onUpdate(int inGame)
     // prevent pad from affecting menus
     padDisableInput();
 
-    // draw frame
-    drawFrame();
-
-    // draw items
-    for (i = 0; i < menuElementsCount; ++i)
+    // draw
+    if (padGetButton(0, PAD_L1) <= 0)
     {
-      currentElement = &menuElements[i];
-      float itemHeight = 0;
-      currentElement->handler(i, ACTIONTYPE_GETHEIGHT, &itemHeight);
+      // draw frame
+      drawFrame();
 
-      // set rect to height
-      drawRect.BottomLeft[1] = drawRect.TopLeft[1] + itemHeight;
-      drawRect.BottomRight[1] = drawRect.TopRight[1] + itemHeight;
+      // draw items
+      for (i = 0; i < menuElementsCount; ++i)
+      {
+        currentElement = &menuElements[i];
+        float itemHeight = 0;
+        currentElement->handler(i, ACTIONTYPE_GETHEIGHT, &itemHeight);
 
-      // draw selection
-      if (i == selectedMenuItem) {
-        gfxScreenSpaceBox(&drawRect, colorSelected, colorSelected, colorSelected, colorSelected);
+        // set rect to height
+        drawRect.BottomLeft[1] = drawRect.TopLeft[1] + itemHeight;
+        drawRect.BottomRight[1] = drawRect.TopRight[1] + itemHeight;
+
+        // draw selection
+        if (i == selectedMenuItem) {
+          gfxScreenSpaceBox(&drawRect, colorSelected, colorSelected, colorSelected, colorSelected);
+        }
+
+        // draw
+        currentElement->handler(i, ACTIONTYPE_DRAW, &drawRect);
+
+        // increment rect
+        drawRect.TopLeft[1] += itemHeight;
+        drawRect.TopRight[1] += itemHeight;
       }
-
-      // draw
-      currentElement->handler(i, ACTIONTYPE_DRAW, &drawRect);
-
-      // increment rect
-      drawRect.TopLeft[1] += itemHeight;
-      drawRect.TopRight[1] += itemHeight;
     }
 
     // 
