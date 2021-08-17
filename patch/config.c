@@ -90,6 +90,7 @@ MenuElem_t menuElements[] = {
   { MODTYPE_TOGGLE, "Announcers on all gamemodes", 1, toggleActionHandler, &config.enableGamemodeAnnouncements },
   { MODTYPE_TOGGLE, "Spectate mode", 1, toggleActionHandler, &config.enableSpectate },
   { MODTYPE_TOGGLE, "Singleplayer music", 0, toggleActionHandler, &config.enableSingleplayerMusic },
+  { MODTYPE_TOGGLE, "Reduce LOD", 1, toggleActionHandler, &config.enableReducedLOD },
 };
 
 // 

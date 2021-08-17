@@ -83,6 +83,9 @@ int lastMenuInvokedTime = 0;
 int lastGameState = 0;
 const char * patchConfigStr = "PATCH CONFIG";
 
+extern float _lodScale;
+extern void* _correctTieLod;
+
 // 
 PatchConfig_t config __attribute__((section(".config"))) = {
 	0,
@@ -680,6 +683,22 @@ int main (void)
 		if (*(u32*)0x003106a0 == 0x00560E30)
 		{
 			*(u32*)0x003106a0  = &onGameStartMenuBack;
+		}
+
+		// patch lod
+		if (*(u32*)0x005930B8 == 0x02C3B020)
+		{
+			*(u32*)0x005930B8 = 0x08000000 | ((u32)&_correctTieLod >> 2);
+		}
+
+		// correct lod
+		if (config.enableReducedLOD)
+		{
+			_lodScale = 0.1;
+		}
+		else
+		{
+			_lodScale = 1.0;
 		}
 
 		// patch start menu back button text

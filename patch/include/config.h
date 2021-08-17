@@ -6,4 +6,5 @@ typedef struct PatchConfig
   char enableGamemodeAnnouncements;
   char enableSpectate;
   char enableSingleplayerMusic;
+  char enableReducedLOD;
 } PatchConfig_t;
