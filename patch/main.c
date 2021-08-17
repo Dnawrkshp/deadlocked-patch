@@ -68,6 +68,8 @@
 
 #define EXCEPTION_DISPLAY_ADDR			(0x000BA000)
 
+#define SHRUB_RENDER_DISTANCE				(*(float*)0x0022308C)
+
 // 
 void processSpectate(void);
 void runMapLoader(void);
@@ -698,16 +700,19 @@ int main (void)
 			case 0: // low
 			{
 				_lodScale = 0.1;
+				SHRUB_RENDER_DISTANCE = 50;
 				break;
 			}
 			case 1: // normal
 			{
 				_lodScale = 1.0;
+				SHRUB_RENDER_DISTANCE = 500;
 				break;
 			}
 			case 2: // high
 			{
 				_lodScale = 10.0;
+				SHRUB_RENDER_DISTANCE = 5000;
 				break;
 			}
 		}
