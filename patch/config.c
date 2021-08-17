@@ -44,7 +44,7 @@ u32 padPointer = 0;
 
 // constants
 const float lineHeight = 0.05;
-const char footerText[] = "\x12 Close";
+const char footerText[] = "\x10 SELECT     \x12 BACK";
 
 // menu display properties
 const u32 colorBlack = 0x80000000;
@@ -56,10 +56,10 @@ const u32 colorButtonFg = 0x80505050;
 const u32 colorText = 0x80FFFFFF;
 const u32 colorOpenBg = 0x20000000;
 RECT rectBgBox = {
-  { 0.2, 0.15 },
-  { 0.8, 0.15 },
-  { 0.2, 0.85 },
-  { 0.8, 0.85 }
+  { 0.1, 0.15 },
+  { 0.9, 0.15 },
+  { 0.1, 0.85 },
+  { 0.9, 0.85 }
 };
 RECT rectOpenBg = {
   { 0.1, 0.75 },
@@ -244,6 +244,9 @@ void onConfigOnlineMenu(void)
 
   if (isConfigMenuActive)
   {
+    // prevent pad from affecting menus
+    padDisableInput();
+
     // draw frame
     drawFrame();
 
@@ -272,7 +275,7 @@ void onConfigOnlineMenu(void)
     }
 
     // close
-    if (padGetButtonDown(0, PAD_TRIANGLE) > 0)
+    if (padGetButtonUp(0, PAD_TRIANGLE) > 0)
     {
       configMenuDisable();
     }
@@ -315,11 +318,11 @@ void onConfigOnlineMenu(void)
     {
       // render message
       gfxScreenSpaceBox(&rectOpenBg, colorOpenBg, colorOpenBg, colorOpenBg, colorOpenBg);
-      gfxScreenSpaceText(SCREEN_WIDTH * 0.3, SCREEN_HEIGHT * 0.7, 1, 1, 0x80FFFFFF, "\x16+\x15 Open Config Menu", -1, 1);
+      gfxScreenSpaceText(SCREEN_WIDTH * 0.3, SCREEN_HEIGHT * 0.7, 1, 1, 0x80FFFFFF, "\x1e Open Config Menu", -1, 1);
     }
 
 		// check for pad input
-		if (padGetButtonDown(0, PAD_L2 | PAD_R1))
+		if (padGetButtonDown(0, PAD_SELECT) > 0)
 		{
       configMenuEnable();
 		}
@@ -346,7 +349,4 @@ void configMenuEnable(void)
 
   // ensure custom map installer button is only enabled if not yet tried to install
   menuElements[0].enabled = !mapsHasTriedLoading();
-
-  // prevent pad from affecting menus
-  padDisableInput();
 }

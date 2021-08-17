@@ -77,6 +77,7 @@ void onConfigOnlineMenu(void);
 // 
 int hasInitialized = 0;
 int sentGameStart = 0;
+int lastMenuInvokedTime = 0;
 
 // 
 PatchConfig_t config __attribute__((section(".config"))) = {
@@ -556,6 +557,9 @@ void onOnlineMenu(void)
 	// call normal draw routine
 	((void (*)(void))0x00707F28)();
 	
+	// 
+	lastMenuInvokedTime = gameGetTime();
+
 	//
 	if (!hasInitialized)
 	{
@@ -596,6 +600,10 @@ int main (void)
 
 	// Call this first
 	dlPreUpdate();
+
+	// auto enable pad input to prevent freezing when popup shows
+	if (gameGetTime() - lastMenuInvokedTime > TIME_SECOND)
+		padEnableInput();
 
 	// Hook menu loop
 	*(u32*)0x00594CB8 = 0x0C000000 | ((u32)(&onOnlineMenu) / 4);
