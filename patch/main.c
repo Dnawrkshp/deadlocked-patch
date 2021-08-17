@@ -91,7 +91,8 @@ PatchConfig_t config __attribute__((section(".config"))) = {
 	0,
 	0,
 	0,
-	0
+	0,
+	1
 };
 
 /*
@@ -692,13 +693,23 @@ int main (void)
 		}
 
 		// correct lod
-		if (config.enableReducedLOD)
+		switch (config.levelOfDetail)
 		{
-			_lodScale = 0.1;
-		}
-		else
-		{
-			_lodScale = 1.0;
+			case 0: // low
+			{
+				_lodScale = 0.1;
+				break;
+			}
+			case 1: // normal
+			{
+				_lodScale = 1.0;
+				break;
+			}
+			case 2: // high
+			{
+				_lodScale = 10.0;
+				break;
+			}
 		}
 
 		// patch start menu back button text

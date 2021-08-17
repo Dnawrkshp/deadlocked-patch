@@ -6,7 +6,6 @@ _lodScale:
   .float 0.0
   .float 0.0
   .float 0.0
-.end _lodScale;
 
 
 	.globl	_correctTieLod;
@@ -17,4 +16,3 @@ _correctTieLod:
   vmulx.xyz   vf16, vf16, vf2x;
   j 0x005930C0;
   nop;
-.end _correctTieLod;

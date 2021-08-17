@@ -8,13 +8,6 @@
 #include "include/config.h"
 #include "messageid.h"
 
-enum ModType
-{
-  MODTYPE_NONE = 0,
-  MODTYPE_TOGGLE,
-  MODTYPE_BUTTON
-};
-
 enum ActionType
 {
   ACTIONTYPE_DRAW,
@@ -24,17 +17,23 @@ enum ActionType
   ACTIONTYPE_DECREMENT
 };
 
-typedef void (*ActionHandler)(int elementId, int actionType, void * userdata);
+typedef void (*ActionHandler)(int elementId, int actionType, void * actionArg);
 typedef void (*ButtonSelectHandler)(int elementId);
 
 typedef struct MenuElem
 {
-  enum ModType type;
   char name[32];
   int enabled;
   ActionHandler handler;
   void * userdata;
 } MenuElem_t;
+
+typedef struct MenuElem_ListData
+{
+  char * value;
+  int count;
+  char * items[];
+} MenuElem_ListData_t;
 
 // config
 extern PatchConfig_t config;
@@ -74,8 +73,9 @@ RECT rectOpenBg = {
 void configMenuDisable(void);
 void configMenuEnable(void);
 
-void buttonActionHandler(int elementId, int actionType, void * userdata);
-void toggleActionHandler(int elementId, int actionType, void * userdata);
+void buttonActionHandler(int elementId, int actionType, void * actionArg);
+void toggleActionHandler(int elementId, int actionType, void * actionArg);
+void listActionHandler(int elementId, int actionType, void * actionArg);
 
 void mapsSelectHandler(int elementId);
 
@@ -83,14 +83,21 @@ int mapsHasTriedLoading(void);
 int mapsPromptEnableCustomMaps(void);
 int mapsDownloadingModules(void);
 
+// level of detail list item
+MenuElem_ListData_t dataLevelOfDetail = {
+    &config.levelOfDetail,
+    2,
+    { "Low", "Normal", "High" }
+};
+
 // menu items
 MenuElem_t menuElements[] = {
-  { MODTYPE_TOGGLE, "Enable custom maps", 1, buttonActionHandler, mapsSelectHandler },
-  { MODTYPE_TOGGLE, "Disable framelimiter", 1, toggleActionHandler, &config.disableFramelimiter },
-  { MODTYPE_TOGGLE, "Announcers on all gamemodes", 1, toggleActionHandler, &config.enableGamemodeAnnouncements },
-  { MODTYPE_TOGGLE, "Spectate mode", 1, toggleActionHandler, &config.enableSpectate },
-  { MODTYPE_TOGGLE, "Singleplayer music", 0, toggleActionHandler, &config.enableSingleplayerMusic },
-  { MODTYPE_TOGGLE, "Reduce LOD", 1, toggleActionHandler, &config.enableReducedLOD },
+  { "Enable custom maps", 1, buttonActionHandler, mapsSelectHandler },
+  { "Disable framelimiter", 1, toggleActionHandler, &config.disableFramelimiter },
+  { "Announcers on all gamemodes", 1, toggleActionHandler, &config.enableGamemodeAnnouncements },
+  { "Spectate mode", 1, toggleActionHandler, &config.enableSpectate },
+  { "Singleplayer music", 0, toggleActionHandler, &config.enableSingleplayerMusic },
+  { "Level of Detail", 1, listActionHandler, &dataLevelOfDetail },
 };
 
 // 
@@ -126,6 +133,23 @@ void drawToggleMenuElement(MenuElem_t* element, RECT* rect)
   // draw value
   x = (rect->TopRight[0] * SCREEN_WIDTH) - 5;
   gfxScreenSpaceText(x, y, 1, 1, color, *(char*)element->userdata ? "On" : "Off", -1, 8);
+}
+
+//------------------------------------------------------------------------------
+void drawListMenuElement(MenuElem_t* element, MenuElem_ListData_t * listData, RECT* rect)
+{
+  float x,y;
+  float lerp = element->enabled ? 0.0 : 0.5;
+  u32 color = colorLerp(colorText, 0, lerp);
+
+  // draw name
+  x = (rect->TopLeft[0] * SCREEN_WIDTH) + 5;
+  y = (rect->TopLeft[1] * 440.0) + 5;
+  gfxScreenSpaceText(x, y, 1, 1, color, element->name, -1, 6);
+
+  // draw value
+  x = (rect->TopRight[0] * SCREEN_WIDTH) - 5;
+  gfxScreenSpaceText(x, y, 1, 1, color, listData->items[(int)*listData->value], -1, 8);
 }
 
 //------------------------------------------------------------------------------
@@ -166,33 +190,72 @@ void drawButtonMenuElement(MenuElem_t* element, RECT* rect)
 }
 
 //------------------------------------------------------------------------------
-void buttonActionHandler(int elementId, int actionType, void * userdata)
+void buttonActionHandler(int elementId, int actionType, void * actionArg)
 {
   MenuElem_t* element = &menuElements[elementId];
+
   
   switch (actionType)
   {
     case ACTIONTYPE_SELECT:
     {
-      if (userdata)
-        ((ButtonSelectHandler)userdata)(elementId);
+      if (element->userdata)
+        ((ButtonSelectHandler)element->userdata)(elementId);
       break;
     }
     case ACTIONTYPE_GETHEIGHT:
     {
-      *(float*)userdata = lineHeight * 2;
+      *(float*)actionArg = lineHeight * 2;
       break;
     }
     case ACTIONTYPE_DRAW:
     {
-      drawButtonMenuElement(element, (RECT*)userdata);
+      drawButtonMenuElement(element, (RECT*)actionArg);
       break;
     }
   }
 }
 
 //------------------------------------------------------------------------------
-void toggleActionHandler(int elementId, int actionType, void * userdata)
+void listActionHandler(int elementId, int actionType, void * actionArg)
+{
+  MenuElem_t* element = &menuElements[elementId];
+  MenuElem_ListData_t* listData = (MenuElem_ListData_t*)element->userdata;
+  int itemCount = listData->count;
+
+  switch (actionType)
+  {
+    case ACTIONTYPE_INCREMENT:
+    case ACTIONTYPE_SELECT:
+    {
+      char newValue = *listData->value + 1;
+      if (newValue >= itemCount)
+        newValue = 0;
+      *listData->value = newValue;
+      break;
+    }
+    case ACTIONTYPE_DECREMENT:
+    {
+      char newValue = *listData->value - 1;
+      if (newValue < 0)
+        newValue = itemCount - 1;
+      *listData->value = newValue;
+      break;
+    }
+    case ACTIONTYPE_GETHEIGHT:
+    {
+      *(float*)actionArg = lineHeight;
+      break;
+    }
+    case ACTIONTYPE_DRAW:
+    {
+      drawListMenuElement(element, listData, (RECT*)actionArg);
+      break;
+    }
+  }
+}
+//------------------------------------------------------------------------------
+void toggleActionHandler(int elementId, int actionType, void * actionArg)
 {
   MenuElem_t* element = &menuElements[elementId];
 
@@ -208,12 +271,12 @@ void toggleActionHandler(int elementId, int actionType, void * userdata)
     }
     case ACTIONTYPE_GETHEIGHT:
     {
-      *(float*)userdata = lineHeight;
+      *(float*)actionArg = lineHeight;
       break;
     }
     case ACTIONTYPE_DRAW:
     {
-      drawToggleMenuElement(element, (RECT*)userdata);
+      drawToggleMenuElement(element, (RECT*)actionArg);
       break;
     }
   }
@@ -255,7 +318,7 @@ void drawFrame(void)
 void onUpdate(int inGame)
 {
   int i = 0;
-	const int menuElementsCount =  sizeof(menuElements) / sizeof(MenuElem_t);
+	const int menuElementsCount = sizeof(menuElements) / sizeof(MenuElem_t);
   MenuElem_t* currentElement;
   RECT drawRect = {
     { rectBgBox.TopLeft[0], rectBgBox.TopLeft[1] + (lineHeight * 2) },
@@ -326,19 +389,19 @@ void onUpdate(int inGame)
     else if (padGetButtonDown(0, PAD_CROSS) > 0)
     {
       if (currentElement->enabled)
-        currentElement->handler(selectedMenuItem, ACTIONTYPE_SELECT, currentElement->userdata);
+        currentElement->handler(selectedMenuItem, ACTIONTYPE_SELECT, NULL);
     }
     // nav inc
     else if (padGetButtonDown(0, PAD_RIGHT) > 0)
     {
       if (currentElement->enabled)
-        currentElement->handler(selectedMenuItem, ACTIONTYPE_DECREMENT, currentElement->userdata);
+        currentElement->handler(selectedMenuItem, ACTIONTYPE_INCREMENT, NULL);
     }
     // nav dec
     else if (padGetButtonDown(0, PAD_LEFT) > 0)
     {
       if (currentElement->enabled)
-        currentElement->handler(selectedMenuItem, ACTIONTYPE_DECREMENT, currentElement->userdata);
+        currentElement->handler(selectedMenuItem, ACTIONTYPE_DECREMENT, NULL);
     }
   }
   else if (!inGame && !mapsDownloadingModules())
