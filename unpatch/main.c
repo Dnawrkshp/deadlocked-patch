@@ -42,6 +42,14 @@ const int patches[][2] = {
 	{ 0x007055B4, 0x0C046A7B }, // hook loading screen map name strcpy
 };
 
+const int clears[][2] = {
+	{ 0x000D0000, 0x00008000 }, // patch
+	{ 0x000C8000, 0x00007000 }, // gamerules
+	{ 0x000CF000, 0x00001000 }, // module definitions
+};
+
+int hasClearedMemory = 0;
+
 /*
  * NAME :		onOnlineMenu
  * 
@@ -104,12 +112,23 @@ void onOnlineMenu(void)
 int main (void)
 {
 	int i;
-	const int size =  sizeof(patches) / (2 * sizeof(int));
+	const int patchesSize =  sizeof(patches) / (2 * sizeof(int));
+	const int clearsSize =  sizeof(clears) / (2 * sizeof(int));
 
 	// unhook patch
-	for (i = 0; i < size; ++i)
+	for (i = 0; i < patchesSize; ++i)
 	{
 		*(u32*)patches[i][0] = (u32)patches[i][1];
+	}
+
+	// clear memory
+	if (!hasClearedMemory)
+	{
+		hasClearedMemory = 1;
+		for (i = 0; i < clearsSize; ++i)
+		{
+			memset((void*)clears[i][0], 0, clears[i][1]);
+		}
 	}
 
 	// Hook menu loop
