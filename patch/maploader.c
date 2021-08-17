@@ -623,12 +623,6 @@ int mapsPromptEnableCustomMaps(void)
 //------------------------------------------------------------------------------
 void onMapLoaderOnlineMenu(void)
 {
-	RECT boxRectDownload = {
-		{ 0.2, 0.35 },
-		{ 0.8, 0.35 },
-		{ 0.2, 0.65 },
-		{ 0.8, 0.65 }
-	};
 	u32 bgColorDownload = 0x70000000;
 
 	if (actionState == ACTION_DOWNLOADING_MODULES)
@@ -637,7 +631,7 @@ void onMapLoaderOnlineMenu(void)
 		padDisableInput();
 
 		// render background
-		gfxScreenSpaceQuad(&boxRectDownload, bgColorDownload, bgColorDownload, bgColorDownload, bgColorDownload);
+		gfxScreenSpaceBox(0.2, 0.35, 0.6, 0.3, bgColorDownload);
 
 		// flash color
 		u32 downloadColor = 0x80808080;
@@ -647,7 +641,7 @@ void onMapLoaderOnlineMenu(void)
 		downloadColor += 0x101010 * gameTime;
 
 		// render text
-		gfxScreenSpaceText(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.45, 1, 1, downloadColor, "Downloading modules, please wait...", -1, 1);
+		gfxScreenSpaceText(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.5, 1, 1, downloadColor, "Downloading modules, please wait...", -1, 4);
 	}
 	else if (actionState == ACTION_MODULES_INSTALLED)
 	{

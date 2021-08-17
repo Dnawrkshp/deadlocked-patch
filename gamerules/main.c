@@ -359,17 +359,14 @@ void healthbarsLogic(GameModule * module)
 				float y = (float)py / SCREEN_HEIGHT;
 				float health = player->Health / 50;
 				float w = (0.05 * distanceScale) + 0.02, h = 0.005, p = 0.002;
-				float right = w * health * 2;
+				float right = w * health;
 				u32 color = TEAM_COLORS[player->Team];
 
 				// Draw boxes
-				RECT r = { {x-w-p,y-h-p}, {x+w+p,y-h-p}, {x-w-p,y+h+p}, {x+w+p,y+h+p} };
-				gfxScreenSpaceBox(&r, 0x80000000, 0x80000000, 0x80000000, 0x80000000);
-				RECT r2 = { {x-w,y-h}, {x-w +right,y-h}, {x-w,y+h}, {x-w + right,y+h} };
-				gfxScreenSpaceBox(&r2, color, color, color, color);
+				gfxScreenSpaceBox(x,y,w-p,h-p, 0x80000000);
+				gfxScreenSpaceBox(x,y,right,h, color);
 			}
 		}
-
 	}
 }
 

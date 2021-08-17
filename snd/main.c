@@ -744,19 +744,17 @@ void drawRoundMessage(const char * message, float scale)
 {
 	u32 boxColor = 0x20ffffff;
 	int fw = gfxGetFontWidth(message, -1, scale);
-	float w = fw / (2.0 * SCREEN_WIDTH);
-	float h = 36.0 / SCREEN_HEIGHT;
 	float x = 0.5;
-	float y = 0.14;
-	float yOff = -0.015;
+	float y = 0.16;
 	float p = 0.02;
-	RECT r = { {x-w-p,y-p}, {x+w+p,y-p}, {x-w-p,y+h+p}, {x+w+p,y+h+p} };
+	float w = (fw / (float)SCREEN_WIDTH) + p;
+	float h = (36.0 / SCREEN_HEIGHT) + p;
 
 	// draw container
-	gfxScreenSpaceBox(&r, boxColor, boxColor, boxColor, boxColor);
+	gfxScreenSpaceBox(x-(w/2), y-(h/2), w, h, boxColor);
 
 	// draw message
-	gfxScreenSpaceText(SCREEN_WIDTH * x, SCREEN_HEIGHT * (y + yOff), scale, scale * 1.5, 0x80FFFFFF, message, -1, 1);
+	gfxScreenSpaceText(SCREEN_WIDTH * x, SCREEN_HEIGHT * y, scale, scale * 1.5, 0x80FFFFFF, message, -1, 4);
 }
 
 
@@ -875,7 +873,7 @@ void bombTimerLogic()
 
 			// draw timer
 			sprintf(strBuf, "%.02f", timeLeft / (float)TIME_SECOND);
-			gfxScreenSpaceText(SCREEN_WIDTH/2, SCREEN_HEIGHT * 0.14, scale, scale, color, strBuf, -1, 1);
+			gfxScreenSpaceText(SCREEN_WIDTH/2, SCREEN_HEIGHT * 0.15, scale, scale, color, strBuf, -1, 4);
 
 			// tick timer
 			if (timeSecondsLeftFloor < SNDState.Timer.LastPlaySoundSecond)

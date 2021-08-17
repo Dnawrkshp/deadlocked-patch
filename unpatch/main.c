@@ -69,12 +69,6 @@ void onOnlineMenu(void)
 {
 	u32 bgColorDownload = 0x70000000;
 	u32 downloadColor = 0x80808080;
-	RECT boxRectDownload = {
-		{ 0.2, 0.35 },
-		{ 0.8, 0.35 },
-		{ 0.2, 0.65 },
-		{ 0.8, 0.65 }
-	};
 
 	// call normal draw routine
 	((void (*)(void))0x00707F28)();
@@ -84,7 +78,7 @@ void onOnlineMenu(void)
 		return;
 
 	// render background
-	gfxScreenSpaceBox(&boxRectDownload, bgColorDownload, bgColorDownload, bgColorDownload, bgColorDownload);
+	gfxScreenSpaceBox(0.2, 0.35, 0.6, 0.3, bgColorDownload);
 
 	// flash color
 	int gameTime = ((gameGetTime()/100) % 15);
@@ -93,7 +87,7 @@ void onOnlineMenu(void)
 	downloadColor += 0x101010 * gameTime;
 
 	// render text
-	gfxScreenSpaceText(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.45, 1, 1, downloadColor, "Downloading patch, please wait...", -1, 1);
+	gfxScreenSpaceText(SCREEN_WIDTH * 0.5, SCREEN_HEIGHT * 0.5, 1, 1, downloadColor, "Downloading patch, please wait...", -1, 4);
 }
 
 /*
