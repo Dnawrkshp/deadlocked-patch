@@ -325,7 +325,7 @@ void patchPopulateCreateGame()
 	}
 
 	// Patch default respawn timer
-
+	GAMESETTINGS_RESPAWN_TIME = GAMESETTINGS_RESPAWN_TIME2;
 }
 
 /*
