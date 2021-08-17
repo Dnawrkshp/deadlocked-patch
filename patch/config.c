@@ -60,24 +60,15 @@ const u32 colorButtonBg = 0x80303030;
 const u32 colorButtonFg = 0x80505050;
 const u32 colorText = 0x80FFFFFF;
 const u32 colorOpenBg = 0x20000000;
-RECT rectBgBox = {
-  { 0.1, 0.15 },
-  { 0.9, 0.15 },
-  { 0.1, 0.85 },
-  { 0.9, 0.85 }
-};
-RECT rectOpenBg = {
-  { 0.1, 0.75 },
-  { 0.5, 0.75 },
-  { 0.1, 0.8 },
-  { 0.5, 0.8 }
-};
-RECT contentRect = {
-  { 0.11, 0.15 + LINE_HEIGHT_3_2 },
-  { 0.89, 0.15 + LINE_HEIGHT_3_2 },
-  { 0.11, 0.85 - LINE_HEIGHT_3_2 },
-  { 0.89, 0.85 - LINE_HEIGHT_3_2 }
-};
+
+const float frameX = 0.1;
+const float frameY = 0.15;
+const float frameW = 0.8;
+const float frameH = 0.7;
+const float frameTitleH = 0.075;
+const float frameFooterH = 0.05;
+const float contentPaddingX = 0.01;
+const float contentPaddingY = 0;
 
 //
 void configMenuDisable(void);
@@ -295,37 +286,23 @@ void toggleActionHandler(int elementId, int actionType, void * actionArg)
 //------------------------------------------------------------------------------
 void drawFrame(void)
 {
-  RECT r = {
-    { rectBgBox.TopLeft[0], rectBgBox.TopLeft[1] },
-    { rectBgBox.TopRight[0], rectBgBox.TopRight[1] },
-    { rectBgBox.BottomLeft[0], rectBgBox.BottomLeft[1] },
-    { rectBgBox.BottomRight[0], rectBgBox.BottomRight[1] }
-  };
-
   // bg
-	gfxScreenSpaceQuad(&r, colorBg, colorBg, colorBg, colorBg);
+  gfxScreenSpaceBox(frameX, frameY, frameW, frameH, colorBg);
 
   // title bg
-  r.BottomRight[1] = r.TopLeft[1] + LINE_HEIGHT_3_2;
-  r.BottomLeft[1] = r.TopLeft[1] + LINE_HEIGHT_3_2;
-	gfxScreenSpaceQuad(&r, colorRed, colorRed, colorRed, colorRed);
+  gfxScreenSpaceBox(frameX, frameY, frameW, frameTitleH, colorRed);
 
   // title
-  gfxScreenSpaceText(0.5 * SCREEN_WIDTH, r.TopLeft[1] * SCREEN_HEIGHT, 1, 1, colorText, "Patch Config", -1, 1);
+  gfxScreenSpaceText(0.5 * SCREEN_WIDTH, (frameY + frameTitleH * 0.5) * SCREEN_HEIGHT, 1, 1, colorText, "Patch Config", -1, 4);
 
   // footer bg
-  r.TopLeft[1] = rectBgBox.BottomLeft[1] - LINE_HEIGHT_3_2;
-  r.TopRight[1] = rectBgBox.BottomLeft[1] - LINE_HEIGHT_3_2;
-  r.BottomLeft[1] = rectBgBox.BottomLeft[1];
-  r.BottomRight[1] = rectBgBox.BottomLeft[1];
-	gfxScreenSpaceQuad(&r, colorRed, colorRed, colorRed, colorRed);
+  gfxScreenSpaceBox(frameX, frameY + frameH - frameFooterH, frameW, frameFooterH, colorRed);
 
   // footer
-  gfxScreenSpaceText((r.BottomRight[0] * SCREEN_WIDTH) - 5, (r.TopLeft[1] + LINE_HEIGHT) * SCREEN_HEIGHT, 1, 1, colorText, footerText, -1, 5);
+  gfxScreenSpaceText(((frameX + frameW) * SCREEN_WIDTH) - 5, (frameY + frameH) * SCREEN_HEIGHT - 5, 1, 1, colorText, footerText, -1, 8);
 
   // content bg
-	gfxScreenSpaceQuad(&contentRect, colorContentBg, colorContentBg, colorContentBg, colorContentBg);
-
+  gfxScreenSpaceBox(frameX + contentPaddingX, frameY + frameTitleH + contentPaddingY, frameW - (contentPaddingX*2), frameH - frameTitleH - frameFooterH - (contentPaddingY * 2), colorContentBg);
 }
 
 //------------------------------------------------------------------------------
@@ -335,11 +312,16 @@ void onUpdate(int inGame)
   int menuElementRenderEnd = menuOffset;
 	const int menuElementsCount = sizeof(menuElements) / sizeof(MenuElem_t);
   MenuElem_t* currentElement;
+
+  float contentX = frameX + contentPaddingX;
+  float contentY = frameY + frameTitleH + contentPaddingY;
+  float contentW = frameW - (contentPaddingX * 2);
+  float contentH = frameH - frameTitleH - frameFooterH - (contentPaddingY * 2);
   RECT drawRect = {
-    { contentRect.TopLeft[0], contentRect.TopLeft[1] },
-    { contentRect.TopRight[0], contentRect.TopRight[1] },
-    { contentRect.TopLeft[0], contentRect.TopLeft[1] },
-    { contentRect.TopRight[0], contentRect.TopRight[1] }
+    { contentX, contentY },
+    { contentX + contentW, contentY },
+    { contentX, contentY },
+    { contentX + contentW, contentY }
   };
 
   if (isConfigMenuActive)
@@ -361,7 +343,7 @@ void onUpdate(int inGame)
         currentElement->handler(i, ACTIONTYPE_GETHEIGHT, &itemHeight);
 
         // ensure item is within content bounds
-        if ((drawRect.BottomLeft[1] + itemHeight) > contentRect.BottomLeft[1])
+        if ((drawRect.BottomLeft[1] + itemHeight) > (contentY + contentH))
           break;
 
         // set rect to height
@@ -388,9 +370,9 @@ void onUpdate(int inGame)
       {
         float scrollValue = menuOffset / (float)(menuElementsCount - (menuElementRenderEnd-menuOffset));
         float scrollBarHeight = 0.05;
-        float contentRectHeight = contentRect.BottomRight[1] - contentRect.TopRight[1] - scrollBarHeight;
+        float contentRectHeight = contentH - scrollBarHeight;
 
-        gfxScreenSpaceBox(contentRect.TopRight[0], contentRect.TopRight[1] + (scrollValue * contentRectHeight), 0.01, scrollBarHeight, colorRed);
+        gfxScreenSpaceBox(contentX + contentW, contentY + (scrollValue * contentRectHeight), 0.01, scrollBarHeight, colorRed);
       }
     }
 
@@ -446,7 +428,7 @@ void onUpdate(int inGame)
     if (uiGetActive() == UI_ID_ONLINE_MAIN_MENU)
     {
       // render message
-      gfxScreenSpaceQuad(&rectOpenBg, colorOpenBg, colorOpenBg, colorOpenBg, colorOpenBg);
+      gfxScreenSpaceBox(0.1, 0.75, 0.4, 0.05, colorOpenBg);
       gfxScreenSpaceText(SCREEN_WIDTH * 0.3, SCREEN_HEIGHT * 0.775, 1, 1, 0x80FFFFFF, "\x1e Open Config Menu", -1, 4);
     }
 
