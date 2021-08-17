@@ -40,6 +40,7 @@ const int patches[][2] = {
 	{ 0x00159B20, 0x0C056680 }, // hookTableAddr
 	{ 0x00159B20, 0x0C056680 }, // hookTableAddr
 	{ 0x007055B4, 0x0C046A7B }, // hook loading screen map name strcpy
+	{ 0x00211E64, 0x00000000 }, // net global callbacks ptr
 };
 
 const int clears[][2] = {

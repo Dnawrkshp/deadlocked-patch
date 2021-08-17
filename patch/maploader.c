@@ -637,7 +637,7 @@ void onMapLoaderOnlineMenu(void)
 		padDisableInput();
 
 		// render background
-		gfxScreenSpaceBox(&boxRectDownload, bgColorDownload, bgColorDownload, bgColorDownload, bgColorDownload);
+		gfxScreenSpaceQuad(&boxRectDownload, bgColorDownload, bgColorDownload, bgColorDownload, bgColorDownload);
 
 		// flash color
 		u32 downloadColor = 0x80808080;
