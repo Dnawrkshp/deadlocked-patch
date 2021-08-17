@@ -374,13 +374,13 @@ void onUpdate(int inGame)
 
         gfxScreenSpaceBox(contentX + contentW, contentY + (scrollValue * contentRectHeight), 0.01, scrollBarHeight, colorRed);
       }
-    }
 
-    // 
-    if (selectedMenuItem >= menuElementRenderEnd)
-      ++menuOffset;
-    if (selectedMenuItem < menuOffset)
-      menuOffset = selectedMenuItem;
+      // 
+      if (selectedMenuItem >= menuElementRenderEnd)
+        ++menuOffset;
+      if (selectedMenuItem < menuOffset)
+        menuOffset = selectedMenuItem;
+    }
 
     // 
     currentElement = &menuElements[selectedMenuItem];
