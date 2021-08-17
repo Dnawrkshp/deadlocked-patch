@@ -24,6 +24,7 @@ enum ActionType
 };
 
 typedef void (*ActionHandler)(int elementId, int actionType, void * userdata);
+typedef void (*ButtonSelectHandler)(int elementId);
 
 typedef struct MenuElem
 {
@@ -72,8 +73,10 @@ RECT rectOpenBg = {
 void configMenuDisable(void);
 void configMenuEnable(void);
 
-void mapsActionHandler(int elementId, int actionType, void * userdata);
+void buttonActionHandler(int elementId, int actionType, void * userdata);
 void toggleActionHandler(int elementId, int actionType, void * userdata);
+
+void mapsSelectHandler(int elementId);
 
 int mapsHasTriedLoading(void);
 int mapsPromptEnableCustomMaps(void);
@@ -81,12 +84,26 @@ int mapsDownloadingModules(void);
 
 // menu items
 MenuElem_t menuElements[] = {
-  { MODTYPE_TOGGLE, "Enable custom maps", 1, mapsActionHandler, NULL },
+  { MODTYPE_TOGGLE, "Enable custom maps", 1, buttonActionHandler, mapsSelectHandler },
   { MODTYPE_TOGGLE, "Disable framelimiter", 1, toggleActionHandler, &config.disableFramelimiter },
   { MODTYPE_TOGGLE, "Announcers on all gamemodes", 1, toggleActionHandler, &config.enableGamemodeAnnouncements },
   { MODTYPE_TOGGLE, "Spectate mode", 1, toggleActionHandler, &config.enableSpectate },
   { MODTYPE_TOGGLE, "Singleplayer music", 0, toggleActionHandler, &config.enableSingleplayerMusic },
 };
+
+// 
+void mapsSelectHandler(int elementId)
+{
+  MenuElem_t* element = &menuElements[elementId];
+
+  // close menu
+  configMenuDisable();
+
+  // try and load the map
+  // disable on success
+  if (mapsPromptEnableCustomMaps())
+    element->enabled = 0;
+}
 
 //------------------------------------------------------------------------------
 void drawToggleMenuElement(MenuElem_t* element, RECT* rect)
@@ -143,7 +160,7 @@ void drawButtonMenuElement(MenuElem_t* element, RECT* rect)
 }
 
 //------------------------------------------------------------------------------
-void mapsActionHandler(int elementId, int actionType, void * userdata)
+void buttonActionHandler(int elementId, int actionType, void * userdata)
 {
   MenuElem_t* element = &menuElements[elementId];
   
@@ -151,9 +168,8 @@ void mapsActionHandler(int elementId, int actionType, void * userdata)
   {
     case ACTIONTYPE_SELECT:
     {
-      configMenuDisable();
-      if (mapsPromptEnableCustomMaps())
-        element->enabled = 0;
+      if (userdata)
+        ((ButtonSelectHandler)userdata)(elementId);
       break;
     }
     case ACTIONTYPE_GETHEIGHT:
@@ -274,6 +290,9 @@ void onConfigOnlineMenu(void)
       drawRect.TopRight[1] += itemHeight;
     }
 
+    // 
+    currentElement = &menuElements[selectedMenuItem];
+
     // close
     if (padGetButtonUp(0, PAD_TRIANGLE) > 0)
     {
@@ -296,20 +315,20 @@ void onConfigOnlineMenu(void)
     // nav select
     else if (padGetButtonDown(0, PAD_CROSS) > 0)
     {
-      if (menuElements[selectedMenuItem].enabled)
-        menuElements[selectedMenuItem].handler(selectedMenuItem, ACTIONTYPE_SELECT, NULL);
+      if (currentElement->enabled)
+        currentElement->handler(selectedMenuItem, ACTIONTYPE_SELECT, currentElement->userdata);
     }
     // nav inc
     else if (padGetButtonDown(0, PAD_RIGHT) > 0)
     {
-      if (menuElements[selectedMenuItem].enabled)
-        menuElements[selectedMenuItem].handler(selectedMenuItem, ACTIONTYPE_DECREMENT, NULL);
+      if (currentElement->enabled)
+        currentElement->handler(selectedMenuItem, ACTIONTYPE_DECREMENT, currentElement->userdata);
     }
     // nav dec
     else if (padGetButtonDown(0, PAD_LEFT) > 0)
     {
-      if (menuElements[selectedMenuItem].enabled)
-        menuElements[selectedMenuItem].handler(selectedMenuItem, ACTIONTYPE_DECREMENT, NULL);
+      if (currentElement->enabled)
+        currentElement->handler(selectedMenuItem, ACTIONTYPE_DECREMENT, currentElement->userdata);
     }
   }
   else if (!mapsDownloadingModules())
