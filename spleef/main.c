@@ -70,10 +70,11 @@ void initialize(void)
 	GameOptions * gameOptions = gameGetOptions();
 	Player ** players = playerGetAll();
 
-	int i, j;
-	int w = 15, h = 15;
-	float size = 2.5;
-	float radius = 2.5 * ((w + h) / 5);
+	int i, j, k;
+	int w = 10, h = 10;
+	float size = 4;
+	float radius = 4 * ((w + h) / 5);
+	float levelOffset = 20;
 #if DEBUG
 	int count = 0;
 #endif
@@ -90,7 +91,7 @@ void initialize(void)
 	center[2] = StartPos[2];
 
 	// Set death barrier
-	gameSetDeathHeight(StartPos[2] - 10);
+	gameSetDeathHeight(StartPos[2] - levelOffset - 10);
 
 	// Set survivor
 	gameOptions->GameFlags.MultiplayerGameFlags.Survivor = 1;
@@ -102,49 +103,55 @@ void initialize(void)
 	pos[3] = sourceBox->Position[3];
 
 	// Spawn boxes
-	for (i = 0; i < w; ++i)
+	for (k = 0; k < 2; ++k)
 	{
-		for (j = 0; j < h; ++j)
+		for (i = 0; i < w; ++i)
 		{
-			hbMoby = mobySpawn(MOBY_ID_NODE_BOLT_GUARD, 0);
-			
-			if (hbMoby)
+			for (j = 0; j < h; ++j)
 			{
-				vector_copy(hbMoby->Position, pos);
+				hbMoby = mobySpawn(MOBY_ID_NODE_BOLT_GUARD, 0);
+				
+				if (hbMoby)
+				{
+					vector_copy(hbMoby->Position, pos);
 
-				hbMoby->UNK_30 = 0xFF;
-				hbMoby->UNK_31 = 0x01;
-				hbMoby->RenderDistance = 0x0080;
-				hbMoby->Opacity = 0x80;
-				hbMoby->UNK_20[0] = 1;
+					hbMoby->UNK_30 = 0xFF;
+					hbMoby->UNK_31 = 0x01;
+					hbMoby->RenderDistance = 0x0080;
+					hbMoby->Opacity = 0x80;
+					hbMoby->UNK_20[0] = 1;
 
-				hbMoby->UNK_B8 = 1;
-				hbMoby->Scale = (float)0.11;
-				hbMoby->UNK_38[0] = 2;
-				hbMoby->UNK_38[1] = 2;
-				hbMoby->GuberMoby = 0;
+					hbMoby->UNK_B8 = 1;
+					hbMoby->Scale = (float)0.17;
+					hbMoby->UNK_38[0] = 2;
+					hbMoby->UNK_38[1] = 2;
+					hbMoby->GuberMoby = 0;
 
-				// For this model the vector here is copied to 0x80 in the moby
-				// This fixes the occlusion bug
-				hbMoby->AnimationPointer = StartUNK_80;
+					// For this model the vector here is copied to 0x80 in the moby
+					// This fixes the occlusion bug
+					hbMoby->AnimationPointer = StartUNK_80;
 
-				// Copy from source box
-				hbMoby->ModelPointer = sourceBox->ModelPointer;
-				hbMoby->CollisionPointer = sourceBox->CollisionPointer;
-				hbMoby->UNK_20[2] = sourceBox->UNK_20[2];
+					// Copy from source box
+					hbMoby->ModelPointer = sourceBox->ModelPointer;
+					hbMoby->CollisionPointer = sourceBox->CollisionPointer;
+					hbMoby->UNK_20[2] = sourceBox->UNK_20[2];
 
-#if DEBUG
-				++count;
-#endif
+	#if DEBUG
+					++count;
+	#endif
+				}
+
+				pos[1] += size;
 			}
 
-			pos[1] += size;
+			pos[0] += size;
+			pos[1] = StartPos[1];
 		}
 
-		pos[0] += size;
+		pos[0] = StartPos[0];
 		pos[1] = StartPos[1];
+		pos[2] -= levelOffset;
 	}
-
 	// 
 #if DEBUG
 	hbMoby->Opacity = 0xFF;
@@ -204,6 +211,12 @@ void gameStart(void)
 
 	if (!Initialized)
 		initialize();
+
+
+#if DEBUG
+	if (padGetButton(0, PAD_L3 | PAD_R3) > 0)
+		gameEnd(0);
+#endif
 
 	// 
 	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
