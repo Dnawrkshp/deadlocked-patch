@@ -73,11 +73,15 @@ void processSpectate(void);
 void runMapLoader(void);
 void onMapLoaderOnlineMenu(void);
 void onConfigOnlineMenu(void);
+void onConfigGameMenu(void);
+void configMenuEnable(void);
 
 // 
 int hasInitialized = 0;
 int sentGameStart = 0;
 int lastMenuInvokedTime = 0;
+int lastGameState = 0;
+const char * patchConfigStr = "PATCH CONFIG";
 
 // 
 PatchConfig_t config __attribute__((section(".config"))) = {
@@ -539,10 +543,33 @@ void runGameStartMessager(void)
 }
 
 /*
+ * NAME :		onGameStartMenuBack
+ * 
+ * DESCRIPTION :
+ * 			Called when the user selects 'Back' in the in game start menu
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void onGameStartMenuBack(long a0)
+{
+	// call start menu back callback
+	((void (*)(long))0x00560E30)(a0);
+
+	// open config
+	configMenuEnable();
+}
+
+/*
  * NAME :		onOnlineMenu
  * 
  * DESCRIPTION :
- * 			Called every ui update.
+ * 			Called every ui update in menus.
  * 
  * NOTES :
  * 
@@ -602,8 +629,11 @@ int main (void)
 	dlPreUpdate();
 
 	// auto enable pad input to prevent freezing when popup shows
-	if (gameGetTime() - lastMenuInvokedTime > TIME_SECOND)
+	if (lastMenuInvokedTime > 0 && gameGetTime() - lastMenuInvokedTime > TIME_SECOND)
+	{
 		padEnableInput();
+		lastMenuInvokedTime = 0;
+	}
 
 	// Hook menu loop
 	*(u32*)0x00594CB8 = 0x0C000000 | ((u32)(&onOnlineMenu) / 4);
@@ -638,7 +668,37 @@ int main (void)
 
 	// Patch weapon shot to be sent reliably
 	//patchWeaponShotNetSendFlag();
-	
+
+	// in game stuff
+	if (gameIsIn())
+	{
+		// close config menu on transition to lobby
+		if (lastGameState != 1)
+			configMenuDisable();
+
+		// Hook game start menu back callback
+		if (*(u32*)0x003106a0 == 0x00560E30)
+		{
+			*(u32*)0x003106a0  = &onGameStartMenuBack;
+		}
+
+		// patch start menu back button text
+		*(u32*)0x002AC15C = (u32)patchConfigStr;
+
+		// trigger config menu update
+		onConfigGameMenu();
+
+		lastGameState = 1;
+	}
+	else
+	{
+		// close config menu on transition to lobby
+		if (lastGameState != 0)
+			configMenuDisable();
+
+		lastGameState = 0;
+	}
+
 	// Process game modules
 	processGameModules();
 

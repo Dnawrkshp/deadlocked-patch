@@ -4,6 +4,7 @@
 #include <libdl/stdio.h>
 #include <libdl/net.h>
 #include <libdl/color.h>
+#include <libdl/game.h>
 #include "include/config.h"
 #include "messageid.h"
 
@@ -95,6 +96,10 @@ MenuElem_t menuElements[] = {
 void mapsSelectHandler(int elementId)
 {
   MenuElem_t* element = &menuElements[elementId];
+
+  // 
+  if (gameIsIn())
+    return;
 
   // close menu
   configMenuDisable();
@@ -246,7 +251,7 @@ void drawFrame(void)
 }
 
 //------------------------------------------------------------------------------
-void onConfigOnlineMenu(void)
+void onUpdate(int inGame)
 {
   int i = 0;
 	const int menuElementsCount =  sizeof(menuElements) / sizeof(MenuElem_t);
@@ -331,7 +336,7 @@ void onConfigOnlineMenu(void)
         currentElement->handler(selectedMenuItem, ACTIONTYPE_DECREMENT, currentElement->userdata);
     }
   }
-  else if (!mapsDownloadingModules())
+  else if (!inGame && !mapsDownloadingModules())
   {
     if (uiGetActive() == UI_ID_ONLINE_MAIN_MENU)
     {
@@ -349,8 +354,23 @@ void onConfigOnlineMenu(void)
 }
 
 //------------------------------------------------------------------------------
+void onConfigGameMenu(void)
+{
+  onUpdate(1);
+}
+
+//------------------------------------------------------------------------------
+void onConfigOnlineMenu(void)
+{
+  onUpdate(0);
+}
+
+//------------------------------------------------------------------------------
 void configMenuDisable(void)
 {
+  if (!isConfigMenuActive)
+    return;
+  
   isConfigMenuActive = 0;
 
   // send config to server for saving
