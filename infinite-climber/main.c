@@ -157,7 +157,6 @@ Moby * spawn(MobyDef * def, VECTOR position, VECTOR rotation, float scale)
 	sourceBox->Opacity = 0x7E;
 	sourceBox->UNK_20[0] = 1;
 
-	sourceBox->UNK_B8 = 1;
 	sourceBox->Scale = (float)0.11 * scale * def->ObjectScale;
 	sourceBox->UNK_38[0] = 2;
 	sourceBox->UNK_38[1] = 2;
