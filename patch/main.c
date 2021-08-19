@@ -66,6 +66,8 @@
 #define FRAME_SKIP_WRITE0				(*(u32*)0x004A9400)
 #define FRAME_SKIP						(*(u32*)0x0021E1D8)
 
+#define IS_PROGRESSIVE_SCAN					(*(int*)0x0021DE6C)
+
 #define EXCEPTION_DISPLAY_ADDR			(0x000E0000)
 
 #define SHRUB_RENDER_DISTANCE				(*(float*)0x0022308C)
@@ -646,7 +648,21 @@ int main (void)
 
 	// invoke exception display installer
 	if (*(u32*)EXCEPTION_DISPLAY_ADDR != 0)
+	{
 		((void (*)(void))EXCEPTION_DISPLAY_ADDR)();
+
+		// change display to match progressive scan resolution
+		if (IS_PROGRESSIVE_SCAN)
+		{
+			*(u16*)(EXCEPTION_DISPLAY_ADDR + 0x9F4) = 0x0083;
+			*(u16*)(EXCEPTION_DISPLAY_ADDR + 0x9F8) = 0x210E;
+		}
+		else
+		{
+			*(u16*)(EXCEPTION_DISPLAY_ADDR + 0x9F4) = 0x0183;
+			*(u16*)(EXCEPTION_DISPLAY_ADDR + 0x9F8) = 0x2278;
+		}
+	}
 
 	// Run map loader
 	runMapLoader();
