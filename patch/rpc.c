@@ -8,9 +8,9 @@
 #define CMD_USBREAD			0x04
 #define CMD_USBSEEK			0x05
 
-#define RPCCLIENT_INITED (*(int*)0x000EEFFC)
+#define RPCCLIENT_INITED (*(int*)0x000E2FFC)
 
-static SifRpcClientData_t * rpcclient = (SifRpcClientData_t*)0x000EF000;
+static SifRpcClientData_t * rpcclient = (SifRpcClientData_t*)0x000E3000;
 static int Rpc_Buffer[16] 			__attribute__((aligned(64)));
 
 static struct { 			// size = 1024
@@ -53,6 +53,9 @@ int rpcUSBInit(void)
 
 	if (RPCCLIENT_INITED)
 		return -2;
+
+	// 
+	memset(rpcclient, 0, sizeof(SifRpcClientData_t));
 
 	SifInitRpc(0);
 		

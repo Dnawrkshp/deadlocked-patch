@@ -20,11 +20,11 @@
 #include <io_common.h>
 
 #define MAP_FRAG_PAYLOAD_MAX_SIZE               (1024)
-#define LOAD_MODULES_STATE                      (*(u8*)0x000EFF00)
+#define LOAD_MODULES_STATE                      (*(u8*)0x000E2FF0)
 #define HAS_LOADED_MODULES                      (LOAD_MODULES_STATE == 100)
 
-#define USB_FS_ID                               (*(u8*)0x000EFF04)
-#define USB_SRV_ID                              (*(u8*)0x000EFF08)
+#define USB_FS_ID                               (*(u8*)0x000E2FF4)
+#define USB_SRV_ID                              (*(u8*)0x000E2FF8)
 
 
 void hook(void);
@@ -33,9 +33,9 @@ void loadModules(void);
 int readLevelVersion(char * name, int * version);
 int readGlobalVersion(int * version);
 
-void * usbFsModuleStart = (void*)0x000E0000;
+void * usbFsModuleStart = (void*)0x000E3000;
 int usbFsModuleSize = 0;
-void * usbSrvModuleStart = (void*)0x000ED000;
+void * usbSrvModuleStart = (void*)0x000F0000;
 int usbSrvModuleSize = 0;
 
 enum MenuActionId
