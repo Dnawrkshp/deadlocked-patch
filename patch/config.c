@@ -99,6 +99,7 @@ MenuElem_t menuElements[] = {
   { "Spectate mode", 1, toggleActionHandler, &config.enableSpectate },
   { "Singleplayer music", 0, toggleActionHandler, &config.enableSingleplayerMusic },
   { "Level of Detail", 1, listActionHandler, &dataLevelOfDetail },
+  { "Progressive Scan", 1, toggleActionHandler, (char*)0x0021DE6C },
 };
 
 // 
@@ -255,6 +256,7 @@ void listActionHandler(int elementId, int actionType, void * actionArg)
     }
   }
 }
+
 //------------------------------------------------------------------------------
 void toggleActionHandler(int elementId, int actionType, void * actionArg)
 {
