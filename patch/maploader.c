@@ -516,24 +516,24 @@ void hookedLoadingScreen(u64 a0, void * a1, u64 a2, u64 a3, u64 t0, u64 t1, u64 
 //------------------------------------------------------------------------------
 void hookedGetTable(u32 startSector, u32 sectorCount, u8 * dest, u32 levelId)
 {
-    // load table
-    ((void (*)(u32,u32,void*))0x00159A00)(startSector, sectorCount, dest);
+	// load table
+	((void (*)(u32,u32,void*))0x00159A00)(startSector, sectorCount, dest);
 
-    // Disable when loading menu
-    if (levelId == 0)
-    {
-        State.Enabled = 0;
-        return;
-    }
+	// Disable when loading menu
+	if (levelId == 0)
+	{
+			State.Enabled = 0;
+			return;
+	}
 
 	// Check if loading MP map
 	if (State.Enabled && HAS_LOADED_MODULES)
 	{
         // Disable if map doesn't match
-        if (levelId != State.MapId)
+        if (levelId != State.MapId && (levelId - 20) != State.MapId)
         {
-            State.Enabled = 0;
-            return;
+					State.Enabled = 0;
+					return;
         }
 
         int fSize = getLevelSizeUsb();
