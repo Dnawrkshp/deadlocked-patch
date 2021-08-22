@@ -47,6 +47,8 @@ SECTIONS {
 		*(.sdata)
 		*(.sdata.*)
 		*(.gnu.linkonce.s*)
+		*(.scommon)
+		*(.scommon.*)
 	}
 
 	_end = . ;
