@@ -278,13 +278,16 @@ void onDestroyBox(int id)
 		mobyDestroy(box);
 	}
 
-	DPRINTF("box destroyed %d\n", id);
+	//DPRINTF("box destroyed %d\n", id);
 }
 
 int onDestroyBoxRemote(void * connection, void * data)
 {
 	SpleefDestroyBoxMessage_t * message = (SpleefDestroyBoxMessage_t*)data;
-	onDestroyBox(message->BoxId);
+
+	// if the round hasn't ended
+	if (!SpleefState.RoundEndTicks)
+		onDestroyBox(message->BoxId);
 
 	return sizeof(SpleefDestroyBoxMessage_t);
 }
@@ -296,6 +299,7 @@ void destroyBox(int id)
 	// send out
 	message.BoxId = id;
 	netBroadcastCustomAppMessage(netGetDmeServerConnection(), CUSTOM_MSG_ID_SPLEEF_DESTROY_BOX, sizeof(SpleefDestroyBoxMessage_t), &message);
+	//DPRINTF("sent destroy box %d\n", id);
 }
 
 void boxUpdate(Moby* moby)
@@ -303,7 +307,7 @@ void boxUpdate(Moby* moby)
 	int i;
 	MobyColDamage* colDamage = mobyGetDamage(moby, 0xfffffff, 0);
 
-	if (colDamage)
+	if (moby->UNK_2C[0] != -1 && colDamage && colDamage->Moby == moby)
 	{
 		int damagePlayerId = colDamage->Damager->NetObjectGid.HostId;
 		if (playerIdIsLocal(damagePlayerId))
@@ -321,7 +325,8 @@ void boxUpdate(Moby* moby)
 			}
 		}
 
-		return;
+		// remove damage
+		moby->UNK_2C[0] = 0xff;
 	}
 
 	// call base
@@ -362,6 +367,17 @@ void drawRoundMessage(const char * message, float scale)
 			gfxScreenSpaceText(x+(w/2), y, scale, scale, 0x80FFFFFF, gameSettings->PlayerNames[pId], -1, 5);
 		}
 	}
+}
+
+int playerIsDead(Player* p)
+{
+	return p->PlayerState == 57 // dead
+								|| p->PlayerState == 106 // drown
+								|| p->PlayerState == 118 // death fall
+								|| p->PlayerState == 122 // death sink
+								|| p->PlayerState == 123 // death lava
+								|| p->PlayerState == 148 // death no fall
+								;
 }
 
 void resetRoundState(void)
@@ -678,23 +694,20 @@ void gameStart(void)
 					if (p)
 					{
 						// check if player is dead
-						if ( p->PlayerState == 57 // dead
-								|| p->PlayerState == 106 // drown
-								|| p->PlayerState == 118 // death fall
-								|| p->PlayerState == 122 // death sink
-								|| p->PlayerState == 123 // death lava
-								|| p->PlayerState == 148 // death no fall
-						)
+						if (playerIsDead(p) || SpleefState.RoundPlayerState[i] == 1)
 						{
 							// player newly died
-							if (!SpleefState.RoundPlayerState[i])
+							if (SpleefState.RoundPlayerState[i] == 0)
 							{
 								DPRINTF("player %d died\n", i);
 								SpleefState.RoundPlayerState[i] = 1;
 
 								// set player to first/second/third if appropriate
 								if (playersAlive < 4)
+								{
 									SpleefState.RoundResult[playersAlive] = i;
+									DPRINTF("setting %d place to player %d\n", playersAlive, i);
+								}
 							}
 						}
 						else
@@ -709,7 +722,10 @@ void gameStart(void)
 					// end
 					DPRINTF("end round: playersAlive:%d playerCount:%d\n", playersAlive, playerCount);
 					if (lastPlayerAlive >= 0)
+					{
 						SpleefState.RoundResult[1] = lastPlayerAlive;
+						DPRINTF("last player alive is %d\n", lastPlayerAlive);
+					}
 					setRoundOutcome(SpleefState.RoundResult[1], SpleefState.RoundResult[2], SpleefState.RoundResult[3]);
 				}
 			}
@@ -735,7 +751,10 @@ void gameStart(void)
 		if (!p)
 			continue;
 
-		p->Health = PLAYER_MAX_HEALTH;
+		if (!playerIsDead(p))
+			p->Health = PLAYER_MAX_HEALTH;
+		else
+			p->Health = 0;
 	}
 
 	// 
