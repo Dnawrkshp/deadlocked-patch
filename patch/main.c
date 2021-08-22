@@ -85,6 +85,7 @@ int hasInitialized = 0;
 int sentGameStart = 0;
 int lastMenuInvokedTime = 0;
 int lastGameState = 0;
+int hasInstalledExceptionHandler = 0;
 const char * patchConfigStr = "PATCH CONFIG";
 
 extern float _lodScale;
@@ -649,8 +650,12 @@ int main (void)
 	// invoke exception display installer
 	if (*(u32*)EXCEPTION_DISPLAY_ADDR != 0)
 	{
-		((void (*)(void))EXCEPTION_DISPLAY_ADDR)();
-
+		if (!hasInstalledExceptionHandler)
+		{
+			((void (*)(void))EXCEPTION_DISPLAY_ADDR)();
+			hasInstalledExceptionHandler = 1;
+		}
+		
 		// change display to match progressive scan resolution
 		if (IS_PROGRESSIVE_SCAN)
 		{
@@ -715,7 +720,7 @@ int main (void)
 		{
 			case 0: // low
 			{
-				_lodScale = 0.1;
+				_lodScale = 0.2;
 				SHRUB_RENDER_DISTANCE = 50;
 				break;
 			}
