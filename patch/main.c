@@ -91,13 +91,38 @@ const char * patchConfigStr = "PATCH CONFIG";
 extern float _lodScale;
 extern void* _correctTieLod;
 
+//
+typedef struct PlayerStateMessage
+{
+	char Player
+} PlayerStateMessage_t;
+
+const PlayerStateCondition_t stateConditions[] = {
+	{
+		PLAYERSTATECONDITION_LOCAL_OR_REMOTE_EQUALS,
+		0,
+		125
+	},
+	{
+		PLAYERSTATECONDITION_LOCAL_EQUALS,
+		15,
+		19
+	},
+	{
+		PLAYERSTATECONDITION_LOCAL_EQUALS,
+		15,
+		20
+	}
+};
+
 // 
 PatchConfig_t config __attribute__((section(".config"))) = {
 	0,
 	0,
 	0,
 	0,
-	1
+	1,
+	0
 };
 
 /*
@@ -442,6 +467,146 @@ void patchWeaponShotNetSendFlag(void)
 }
 
 /*
+ * NAME :		runGameStartMessager
+ * 
+ * DESCRIPTION :
+ * 
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void runGameStartMessager(void)
+{
+	GameSettings * gameSettings = gameGetSettings();
+	if (!gameSettings)
+		return;
+
+	// in staging
+	if (uiGetActive() == UI_ID_GAME_LOBBY)
+	{
+		// check if game started
+		if (!sentGameStart && gameSettings->GameLoadStartTime > 0)
+		{
+			// check if host
+			if (*(u8*)0x00172170 == 0)
+			{
+				netSendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_GAME_LOBBY_STARTED, 0, gameSettings);
+			}
+			
+			sentGameStart = 1;
+		}
+	}
+	else
+	{
+		sentGameStart = 0;
+	}
+}
+
+/*
+ * NAME :		runPlayerStateSync
+ * 
+ * DESCRIPTION :
+ * 
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void runPlayerStateSync(void)
+{
+	const int stateDatasCount = sizeof(stateConditions) / sizeof(PlayerStateCondition_t);
+
+	Player ** players = playerGetAll();
+	int i,j;
+
+	if (!gameIsIn() || !config.enablePlayerStateSync)
+		return;
+
+	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+	{
+		Player* p = players[i];
+		if (p && !playerIsLocal(p))
+		{
+			// get remote state
+			int remoteState = *(int*)((u32)p + 0x3a80);
+
+			// force onto local state
+			PlayerVTable* vtable = playerGetVTable(p);
+			if (vtable && remoteState != p->PlayerState)
+			{
+				int pStateTimer = *(int*)((u32)p + 0x25e0);
+
+				for (j = 0; j < stateDatasCount; ++j)
+				{
+					const PlayerStateCondition_t* condition = &stateConditions[j];
+					if (pStateTimer >= condition->TimeSince)
+					{
+						int force = 0;
+						switch (condition->Type)
+						{
+							case PLAYERSTATECONDITION_REMOTE_EQUALS: // check remote is and local isn't
+							{
+								force = condition->StateId == remoteState;
+								break;
+							}
+							case PLAYERSTATECONDITION_LOCAL_EQUALS: // check local is and remote isn't
+							{
+								force = condition->StateId == p->PlayerState;
+								break;
+							}
+							case PLAYERSTATECONDITION_LOCAL_OR_REMOTE_EQUALS: // check local or remote is
+							{
+								force = condition->StateId == remoteState || condition->StateId == p->PlayerState;
+								break;
+							}
+						}
+
+						if (force)
+						{
+							DPRINTF("%d changing remote player %08x (%d) state to %d timer:%d\n", j, (u32)p, p->PlayerId, remoteState, pStateTimer);
+							vtable->UpdateState(p, remoteState, 1, 1, 1);
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+/*
+ * NAME :		onGameStartMenuBack
+ * 
+ * DESCRIPTION :
+ * 			Called when the user selects 'Back' in the in game start menu
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void onGameStartMenuBack(long a0)
+{
+	// call start menu back callback
+	((void (*)(long))0x00560E30)(a0);
+
+	// open config
+	configMenuEnable();
+}
+
+/*
  * NAME :		processGameModules
  * 
  * DESCRIPTION :
@@ -524,56 +689,6 @@ void processGameModules()
 	}
 }
 
-void runGameStartMessager(void)
-{
-	GameSettings * gameSettings = gameGetSettings();
-	if (!gameSettings)
-		return;
-
-	// in staging
-	if (uiGetActive() == UI_ID_GAME_LOBBY)
-	{
-		// check if game started
-		if (!sentGameStart && gameSettings->GameLoadStartTime > 0)
-		{
-			// check if host
-			if (*(u8*)0x00172170 == 0)
-			{
-				netSendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_GAME_LOBBY_STARTED, 0, gameSettings);
-			}
-			
-			sentGameStart = 1;
-		}
-	}
-	else
-	{
-		sentGameStart = 0;
-	}
-}
-
-/*
- * NAME :		onGameStartMenuBack
- * 
- * DESCRIPTION :
- * 			Called when the user selects 'Back' in the in game start menu
- * 
- * NOTES :
- * 
- * ARGS : 
- * 
- * RETURN :
- * 
- * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
- */
-void onGameStartMenuBack(long a0)
-{
-	// call start menu back callback
-	((void (*)(long))0x00560E30)(a0);
-
-	// open config
-	configMenuEnable();
-}
-
 /*
  * NAME :		onOnlineMenu
  * 
@@ -644,9 +759,6 @@ int main (void)
 		lastMenuInvokedTime = 0;
 	}
 
-	// Hook menu loop
-	*(u32*)0x00594CB8 = 0x0C000000 | ((u32)(&onOnlineMenu) / 4);
-
 	// invoke exception display installer
 	if (*(u32*)EXCEPTION_DISPLAY_ADDR != 0)
 	{
@@ -675,6 +787,9 @@ int main (void)
 	// Run game start messager
 	runGameStartMessager();
 
+	// Run sync player state
+	runPlayerStateSync();
+
 	// Patch camera speed
 	patchCameraSpeed();
 
@@ -702,6 +817,13 @@ int main (void)
 		// close config menu on transition to lobby
 		if (lastGameState != 1)
 			configMenuDisable();
+
+		//
+		if (!hasInitialized)
+		{
+			DPRINTF("patch loaded\n");
+			hasInitialized = 1;
+		}
 
 		// Hook game start menu back callback
 		if (*(u32*)0x003106a0 == 0x00560E30)
@@ -748,6 +870,10 @@ int main (void)
 	}
 	else
 	{
+		// Hook menu loop
+		if (*(u32*)0x00594CBC == 0)
+			*(u32*)0x00594CB8 = 0x0C000000 | ((u32)(&onOnlineMenu) / 4);
+
 		// close config menu on transition to lobby
 		if (lastGameState != 0)
 			configMenuDisable();

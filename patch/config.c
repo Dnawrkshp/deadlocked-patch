@@ -80,6 +80,10 @@ void listActionHandler(int elementId, int actionType, void * actionArg);
 
 void mapsSelectHandler(int elementId);
 
+#ifdef DEBUG
+void downloadPatchSelectHandler(int elementId);
+#endif
+
 int mapsHasTriedLoading(void);
 int mapsPromptEnableCustomMaps(void);
 int mapsDownloadingModules(void);
@@ -93,14 +97,34 @@ MenuElem_ListData_t dataLevelOfDetail = {
 
 // menu items
 MenuElem_t menuElements[] = {
+#ifdef DEBUG
+  { "Redownload patch", 1, buttonActionHandler, downloadPatchSelectHandler },
+#endif
   { "Enable custom maps", 1, buttonActionHandler, mapsSelectHandler },
   { "Disable framelimiter", 1, toggleActionHandler, &config.disableFramelimiter },
   { "Announcers on all gamemodes", 1, toggleActionHandler, &config.enableGamemodeAnnouncements },
   { "Spectate mode", 1, toggleActionHandler, &config.enableSpectate },
   { "Singleplayer music", 0, toggleActionHandler, &config.enableSingleplayerMusic },
   { "Level of Detail", 1, listActionHandler, &dataLevelOfDetail },
+  { "Sync player state", 1, toggleActionHandler, &config.enablePlayerStateSync },
   { "Progressive Scan", 1, toggleActionHandler, (char*)0x0021DE6C },
 };
+
+#ifdef DEBUG
+
+// 
+void downloadPatchSelectHandler(int elementId)
+{
+  MenuElem_t* element = &menuElements[elementId];
+
+  // close menu
+  configMenuDisable();
+
+  // send request
+  netSendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_REQUEST_PATCH, 0, &elementId);
+}
+
+#endif
 
 // 
 void mapsSelectHandler(int elementId)

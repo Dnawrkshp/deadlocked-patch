@@ -66,6 +66,10 @@ enum CustomMessageId
      */
     CUSTOM_MSG_ID_SPLEEF_DESTROY_BOX = 8,
 
+    /*
+     * Sent from the client to the server when the client wants to update the patch.
+     */
+    CUSTOM_MSG_ID_CLIENT_REQUEST_PATCH = 9,
 };
 
 #endif // _MESSAGEID_H_

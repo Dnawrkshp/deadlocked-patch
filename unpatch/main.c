@@ -27,20 +27,24 @@
 #include <libdl/ui.h>
 #include <libdl/graphics.h>
 
-const int patches[][2] = {
+const int patches[][3] = {
 	// patch
-	{ 0x0072C3FC, 0x0C1CBBDE }, // GAMESETTINGS_LOAD_PATCH
-	{ 0x004B882C, 0x00712BF0 }, // GAMESETTINGS_BUILD_PTR
-	{ 0x0072E5B4, 0x0C1C2D50 }, // GAMESETTINGS_CREATE_PATCH
+	{ 0, 0x0072C3FC, 0x0C1CBBDE }, // GAMESETTINGS_LOAD_PATCH
+	{ 0, 0x004B882C, 0x00712BF0 }, // GAMESETTINGS_BUILD_PTR
+	{ 0, 0x0072E5B4, 0x0C1C2D50 }, // GAMESETTINGS_CREATE_PATCH
+	{ -1, 0x01EAAB10, 0x03E00008 }, // GET_MEDIUS_APP_HANDLER_HOOK
+	{ -1, 0x00211E64, 0x00000000 }, // net global callbacks ptr
+	{ -1, 0x00212164, 0x00000000 }, // dme callback table custom msg handler ptr
 	// maploader
-	{ 0x005CFB48, 0x0C058E10 }, // hookLoadAddr
-	{ 0x00705554, 0x0C058E02 }, // hookLoadingScreenAddr
-	{ 0x00163814, 0x0C058E10 }, // hookLoadCdvdAddr
-	{ 0x005CF9B0, 0x0C058E4A }, // hookCheckAddr
-	{ 0x00159B20, 0x0C056680 }, // hookTableAddr
-	{ 0x00159B20, 0x0C056680 }, // hookTableAddr
-	{ 0x007055B4, 0x0C046A7B }, // hook loading screen map name strcpy
-	{ 0x00211E64, 0x00000000 }, // net global callbacks ptr
+	{ 0, 0x005CFB48, 0x0C058E10 }, // hookLoadAddr
+	{ 0, 0x00705554, 0x0C058E02 }, // hookLoadingScreenAddr
+	{ -1, 0x00163814, 0x0C058E10 }, // hookLoadCdvdAddr
+	{ 0, 0x005CF9B0, 0x0C058E4A }, // hookCheckAddr
+	{ -1, 0x00159B20, 0x0C056680 }, // hookTableAddr
+	{ -1, 0x00159B20, 0x0C056680 }, // hookTableAddr
+	{ 0, 0x007055B4, 0x0C046A7B }, // hook loading screen map name strcpy
+	// in game
+	{ 1, 0x005930B8, 0x02C3B020 }, // lod patch
 };
 
 const int clears[][2] = {
@@ -107,13 +111,16 @@ void onOnlineMenu(void)
 int main (void)
 {
 	int i;
-	const int patchesSize =  sizeof(patches) / (2 * sizeof(int));
+	const int patchesSize =  sizeof(patches) / (3 * sizeof(int));
 	const int clearsSize =  sizeof(clears) / (2 * sizeof(int));
+	int inGame = gameIsIn();
 
 	// unhook patch
 	for (i = 0; i < patchesSize; ++i)
 	{
-		*(u32*)patches[i][0] = (u32)patches[i][1];
+		int context = patches[i][0];
+		if (context < 0 || context == inGame)
+			*(u32*)patches[i][1] = (u32)patches[i][2];
 	}
 
 	// clear memory
@@ -125,6 +132,10 @@ int main (void)
 			memset((void*)clears[i][0], 0, clears[i][1]);
 		}
 	}
+
+	// 
+	if (inGame)
+		return;
 
 	// Hook menu loop
 	*(u32*)0x00594CB8 = 0x0C000000 | ((u32)(&onOnlineMenu) / 4);
