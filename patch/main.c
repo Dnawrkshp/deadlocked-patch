@@ -72,6 +72,8 @@
 
 #define SHRUB_RENDER_DISTANCE				(*(float*)0x0022308C)
 
+#define DRAW_SHADOW_FUNC						((u32*)0x00587b30)
+
 // 
 void processSpectate(void);
 void runMapLoader(void);
@@ -844,18 +846,24 @@ int main (void)
 			{
 				_lodScale = 0.2;
 				SHRUB_RENDER_DISTANCE = 50;
+				*DRAW_SHADOW_FUNC = 0x03E00008;
+				*(DRAW_SHADOW_FUNC + 1) = 0;
 				break;
 			}
 			case 1: // normal
 			{
 				_lodScale = 1.0;
 				SHRUB_RENDER_DISTANCE = 500;
+				*DRAW_SHADOW_FUNC = 0x27BDFF90;
+				*(DRAW_SHADOW_FUNC + 1) = 0xFFB30038;
 				break;
 			}
 			case 2: // high
 			{
 				_lodScale = 10.0;
 				SHRUB_RENDER_DISTANCE = 5000;
+				*DRAW_SHADOW_FUNC = 0x27BDFF90;
+				*(DRAW_SHADOW_FUNC + 1) = 0xFFB30038;
 				break;
 			}
 		}
