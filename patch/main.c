@@ -94,23 +94,26 @@ extern float _lodScale;
 extern void* _correctTieLod;
 
 //
-typedef struct PlayerStateMessage
-{
-	char Player
-} PlayerStateMessage_t;
+const PlayerStateCondition_t stateSkipRemoteConditions[] = {
+	{	// skip when player is swinging
+		PLAYERSTATECONDITION_LOCAL_OR_REMOTE_EQUALS,
+		0,
+		43
+	},
+};
 
-const PlayerStateCondition_t stateConditions[] = {
-	{
+const PlayerStateCondition_t stateForceRemoteConditions[] = {
+	{ // force chargebooting
 		PLAYERSTATECONDITION_LOCAL_OR_REMOTE_EQUALS,
 		0,
 		125
 	},
-	{
+	{ // force remote if local is still wrenching
 		PLAYERSTATECONDITION_LOCAL_EQUALS,
 		15,
 		19
 	},
-	{
+	{ // force remote if local is still hyper striking
 		PLAYERSTATECONDITION_LOCAL_EQUALS,
 		15,
 		20
@@ -509,6 +512,27 @@ void runGameStartMessager(void)
 	}
 }
 
+int checkStateCondition(PlayerStateCondition_t * condition, int localState, int remoteState)
+{
+	switch (condition->Type)
+	{
+		case PLAYERSTATECONDITION_REMOTE_EQUALS: // check remote is and local isn't
+		{
+			return condition->StateId == remoteState;
+		}
+		case PLAYERSTATECONDITION_LOCAL_EQUALS: // check local is and remote isn't
+		{
+			return condition->StateId == localState;
+		}
+		case PLAYERSTATECONDITION_LOCAL_OR_REMOTE_EQUALS: // check local or remote is
+		{
+			return condition->StateId == remoteState || condition->StateId == localState;
+		}
+	}
+
+	return 0;
+}
+
 /*
  * NAME :		runPlayerStateSync
  * 
@@ -525,7 +549,8 @@ void runGameStartMessager(void)
  */
 void runPlayerStateSync(void)
 {
-	const int stateDatasCount = sizeof(stateConditions) / sizeof(PlayerStateCondition_t);
+	const int stateForceCount = sizeof(stateForceRemoteConditions) / sizeof(PlayerStateCondition_t);
+	const int stateSkipCount = sizeof(stateSkipRemoteConditions) / sizeof(PlayerStateCondition_t);
 
 	Player ** players = playerGetAll();
 	int i,j;
@@ -539,40 +564,44 @@ void runPlayerStateSync(void)
 		if (p && !playerIsLocal(p))
 		{
 			// get remote state
+			int localState = p->PlayerState;
 			int remoteState = *(int*)((u32)p + 0x3a80);
 
 			// force onto local state
 			PlayerVTable* vtable = playerGetVTable(p);
-			if (vtable && remoteState != p->PlayerState)
+			if (vtable && remoteState != localState)
 			{
 				int pStateTimer = *(int*)((u32)p + 0x25e0);
+				int skip = 0;
 
-				for (j = 0; j < stateDatasCount; ++j)
+				// iterate each condition
+				// if one is true, skip to the next player
+				for (j = 0; j < stateSkipCount; ++j)
 				{
-					const PlayerStateCondition_t* condition = &stateConditions[j];
+					const PlayerStateCondition_t* condition = &stateSkipRemoteConditions[j];
 					if (pStateTimer >= condition->TimeSince)
 					{
-						int force = 0;
-						switch (condition->Type)
+						if (checkStateCondition(condition, localState, remoteState))
 						{
-							case PLAYERSTATECONDITION_REMOTE_EQUALS: // check remote is and local isn't
-							{
-								force = condition->StateId == remoteState;
-								break;
-							}
-							case PLAYERSTATECONDITION_LOCAL_EQUALS: // check local is and remote isn't
-							{
-								force = condition->StateId == p->PlayerState;
-								break;
-							}
-							case PLAYERSTATECONDITION_LOCAL_OR_REMOTE_EQUALS: // check local or remote is
-							{
-								force = condition->StateId == remoteState || condition->StateId == p->PlayerState;
-								break;
-							}
+							DPRINTF("%d skipping remote player %08x (%d) state (%d) timer:%d\n", j, (u32)p, p->PlayerId, remoteState, pStateTimer);
+							skip = 1;
+							break;
 						}
+					}
+				}
 
-						if (force)
+				// go to next player
+				if (skip)
+					continue;
+
+				// iterate each condition
+				// if one is true, then force the remote state onto the local player
+				for (j = 0; j < stateForceCount; ++j)
+				{
+					const PlayerStateCondition_t* condition = &stateForceRemoteConditions[j];
+					if (pStateTimer >= condition->TimeSince)
+					{
+						if (checkStateCondition(condition, localState, remoteState))
 						{
 							DPRINTF("%d changing remote player %08x (%d) state to %d timer:%d\n", j, (u32)p, p->PlayerId, remoteState, pStateTimer);
 							vtable->UpdateState(p, remoteState, 1, 1, 1);
