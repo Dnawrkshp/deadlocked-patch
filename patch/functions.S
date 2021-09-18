@@ -1,4 +1,5 @@
 
+  .section .text.functions
 	.globl	_lodScale;
 _lodScale: 
   .align 4
