@@ -400,7 +400,7 @@ void resetRoundState(void)
 	Player ** players = playerGetAll();
 	int gameTime = gameGetTime();
 	int i,j,k, count=0;
-	VECTOR pos, rot, center;
+	VECTOR pos, rot = {0,0,0,0}, center;
 	Moby* hbMoby = 0;
 
 	// 
