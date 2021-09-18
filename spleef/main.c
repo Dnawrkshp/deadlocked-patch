@@ -302,6 +302,20 @@ void destroyBox(int id)
 	DPRINTF("sent destroy box %d\n", id);
 }
 
+void changeBoxCollisionIds(void * modelPtr)
+{
+	int i = 0;
+
+	// Collision offset at +0x10
+	u32 colPtr = *(u32*)((u32)modelPtr + 0x10) + 0x70;
+
+	for (i = 0; i < 12; ++i)
+	{
+		*(u8*)(colPtr + 3) = 0x02;
+		colPtr += 4;
+	}
+}
+
 void boxUpdate(Moby* moby)
 {
 	int i;
@@ -547,6 +561,9 @@ void initialize(void)
 
 	// Spawn box so we know the correct model and collision pointers
 	SourceBox = mobySpawn(MOBY_ID_BETA_BOX, 0);
+	
+	// change collision ids
+	changeBoxCollisionIds(SourceBox->ModelPointer);
 
 	// clear spleefbox array
 	memset(SpleefBox, 0, sizeof(SpleefBox));
