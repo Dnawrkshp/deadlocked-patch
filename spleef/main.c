@@ -278,7 +278,7 @@ void onDestroyBox(int id)
 		mobyDestroy(box);
 	}
 
-	//DPRINTF("box destroyed %d\n", id);
+	DPRINTF("box destroyed %d\n", id);
 }
 
 int onDestroyBoxRemote(void * connection, void * data)
@@ -299,7 +299,7 @@ void destroyBox(int id)
 	// send out
 	message.BoxId = id;
 	netBroadcastCustomAppMessage(netGetDmeServerConnection(), CUSTOM_MSG_ID_SPLEEF_DESTROY_BOX, sizeof(SpleefDestroyBoxMessage_t), &message);
-	//DPRINTF("sent destroy box %d\n", id);
+	DPRINTF("sent destroy box %d\n", id);
 }
 
 void boxUpdate(Moby* moby)
@@ -475,9 +475,7 @@ void resetRoundState(void)
 						hbMoby->CollisionPointer = SourceBox->CollisionPointer;
 						hbMoby->UNK_20[2] = SourceBox->UNK_20[2];
 
-		#if DEBUG
 						++count;
-		#endif
 					}
 				}
 
@@ -494,16 +492,19 @@ void resetRoundState(void)
 	}
 
 	// 
+	SpleefState.RoundInitialized = 1;
+
+	// this has to be here otherwise the rounds won't reset correctly
+	// think that this eats cycles and that helps sync things maybe?
+	// not super sure
+	printf("count: %d, source: %08x, new: %08x\n", count, (u32)SourceBox, (u32)hbMoby);
+
+	// 
 	#if DEBUG
 		if (hbMoby)
 			hbMoby->Opacity = 0xFF;
-		printf("count: %d, source: %08x, new: %08x\n", count, (u32)SourceBox, (u32)hbMoby);
+		printf("Round %d started\n", SpleefState.RoundNumber);
 	#endif
-
-
-	SpleefState.RoundInitialized = 1;
-
-	DPRINTF("Round %d started\n", SpleefState.RoundNumber);
 }
 
 /*
