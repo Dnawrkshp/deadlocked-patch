@@ -752,7 +752,7 @@ void gameStart(void)
 	else
 	{
 		// set winner
-		gameSetWinner(SpleefState.WinningTeam, 1);
+		gameSetWinner(SpleefState.WinningTeam, 0);
 
 		// end game
 		if (SpleefState.GameOver == 1)
