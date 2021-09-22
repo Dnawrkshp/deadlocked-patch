@@ -10,6 +10,7 @@ all:
 	$(MAKE) -C infinite-climber
 	$(MAKE) -C race
 	$(MAKE) -C snd
+	$(MAKE) -C duckhunt
 	
 clean:
 	$(MAKE) -C patch clean
@@ -21,4 +22,5 @@ clean:
 	$(MAKE) -C infinite-climber clean
 	$(MAKE) -C race clean
 	$(MAKE) -C snd clean
+	$(MAKE) -C duckhunt clean
 
