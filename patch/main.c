@@ -29,6 +29,7 @@
 #include <libdl/patch.h>
 #include <libdl/ui.h>
 #include <libdl/graphics.h>
+#include <libdl/sha1.h>
 
 /*
  * Array of game modules.
@@ -92,6 +93,12 @@ const char * patchConfigStr = "PATCH CONFIG";
 
 extern float _lodScale;
 extern void* _correctTieLod;
+
+typedef struct ChangeTeamRequest {
+	u32 Seed;
+	int PoolSize;
+	char Pool[GAME_MAX_PLAYERS];
+} ChangeTeamRequest_t;
 
 //
 const PlayerStateCondition_t stateSkipRemoteConditions[] = {
@@ -715,6 +722,78 @@ void processGameModules()
 }
 
 /*
+ * NAME :		onSetTeams
+ * 
+ * DESCRIPTION :
+ * 			Called when the server requests the client to change the lobby's teams.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+int onSetTeams(void * connection, void * data)
+{
+	int i, j;
+  ChangeTeamRequest_t request;
+	int seed;
+	char teamByClientId[GAME_MAX_PLAYERS];
+
+	// move message payload into local
+	memcpy(&request, data, sizeof(ChangeTeamRequest_t));
+
+	// move seed
+	memcpy(&seed, &request.Seed, 4);
+
+	//
+	memset(teamByClientId, -1, sizeof(teamByClientId));
+
+	// get game settings
+	GameSettings* gameSettings = gameGetSettings();
+	if (gameSettings)
+	{
+		for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+		{
+			int clientId = gameSettings->PlayerClients[i];
+			if (clientId >= 0)
+			{
+				int teamId = teamByClientId[clientId];
+				if (teamId < 0)
+				{
+					// psuedo random
+					sha1(&seed, 4, &seed, 4);
+
+					// get pool index from rng
+					int teamPoolIndex = request.PoolSize == 0 ? 9 : (seed % request.PoolSize);
+
+					// set team
+					teamId = request.Pool[teamPoolIndex];
+
+					// remove element from pool
+					if (request.PoolSize > 0)
+					{
+						for (j = teamPoolIndex+1; j < GAME_MAX_PLAYERS; ++j)
+							request.Pool[j-1] = request.Pool[j];
+						request.PoolSize -= 1;
+					}
+
+					// set client id team
+					teamByClientId[clientId] = teamId;
+				}
+
+				// set team
+				gameSettings->PlayerTeams[i] = teamId;
+			}
+		}
+	}
+
+	return sizeof(ChangeTeamRequest_t);
+}
+
+/*
  * NAME :		onOnlineMenu
  * 
  * DESCRIPTION :
@@ -804,6 +883,9 @@ int main (void)
 			*(u16*)(EXCEPTION_DISPLAY_ADDR + 0x9F8) = 0x2278;
 		}
 	}
+
+	// install net handlers
+	netInstallCustomMsgHandler(CUSTOM_MSG_ID_SERVER_REQUEST_TEAM_CHANGE, &onSetTeams);
 
 	// Run map loader
 	runMapLoader();
