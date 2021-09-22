@@ -76,6 +76,7 @@ struct SpleefState
 	int RoundEndTicks;
 	char RoundResult[4];
 	char RoundPlayerState[GAME_MAX_PLAYERS];
+	short PlayerKills[GAME_MAX_PLAYERS];
 	int RoundInitialized;
 	int GameOver;
 	int WinningTeam;
@@ -572,7 +573,7 @@ void initialize(void)
 	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
 	{
 		Player * p = players[i];
-		PlayerScores[i].TeamId = p ? i : 0;
+		PlayerScores[i].TeamId = p ? i : -1;
 		PlayerScores[i].UNK = playerIsLocal(p);
 		PlayerScores[i].Value = 0;
 		SortedPlayerScores[i] = &PlayerScores[i];
@@ -585,6 +586,7 @@ void initialize(void)
 	// initialize state
 	SpleefState.GameOver = 0;
 	SpleefState.RoundNumber = 0;
+	memset(SpleefState.PlayerKills, 0, sizeof(SpleefState.PlayerKills));
 	resetRoundState();
 
 	Initialized = 1;
@@ -610,6 +612,7 @@ void gameStart(void)
 	GameSettings * gameSettings = gameGetSettings();
 	Player ** players = playerGetAll();
 	Player * localPlayer = (Player*)0x00347AA0;
+	PlayerGameStats * stats = gameGetPlayerStats();
 	int i;
 
 	// Ensure in game
@@ -693,6 +696,12 @@ void gameStart(void)
 		}
 		else
 		{
+			// iterate each player
+			for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+			{
+				SpleefState.PlayerKills[i] = stats->Kills[i];
+			}
+
 			// host specific logic
 			if (SpleefState.IsHost && (gameGetTime() - SpleefState.RoundStartTicks) > (5 * TIME_SECOND))
 			{
@@ -781,6 +790,62 @@ void gameStart(void)
 	return;
 }
 
+void setLobbyGameOptions(void)
+{
+	// deathmatch options
+	static char options[] = { 
+		0, 0, 			// 0x06 - 0x08
+		0, 0, 0, 0, 	// 0x08 - 0x0C
+		1, 1, 1, 0,  	// 0x0C - 0x10
+		0, 1, 0, 0,		// 0x10 - 0x14
+		-1, -1, 0, 1,	// 0x14 - 0x18
+	};
+
+	// set game options
+	GameOptions * gameOptions = gameGetOptions();
+	if (!gameOptions)
+		return;
+		
+	// apply options
+	memcpy((void*)&gameOptions->GameFlags.Raw[6], (void*)options, sizeof(options)/sizeof(char));
+	gameOptions->GameFlags.MultiplayerGameFlags.Juggernaut = 0;
+}
+
+void setEndGameScoreboard(void)
+{
+	u32 * uiElements = (u32*)(*(u32*)(0x011C7064 + 4*18) + 0xB0);
+	int i;
+	char buf[24];
+
+	// reset buf
+	memset(buf, 0, sizeof(buf));
+
+	// names start at 6
+	// column headers start at 17
+	strncpy((char*)(uiElements[18] + 0x60), "POINTS", 7);
+	strncpy((char*)(uiElements[19] + 0x60), "KILLS", 6);
+	strncpy((char*)(uiElements[20] + 0x60), "DEATHS", 7);
+
+	// rows
+	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+	{
+		int pid = SortedPlayerScores[i]->TeamId;
+		if (pid >= 0)
+		{
+			// set points
+			sprintf(buf, "%d", SortedPlayerScores[i]->Value);
+			strncpy((char*)(uiElements[22 + (i*4) + 0] + 0x60), buf, strlen(buf) + 1);
+
+			// moves deaths over
+			strncpy((char*)(uiElements[22 + (i*4) + 2] + 0x60), (char*)(uiElements[22 + (i*4) + 1] + 0x60), 8);
+			
+			// set kills
+			sprintf(buf, "%d", SpleefState.PlayerKills[pid]);
+			strncpy((char*)(uiElements[22 + (i*4) + 1] + 0x60), buf, strlen(buf) + 1);
+		}
+	}
+}
+
 /*
  * NAME :		lobbyStart
  * 
@@ -798,5 +863,25 @@ void gameStart(void)
  */
 void lobbyStart(void)
 {
+	int activeId = uiGetActive();
+	static int initializedScoreboard = 0;
 
+	// scoreboard
+	switch (activeId)
+	{
+		case 0x15C:
+		{
+			if (initializedScoreboard)
+				break;
+
+			setEndGameScoreboard();
+			initializedScoreboard = 1;
+			break;
+		}
+		case UI_ID_GAME_LOBBY:
+		{
+			setLobbyGameOptions();
+			break;
+		}
+	}
 }
