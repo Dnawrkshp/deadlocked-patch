@@ -58,8 +58,8 @@
 #define GAMESETTINGS_CREATE_PATCH		(*(u32*)0x0072E5B4)
 #define GAMESETTINGS_CREATE_FUNC		(0x0070B540)
 
-#define GAMESETTINGS_RESPAWN_TIME      	(*(u8*)0x0017380C)
-#define GAMESETTINGS_RESPAWN_TIME2      (*(u8*)0x012B3638)
+#define GAMESETTINGS_RESPAWN_TIME      	(*(char*)0x0017380C)
+#define GAMESETTINGS_RESPAWN_TIME2      (*(char*)0x012B3638)
 
 #define GAMESETTINGS_SURVIVOR			(*(u8*)0x00173806)
 
@@ -280,6 +280,9 @@ void patchGameSettingsLoad_Hook(void * a0, void * a1)
 		// respawn timer
 		GAMESETTINGS_RESPAWN_TIME2 = *(u8*)0x002126DC;
 	}
+
+	if (GAMESETTINGS_RESPAWN_TIME2 < 0)
+		GAMESETTINGS_RESPAWN_TIME2 = 5;
 }
 
 /*
@@ -680,20 +683,11 @@ void processGameModules()
 						if (module->GameEntrypoint)
 							module->GameEntrypoint(module);
 					}
-					// Game has ended so turn off if temporarily on
-					else if (module->State == GAMEMODULE_TEMP_ON)
-					{
-						module->State = GAMEMODULE_OFF;
-					}
 				}
 				else
 				{
-					// If the game has started and we're no longer in game
-					// Then it must have ended
-					if (gamesettings->GameStartTime > 0 && gameGetTime() > gamesettings->GameStartTime && gameHasEnded() && module->State == GAMEMODULE_TEMP_ON)
-						module->State = GAMEMODULE_OFF;
 					// Invoke lobby module if still active
-					else if (module->LobbyEntrypoint)
+					if (module->LobbyEntrypoint)
 					{
 						module->LobbyEntrypoint(module);
 					}
