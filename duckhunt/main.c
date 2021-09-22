@@ -156,7 +156,7 @@ VECTOR DuckFinishPos = {
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void sortScoreboard(void)
+void sortScoreboard(int dontLockLocal)
 {
 	int i = 0;
 	int j = 0;
@@ -168,7 +168,7 @@ void sortScoreboard(void)
 		{
 			// Swap
 			if (SortedPlayerScores[i]->TeamId < 0 ||
-				(SortedPlayerScores[i]->UNK != 1 &&
+				((dontLockLocal || SortedPlayerScores[i]->UNK != 1) &&
 				 (SortedPlayerScores[i]->Value < SortedPlayerScores[i+1]->Value || 
 				 SortedPlayerScores[i+1]->UNK == 1)))
 			{
@@ -667,7 +667,7 @@ void initialize(void)
 	}
 
 	//
-	sortScoreboard();
+	sortScoreboard(0);
 	updateScoreboard();
 
 	// hook damage
@@ -764,7 +764,7 @@ void gameStart(void)
 
 				// update scoreboard
 				updateScoreboard();
-				sortScoreboard();
+				sortScoreboard(0);
 				GAME_SCOREBOARD_REFRESH_FLAG = 1;
 
 				// set when next round starts
@@ -930,6 +930,9 @@ void setEndGameScoreboard(void)
 
 	// reset buf
 	memset(buf, 0, sizeof(buf));
+
+	// sort scoreboard again
+	sortScoreboard(1);
 
 	// names start at 6
 	// column headers start at 17

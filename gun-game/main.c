@@ -24,6 +24,7 @@
 #include <libdl/sha1.h>
 #include <libdl/dialog.h>
 #include <libdl/ui.h>
+#include <libdl/stdio.h>
 #include "module.h"
 
 // TODO
@@ -148,7 +149,7 @@ char shaBuffer;
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void sortScoreboard(void)
+void sortScoreboard(int dontLockLocal)
 {
 	int i = 0;
 	int j = 0;
@@ -160,7 +161,7 @@ void sortScoreboard(void)
 		{
 			// Swap
 			if (SortedPlayerScores[i]->TeamId < 0 ||
-				(SortedPlayerScores[i]->UNK != 1 &&
+				((dontLockLocal || SortedPlayerScores[i]->UNK != 1) &&
 				 (SortedPlayerScores[i]->Value < SortedPlayerScores[i+1]->Value || 
 				 SortedPlayerScores[i+1]->UNK == 1)))
 			//	(SortedPlayerScores[i]->Value == SortedPlayerScores[i+1]->Value &&
@@ -195,7 +196,10 @@ void setWeapon(Player * player, PlayerWeaponData * wepData, int weaponId)
 {
 	// Give
 	if (wepData[weaponId].Level < 0)
+	{
 		playerGiveWeapon(player, weaponId, 0);
+		wepData[weaponId].Level = 0;
+	}
 
 	// Set alpha mods
 	memcpy(&wepData[weaponId].AlphaMods, &WeaponModStates[weaponId].Alpha, 10 * sizeof(int));
@@ -492,7 +496,7 @@ void initialize(void)
 	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
 	{
 		Player * p = players[i];
-		PlayerScores[i].TeamId = p ? i : 0;
+		PlayerScores[i].TeamId = p ? i : -1;
 		PlayerScores[i].UNK = playerIsLocal(p);
 		PlayerScores[i].Value = 0;
 		GAME_SCOREBOARD_ARRAY[i] = p ? &PlayerScores[i] : 0;
@@ -595,7 +599,7 @@ void gameStart(void)
 	// Update scoreboard on change
 	if (ScoreboardChanged)
 	{
-		sortScoreboard();
+		sortScoreboard(0);
 		GAME_SCOREBOARD_REFRESH_FLAG = 1;
 		ScoreboardChanged = 0;
 	}
@@ -616,6 +620,66 @@ void gameStart(void)
 	return;
 }
 
+
+
+void setLobbyGameOptions(void)
+{
+	// deathmatch options
+	static char options[] = { 
+		0, 0, 			// 0x06 - 0x08
+		0, 0, 0, 0, 	// 0x08 - 0x0C
+		1, 1, 1, 0,  	// 0x0C - 0x10
+		0, 1, 0, 0,		// 0x10 - 0x14
+		-1, -1, 0, 1,	// 0x14 - 0x18
+	};
+
+	// set game options
+	GameOptions * gameOptions = gameGetOptions();
+	if (!gameOptions)
+		return;
+		
+	// apply options
+	memcpy((void*)&gameOptions->GameFlags.Raw[6], (void*)options, sizeof(options)/sizeof(char));
+	gameOptions->GameFlags.MultiplayerGameFlags.Juggernaut = 0;
+}
+
+void setEndGameScoreboard(void)
+{
+	u32 * uiElements = (u32*)(*(u32*)(0x011C7064 + 4*18) + 0xB0);
+	int i;
+	char buf[24];
+
+	// reset buf
+	memset(buf, 0, sizeof(buf));
+
+	// sort scoreboard again
+	sortScoreboard(1);
+
+	// names start at 6
+	// column headers start at 17
+	strncpy((char*)(uiElements[18] + 0x60), "GUN", 4);
+	strncpy((char*)(uiElements[19] + 0x60), "KILLS", 6);
+	strncpy((char*)(uiElements[20] + 0x60), "DEATHS", 7);
+
+	// rows
+	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+	{
+		int pid = SortedPlayerScores[i]->TeamId;
+		if (pid >= 0)
+		{
+			// set gun
+			sprintf(buf, "%d", SortedPlayerScores[i]->Value);
+			strncpy((char*)(uiElements[22 + (i*4) + 0] + 0x60), buf, strlen(buf) + 1);
+
+			// moves deaths over
+			strncpy((char*)(uiElements[22 + (i*4) + 2] + 0x60), (char*)(uiElements[22 + (i*4) + 1] + 0x60), 8);
+			
+			// moves kills over
+			strncpy((char*)(uiElements[22 + (i*4) + 1] + 0x60), (char*)(uiElements[22 + (i*4) + 0] + 0x60), 8);
+		}
+	}
+}
+
 /*
  * NAME :		lobbyStart
  * 
@@ -633,5 +697,25 @@ void gameStart(void)
  */
 void lobbyStart(void)
 {
+	int activeId = uiGetActive();
+	static int initializedScoreboard = 0;
 
+	// scoreboard
+	switch (activeId)
+	{
+		case 0x15C:
+		{
+			if (initializedScoreboard)
+				break;
+
+			setEndGameScoreboard();
+			initializedScoreboard = 1;
+			break;
+		}
+		case UI_ID_GAME_LOBBY:
+		{
+			setLobbyGameOptions();
+			break;
+		}
+	}
 }
