@@ -739,7 +739,7 @@ int onSetTeams(void * connection, void * data)
 {
 	int i, j;
   ChangeTeamRequest_t request;
-	int seed;
+	u32 seed;
 	char teamByClientId[GAME_MAX_PLAYERS];
 
 	// move message payload into local
@@ -750,6 +750,13 @@ int onSetTeams(void * connection, void * data)
 
 	//
 	memset(teamByClientId, -1, sizeof(teamByClientId));
+
+#if DEBUG
+	printf("pool size: %d\npool: ", request.PoolSize);
+	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+		printf("%d=%d,", i, request.Pool[i]);
+	printf("\n");
+#endif
 
 	// get game settings
 	GameSettings* gameSettings = gameGetSettings();
@@ -763,21 +770,29 @@ int onSetTeams(void * connection, void * data)
 				int teamId = teamByClientId[clientId];
 				if (teamId < 0)
 				{
-					// psuedo random
-					sha1(&seed, 4, &seed, 4);
-
-					// get pool index from rng
-					int teamPoolIndex = request.PoolSize == 0 ? 9 : (seed % request.PoolSize);
-
-					// set team
-					teamId = request.Pool[teamPoolIndex];
-
-					// remove element from pool
-					if (request.PoolSize > 0)
+					if (request.PoolSize == 0)
 					{
-						for (j = teamPoolIndex+1; j < GAME_MAX_PLAYERS; ++j)
-							request.Pool[j-1] = request.Pool[j];
-						request.PoolSize -= 1;
+						teamId = 0;
+					}
+					else
+					{
+						// psuedo random
+						sha1(&seed, 4, &seed, 4);
+
+						// get pool index from rng
+						int teamPoolIndex = seed % request.PoolSize;
+						DPRINTF("pool info pid:%d poolIndex:%d poolSize:%d\n", i, teamPoolIndex, request.PoolSize);
+
+						// set team
+						teamId = request.Pool[teamPoolIndex];
+
+						// remove element from pool
+						if (request.PoolSize > 0)
+						{
+							for (j = teamPoolIndex+1; j < request.PoolSize; ++j)
+								request.Pool[j-1] = request.Pool[j];
+							request.PoolSize -= 1;
+						}
 					}
 
 					// set client id team
@@ -785,6 +800,7 @@ int onSetTeams(void * connection, void * data)
 				}
 
 				// set team
+				DPRINTF("setting pid:%d to %d\n", i, teamId);
 				gameSettings->PlayerTeams[i] = teamId;
 			}
 		}
