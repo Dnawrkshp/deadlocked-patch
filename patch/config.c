@@ -4,6 +4,7 @@
 #include <libdl/stdio.h>
 #include <libdl/net.h>
 #include <libdl/color.h>
+#include <libdl/string.h>
 #include <libdl/game.h>
 #include "include/config.h"
 #include "messageid.h"
@@ -20,8 +21,19 @@ enum ActionType
   ACTIONTYPE_DECREMENT
 };
 
-typedef void (*ActionHandler)(int elementId, int actionType, void * actionArg);
-typedef void (*ButtonSelectHandler)(int elementId);
+enum ElementState
+{
+  ELEMENT_HIDDEN,
+  ELEMENT_DISABLED,
+  ELEMENT_ENABLED
+};
+
+struct MenuElem;
+struct TabElem;
+
+typedef void (*ActionHandler)(struct TabElem* tab, struct MenuElem* element, int actionType, void * actionArg);
+typedef void (*ButtonSelectHandler)(struct TabElem* tab, struct MenuElem* element);
+typedef void (*TabStateHandler)(struct TabElem* tab, int * state);
 
 typedef struct MenuElem
 {
@@ -38,22 +50,36 @@ typedef struct MenuElem_ListData
   char * items[];
 } MenuElem_ListData_t;
 
+typedef struct TabElem
+{
+  char name[32];
+  TabStateHandler stateHandler;
+  MenuElem_t * elements;
+  int elementsCount;
+} TabElem_t;
+
 // config
 extern PatchConfig_t config;
+
+// temp config
+extern PatchGameConfig_t gameConfig;
 
 // 
 int isConfigMenuActive = 0;
 int selectedMenuItem = 0;
+int selectedTabItem = 0;
 int menuOffset = 0;
 u32 padPointer = 0;
 
 // constants
-const char footerText[] = "\x14 HIDE     \x10 SELECT     \x12 BACK";
+const char footerText[] = "\x14 \x15 TAB     \x10 SELECT     \x12 BACK";
 
 // menu display properties
 const u32 colorBlack = 0x80000000;
 const u32 colorBg = 0x80404040;
 const u32 colorContentBg = 0x80202020;
+const u32 colorTabBg = 0x80404040;
+const u32 colorTabBarBg = 0x80101010;
 const u32 colorRed = 0x80000040;
 const u32 colorSelected = 0x80606060;
 const u32 colorButtonBg = 0x80303030;
@@ -69,20 +95,28 @@ const float frameTitleH = 0.075;
 const float frameFooterH = 0.05;
 const float contentPaddingX = 0.01;
 const float contentPaddingY = 0;
+const float tabBarH = 0.075;
+const float tabBarPaddingX = 0.005;
 
 //
 void configMenuDisable(void);
 void configMenuEnable(void);
 
-void buttonActionHandler(int elementId, int actionType, void * actionArg);
-void toggleActionHandler(int elementId, int actionType, void * actionArg);
-void listActionHandler(int elementId, int actionType, void * actionArg);
+void buttonActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
+void toggleActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
+void listActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
 
-void mapsSelectHandler(int elementId);
-
+void mapsSelectHandler(TabElem_t* tab, MenuElem_t* element);
+void gmResetSelectHandler(TabElem_t* tab, MenuElem_t* element);
 #ifdef DEBUG
-void downloadPatchSelectHandler(int elementId);
+void downloadPatchSelectHandler(TabElem_t* tab, MenuElem_t* element);
 #endif
+
+
+void tabDefaultStateHandler(TabElem_t* tab, int * state);
+void tabGameSettingsStateHandler(TabElem_t* tab, int * state);
+
+void navTab(int direction);
 
 int mapsHasTriedLoading(void);
 int mapsPromptEnableCustomMaps(void);
@@ -95,8 +129,8 @@ MenuElem_ListData_t dataLevelOfDetail = {
     { "Low", "Normal", "High" }
 };
 
-// menu items
-MenuElem_t menuElements[] = {
+// general tab menu items
+MenuElem_t menuElementsGeneral[] = {
 #ifdef DEBUG
   { "Redownload patch", 1, buttonActionHandler, downloadPatchSelectHandler },
 #endif
@@ -110,27 +144,121 @@ MenuElem_t menuElements[] = {
   { "Progressive Scan", 1, toggleActionHandler, (char*)0x0021DE6C },
 };
 
+// map override list item
+MenuElem_ListData_t dataCustomMaps = {
+    &gameConfig.customMapId,
+    17,
+    {
+      "None",
+      "Sarathos SP",
+      "Desert Prison",
+      "Torval SP",
+      "Mining Facility SP",
+      "Dark Cathedral Interior",
+      "Shaar SP",
+      "Hoven Gorge",
+      "Launch Site",
+      "Metropolis MP",
+      "Annihilation Nation",
+      "Blackwater Docks",
+      "Bakisi Isles",
+      "Tyhrranosis",
+      "Ghost Ship",
+      "Duck Hunt",
+      "Spleef"
+    }
+};
+
+// gamemode override list item
+MenuElem_ListData_t dataCustomModes = {
+    &gameConfig.customModeId,
+    5,
+    {
+      "None",
+      "Infected",
+      "Infinite Climber",
+      "Hoverbike Race",
+      "Search and Destroy"
+    }
+};
+
+// vampire list item
+MenuElem_ListData_t dataVampire = {
+    &gameConfig.grVampire,
+    4,
+    {
+      "Off",
+      "Quarter Heal",
+      "Half Heal",
+      "Full Heal",
+    }
+};
+
+// game settings tab menu items
+MenuElem_t menuElementsGameSettings[] = {
+  { "Reset", 1, buttonActionHandler, gmResetSelectHandler },
+  { "Map override", 1, listActionHandler, &dataCustomMaps },
+  { "Gamemode override", 1, listActionHandler, &dataCustomModes },
+  { "Disable weapon packs", 1, toggleActionHandler, &gameConfig.grNoPacks },
+  { "Disable v2s", 1, toggleActionHandler, &gameConfig.grNoV2s },
+  { "Disable health boxes", 1, toggleActionHandler, &gameConfig.grNoHealthBoxes },
+  { "Vampire", 1, listActionHandler, &dataVampire },
+  { "Half time", 1, toggleActionHandler, &gameConfig.grHalfTime },
+  { "Better hills", 1, toggleActionHandler, &gameConfig.grBetterHills },
+  { "Healthbars", 1, toggleActionHandler, &gameConfig.grHealthBars }
+};
+
+// tab items
+TabElem_t tabElements[] = {
+  { "General", tabDefaultStateHandler, menuElementsGeneral, sizeof(menuElementsGeneral)/sizeof(MenuElem_t) },
+  { "Game Settings", tabGameSettingsStateHandler, menuElementsGameSettings, sizeof(menuElementsGameSettings)/sizeof(MenuElem_t) }
+};
+
+const int tabsCount = sizeof(tabElements)/sizeof(TabElem_t);
+
+
+// 
+void tabDefaultStateHandler(TabElem_t* tab, int * state)
+{
+  *state = ELEMENT_ENABLED;
+}
+
+// 
+void tabGameSettingsStateHandler(TabElem_t* tab, int * state)
+{
+  GameSettings * gameSettings = gameGetSettings();
+  if (!gameSettings)
+  {
+    *state = ELEMENT_HIDDEN;
+  }
+  // if game has started or not the host, disable
+  else if (gameSettings->GameLoadStartTime > 0 || *(u8*)0x00172170 != 0)
+  {
+    *state = ELEMENT_DISABLED;
+  }
+  else
+  {
+    *state = ELEMENT_ENABLED;
+  }
+}
+
 #ifdef DEBUG
 
 // 
-void downloadPatchSelectHandler(int elementId)
+void downloadPatchSelectHandler(TabElem_t* tab, MenuElem_t* element)
 {
-  MenuElem_t* element = &menuElements[elementId];
-
   // close menu
   configMenuDisable();
 
   // send request
-  netSendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_REQUEST_PATCH, 0, &elementId);
+  netSendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_REQUEST_PATCH, 0, (void*)element);
 }
 
 #endif
 
 // 
-void mapsSelectHandler(int elementId)
+void mapsSelectHandler(TabElem_t* tab, MenuElem_t* element)
 {
-  MenuElem_t* element = &menuElements[elementId];
-
   // 
   if (gameIsIn())
     return;
@@ -144,11 +272,21 @@ void mapsSelectHandler(int elementId)
     element->enabled = 0;
 }
 
-//------------------------------------------------------------------------------
-void drawToggleMenuElement(MenuElem_t* element, RECT* rect)
+// 
+void gmResetSelectHandler(TabElem_t* tab, MenuElem_t* element)
 {
+  memset(&gameConfig, 0, sizeof(gameConfig));
+}
+
+//------------------------------------------------------------------------------
+void drawToggleMenuElement(TabElem_t* tab, MenuElem_t* element, RECT* rect)
+{
+  // get tab state
+  int tabState = 0;
+  tab->stateHandler(tab, &tabState);
+
   float x,y;
-  float lerp = element->enabled ? 0.0 : 0.5;
+  float lerp = (element->enabled && tabState == ELEMENT_ENABLED) ? 0.0 : 0.5;
   u32 color = colorLerp(colorText, 0, lerp);
 
   // draw name
@@ -162,10 +300,14 @@ void drawToggleMenuElement(MenuElem_t* element, RECT* rect)
 }
 
 //------------------------------------------------------------------------------
-void drawListMenuElement(MenuElem_t* element, MenuElem_ListData_t * listData, RECT* rect)
+void drawListMenuElement(TabElem_t* tab, MenuElem_t* element, MenuElem_ListData_t * listData, RECT* rect)
 {
+  // get tab state
+  int tabState = 0;
+  tab->stateHandler(tab, &tabState);
+
   float x,y;
-  float lerp = element->enabled ? 0.0 : 0.5;
+  float lerp = (element->enabled && tabState == ELEMENT_ENABLED) ? 0.0 : 0.5;
   u32 color = colorLerp(colorText, 0, lerp);
 
   // draw name
@@ -179,10 +321,14 @@ void drawListMenuElement(MenuElem_t* element, MenuElem_ListData_t * listData, RE
 }
 
 //------------------------------------------------------------------------------
-void drawButtonMenuElement(MenuElem_t* element, RECT* rect)
+void drawButtonMenuElement(TabElem_t* tab, MenuElem_t* element, RECT* rect)
 {
+  // get tab state
+  int tabState = 0;
+  tab->stateHandler(tab, &tabState);
+
   float x,y,b = 0.005;
-  float lerp = element->enabled ? 0.0 : 0.5;
+  float lerp = (element->enabled && tabState == ELEMENT_ENABLED) ? 0.0 : 0.5;
   u32 color;
   RECT rBg = {
     { rect->TopLeft[0] + 0.05, rect->TopLeft[1] },
@@ -216,17 +362,20 @@ void drawButtonMenuElement(MenuElem_t* element, RECT* rect)
 }
 
 //------------------------------------------------------------------------------
-void buttonActionHandler(int elementId, int actionType, void * actionArg)
+void buttonActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg)
 {
-  MenuElem_t* element = &menuElements[elementId];
+  // get tab state
+  int tabState = 0;
+  tab->stateHandler(tab, &tabState);
 
-  
   switch (actionType)
   {
     case ACTIONTYPE_SELECT:
     {
+      if (tabState != ELEMENT_ENABLED)
+        break;
       if (element->userdata)
-        ((ButtonSelectHandler)element->userdata)(elementId);
+        ((ButtonSelectHandler)element->userdata)(tab, element);
       break;
     }
     case ACTIONTYPE_GETHEIGHT:
@@ -236,24 +385,29 @@ void buttonActionHandler(int elementId, int actionType, void * actionArg)
     }
     case ACTIONTYPE_DRAW:
     {
-      drawButtonMenuElement(element, (RECT*)actionArg);
+      drawButtonMenuElement(tab, element, (RECT*)actionArg);
       break;
     }
   }
 }
 
 //------------------------------------------------------------------------------
-void listActionHandler(int elementId, int actionType, void * actionArg)
+void listActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg)
 {
-  MenuElem_t* element = &menuElements[elementId];
   MenuElem_ListData_t* listData = (MenuElem_ListData_t*)element->userdata;
   int itemCount = listData->count;
+
+  // get tab state
+  int tabState = 0;
+  tab->stateHandler(tab, &tabState);
 
   switch (actionType)
   {
     case ACTIONTYPE_INCREMENT:
     case ACTIONTYPE_SELECT:
     {
+      if (tabState != ELEMENT_ENABLED)
+        break;
       char newValue = *listData->value + 1;
       if (newValue >= itemCount)
         newValue = 0;
@@ -262,6 +416,8 @@ void listActionHandler(int elementId, int actionType, void * actionArg)
     }
     case ACTIONTYPE_DECREMENT:
     {
+      if (tabState != ELEMENT_ENABLED)
+        break;
       char newValue = *listData->value - 1;
       if (newValue < 0)
         newValue = itemCount - 1;
@@ -275,16 +431,18 @@ void listActionHandler(int elementId, int actionType, void * actionArg)
     }
     case ACTIONTYPE_DRAW:
     {
-      drawListMenuElement(element, listData, (RECT*)actionArg);
+      drawListMenuElement(tab, element, listData, (RECT*)actionArg);
       break;
     }
   }
 }
 
 //------------------------------------------------------------------------------
-void toggleActionHandler(int elementId, int actionType, void * actionArg)
+void toggleActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg)
 {
-  MenuElem_t* element = &menuElements[elementId];
+  // get tab state
+  int tabState = 0;
+  tab->stateHandler(tab, &tabState);
 
   switch (actionType)
   {
@@ -292,6 +450,8 @@ void toggleActionHandler(int elementId, int actionType, void * actionArg)
     case ACTIONTYPE_SELECT:
     case ACTIONTYPE_DECREMENT:
     {
+      if (tabState != ELEMENT_ENABLED)
+        break;
       // toggle
       *(char*)element->userdata = !(*(char*)element->userdata);;
       break;
@@ -303,7 +463,7 @@ void toggleActionHandler(int elementId, int actionType, void * actionArg)
     }
     case ACTIONTYPE_DRAW:
     {
-      drawToggleMenuElement(element, (RECT*)actionArg);
+      drawToggleMenuElement(tab, element, (RECT*)actionArg);
       break;
     }
   }
@@ -312,6 +472,12 @@ void toggleActionHandler(int elementId, int actionType, void * actionArg)
 //------------------------------------------------------------------------------
 void drawFrame(void)
 {
+  int i;
+  TabElem_t * tab = NULL;
+  int state = 0;
+  float tabX = frameX;
+  float tabY = frameY + frameTitleH;
+
   // bg
   gfxScreenSpaceBox(frameX, frameY, frameW, frameH, colorBg);
 
@@ -328,21 +494,58 @@ void drawFrame(void)
   gfxScreenSpaceText(((frameX + frameW) * SCREEN_WIDTH) - 5, (frameY + frameH) * SCREEN_HEIGHT - 5, 1, 1, colorText, footerText, -1, 8);
 
   // content bg
-  gfxScreenSpaceBox(frameX + contentPaddingX, frameY + frameTitleH + contentPaddingY, frameW - (contentPaddingX*2), frameH - frameTitleH - frameFooterH - (contentPaddingY * 2), colorContentBg);
+  gfxScreenSpaceBox(frameX + contentPaddingX, frameY + frameTitleH + tabBarH + contentPaddingY, frameW - (contentPaddingX*2), frameH - frameTitleH - tabBarH - frameFooterH - (contentPaddingY * 2), colorContentBg);
+
+  // tab bar
+  gfxScreenSpaceBox(tabX, tabY, frameW, tabBarH, colorTabBarBg);
+
+  // tabs
+  for (i = 0; i < tabsCount; ++i)
+  {
+    // get tab state
+    tab = &tabElements[i];
+    tab->stateHandler(tab, &state);
+
+    // skip hidden elements
+    if (state != ELEMENT_HIDDEN)
+    {
+      // get tab title width
+      float pWidth = (4 * tabBarPaddingX) + gfxGetFontWidth(tab->name, -1, 1) / (float)SCREEN_WIDTH;
+
+      // get color
+      float lerp = state == ELEMENT_ENABLED ? 0.0 : 0.5;
+      u32 color = colorLerp(colorText, 0, lerp);
+
+      // draw bar
+      u32 barColor = selectedTabItem == i ? colorSelected : colorTabBg;
+      gfxScreenSpaceBox(tabX + tabBarPaddingX, tabY, pWidth - (2 * tabBarPaddingX), tabBarH, barColor);
+
+      // draw text
+      gfxScreenSpaceText((tabX + 2*tabBarPaddingX) * SCREEN_WIDTH, (tabY + (0.5 * tabBarH)) * SCREEN_HEIGHT, 1, 1, color, tab->name, -1, 3);
+
+      // increment X
+      tabX += pWidth - tabBarPaddingX;
+    }
+  }
 }
 
+
 //------------------------------------------------------------------------------
-void onUpdate(int inGame)
+void drawTab(TabElem_t* tab)
 {
+  if (!tab)
+    return;
+
   int i = 0;
   int menuElementRenderEnd = menuOffset;
-	const int menuElementsCount = sizeof(menuElements) / sizeof(MenuElem_t);
+  MenuElem_t * menuElements = tab->elements;
+	int menuElementsCount = tab->elementsCount;
   MenuElem_t* currentElement;
 
   float contentX = frameX + contentPaddingX;
-  float contentY = frameY + frameTitleH + contentPaddingY;
+  float contentY = frameY + frameTitleH + tabBarH + contentPaddingY;
   float contentW = frameW - (contentPaddingX * 2);
-  float contentH = frameH - frameTitleH - frameFooterH - (contentPaddingY * 2);
+  float contentH = frameH - frameTitleH - tabBarH - frameFooterH - (contentPaddingY * 2);
   RECT drawRect = {
     { contentX, contentY },
     { contentX + contentW, contentY },
@@ -350,103 +553,125 @@ void onUpdate(int inGame)
     { contentX + contentW, contentY }
   };
 
+  // draw items
+  for (i = menuOffset; i < menuElementsCount; ++i)
+  {
+    currentElement = &menuElements[i];
+    float itemHeight = 0;
+    currentElement->handler(tab, currentElement, ACTIONTYPE_GETHEIGHT, &itemHeight);
+
+    // ensure item is within content bounds
+    if ((drawRect.BottomLeft[1] + itemHeight) > (contentY + contentH))
+      break;
+
+    // set rect to height
+    drawRect.BottomLeft[1] = drawRect.TopLeft[1] + itemHeight;
+    drawRect.BottomRight[1] = drawRect.TopRight[1] + itemHeight;
+
+    // draw selection
+    if (i == selectedMenuItem) {
+      gfxScreenSpaceQuad(&drawRect, colorSelected, colorSelected, colorSelected, colorSelected);
+    }
+
+    // draw
+    currentElement->handler(tab, currentElement, ACTIONTYPE_DRAW, &drawRect);
+
+    // increment rect
+    drawRect.TopLeft[1] += itemHeight;
+    drawRect.TopRight[1] += itemHeight;
+
+    menuElementRenderEnd = i + 1;
+  }
+  
+  // draw scroll bar
+  if (menuOffset > 0 || menuElementRenderEnd < menuElementsCount)
+  {
+    float scrollValue = menuOffset / (float)(menuElementsCount - (menuElementRenderEnd-menuOffset));
+    float scrollBarHeight = 0.05;
+    float contentRectHeight = contentH - scrollBarHeight;
+
+    gfxScreenSpaceBox(contentX + contentW, contentY + (scrollValue * contentRectHeight), 0.01, scrollBarHeight, colorRed);
+  }
+
+  // 
+  if (selectedMenuItem >= menuElementRenderEnd)
+    ++menuOffset;
+  if (selectedMenuItem < menuOffset)
+    menuOffset = selectedMenuItem;
+
+  // get selected element
+  if (selectedMenuItem >= menuElementsCount)
+    return;
+  currentElement = &menuElements[selectedMenuItem];
+
+  // nav down
+  if (padGetButtonDown(0, PAD_DOWN) > 0)
+  {
+    ++selectedMenuItem;
+    if (selectedMenuItem >= menuElementsCount)
+      selectedMenuItem = menuElementsCount - 1;
+  }
+  // nav up
+  else if (padGetButtonDown(0, PAD_UP) > 0)
+  {
+    --selectedMenuItem;
+    if (selectedMenuItem < 0)
+      selectedMenuItem = 0;
+  }
+  // nav select
+  else if (padGetButtonDown(0, PAD_CROSS) > 0)
+  {
+    if (currentElement->enabled)
+      currentElement->handler(tab, currentElement, ACTIONTYPE_SELECT, NULL);
+  }
+  // nav inc
+  else if (padGetButtonDown(0, PAD_RIGHT) > 0)
+  {
+    if (currentElement->enabled)
+      currentElement->handler(tab, currentElement, ACTIONTYPE_INCREMENT, NULL);
+  }
+  // nav dec
+  else if (padGetButtonDown(0, PAD_LEFT) > 0)
+  {
+    if (currentElement->enabled)
+      currentElement->handler(tab, currentElement, ACTIONTYPE_DECREMENT, NULL);
+  }
+}
+
+//------------------------------------------------------------------------------
+void onUpdate(int inGame)
+{
+  TabElem_t* tab = &tabElements[selectedTabItem];
+
   if (isConfigMenuActive)
   {
     // prevent pad from affecting menus
     padDisableInput();
 
     // draw
-    if (padGetButton(0, PAD_L1) <= 0)
+    if (padGetButton(0, PAD_L3) <= 0)
     {
       // draw frame
       drawFrame();
 
-      // draw items
-      for (i = menuOffset; i < menuElementsCount; ++i)
-      {
-        currentElement = &menuElements[i];
-        float itemHeight = 0;
-        currentElement->handler(i, ACTIONTYPE_GETHEIGHT, &itemHeight);
-
-        // ensure item is within content bounds
-        if ((drawRect.BottomLeft[1] + itemHeight) > (contentY + contentH))
-          break;
-
-        // set rect to height
-        drawRect.BottomLeft[1] = drawRect.TopLeft[1] + itemHeight;
-        drawRect.BottomRight[1] = drawRect.TopRight[1] + itemHeight;
-
-        // draw selection
-        if (i == selectedMenuItem) {
-          gfxScreenSpaceQuad(&drawRect, colorSelected, colorSelected, colorSelected, colorSelected);
-        }
-
-        // draw
-        currentElement->handler(i, ACTIONTYPE_DRAW, &drawRect);
-
-        // increment rect
-        drawRect.TopLeft[1] += itemHeight;
-        drawRect.TopRight[1] += itemHeight;
-
-        menuElementRenderEnd = i + 1;
-      }
-      
-      // draw scroll bar
-      if (menuOffset > 0 || menuElementRenderEnd < menuElementsCount)
-      {
-        float scrollValue = menuOffset / (float)(menuElementsCount - (menuElementRenderEnd-menuOffset));
-        float scrollBarHeight = 0.05;
-        float contentRectHeight = contentH - scrollBarHeight;
-
-        gfxScreenSpaceBox(contentX + contentW, contentY + (scrollValue * contentRectHeight), 0.01, scrollBarHeight, colorRed);
-      }
-
-      // 
-      if (selectedMenuItem >= menuElementRenderEnd)
-        ++menuOffset;
-      if (selectedMenuItem < menuOffset)
-        menuOffset = selectedMenuItem;
+      // draw tab
+      drawTab(tab);
     }
 
-    // 
-    currentElement = &menuElements[selectedMenuItem];
-
+    // nav tab right
+    if (padGetButtonDown(0, PAD_R1) > 0)
+    {
+      navTab(1);
+    }
+    // nav tab left
+    else if (padGetButtonDown(0, PAD_L1) > 0)
+    {
+      navTab(-1);
+    }
     // close
-    if (padGetButtonUp(0, PAD_TRIANGLE) > 0)
+    else if (padGetButtonUp(0, PAD_TRIANGLE) > 0 || padGetButtonDown(0, PAD_START) > 0)
     {
       configMenuDisable();
-    }
-    // nav down
-    else if (padGetButtonDown(0, PAD_DOWN) > 0)
-    {
-      ++selectedMenuItem;
-      if (selectedMenuItem >= menuElementsCount)
-        selectedMenuItem = menuElementsCount - 1;
-    }
-    // nav up
-    else if (padGetButtonDown(0, PAD_UP) > 0)
-    {
-      --selectedMenuItem;
-      if (selectedMenuItem < 0)
-        selectedMenuItem = 0;
-    }
-    // nav select
-    else if (padGetButtonDown(0, PAD_CROSS) > 0)
-    {
-      if (currentElement->enabled)
-        currentElement->handler(selectedMenuItem, ACTIONTYPE_SELECT, NULL);
-    }
-    // nav inc
-    else if (padGetButtonDown(0, PAD_RIGHT) > 0)
-    {
-      if (currentElement->enabled)
-        currentElement->handler(selectedMenuItem, ACTIONTYPE_INCREMENT, NULL);
-    }
-    // nav dec
-    else if (padGetButtonDown(0, PAD_LEFT) > 0)
-    {
-      if (currentElement->enabled)
-        currentElement->handler(selectedMenuItem, ACTIONTYPE_DECREMENT, NULL);
     }
   }
   else if (!inGame && !mapsDownloadingModules())
@@ -455,14 +680,50 @@ void onUpdate(int inGame)
     {
       // render message
       gfxScreenSpaceBox(0.1, 0.75, 0.4, 0.05, colorOpenBg);
-      gfxScreenSpaceText(SCREEN_WIDTH * 0.3, SCREEN_HEIGHT * 0.775, 1, 1, 0x80FFFFFF, "\x1e Open Config Menu", -1, 4);
+      gfxScreenSpaceText(SCREEN_WIDTH * 0.3, SCREEN_HEIGHT * 0.775, 1, 1, 0x80FFFFFF, "\x1f Open Config Menu", -1, 4);
     }
 
 		// check for pad input
-		if (padGetButtonDown(0, PAD_SELECT) > 0)
+		if (padGetButtonDown(0, PAD_START) > 0)
 		{
       configMenuEnable();
 		}
+  }
+}
+
+
+//------------------------------------------------------------------------------
+void navTab(int direction)
+{
+  int newTab = selectedTabItem + direction;
+  TabElem_t *tab = NULL;
+  int state = 0;
+
+  while (1)
+  {
+    if (newTab >= tabsCount)
+      break;
+    if (newTab < 0)
+      break;
+    
+    // get new tab state
+    tab = &tabElements[newTab];
+    tab->stateHandler(tab, &state);
+
+    // skip if hidden
+    if (state == ELEMENT_HIDDEN)
+    {
+      newTab += direction;
+      continue;
+    }
+
+    // set new tab
+    selectedTabItem = newTab;
+
+    // reset menu state
+    selectedMenuItem = 0;
+    menuOffset = 0;
+    break;
   }
 }
 
@@ -499,6 +760,11 @@ void configMenuEnable(void)
   // enable
   isConfigMenuActive = 1;
 
+  // reset menu state
+  selectedMenuItem = 0;
+  selectedTabItem = 0;
+  menuOffset = 0;
+
   // ensure custom map installer button is only enabled if not yet tried to install
-  menuElements[0].enabled = !mapsHasTriedLoading();
+  menuElementsGeneral[0].enabled = !mapsHasTriedLoading();
 }

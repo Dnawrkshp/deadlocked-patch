@@ -137,6 +137,20 @@ PatchConfig_t config __attribute__((section(".config"))) = {
 	0
 };
 
+// 
+PatchGameConfig_t gameConfig = {
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0,
+	0
+};
+
 /*
  * NAME :		patchCameraSpeed
  * 
