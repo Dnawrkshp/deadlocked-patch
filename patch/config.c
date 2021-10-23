@@ -4,59 +4,17 @@
 #include <libdl/stdio.h>
 #include <libdl/net.h>
 #include <libdl/color.h>
+#include <libdl/gamesettings.h>
 #include <libdl/string.h>
 #include <libdl/game.h>
+#include <libdl/map.h>
 #include "messageid.h"
 #include "config.h"
+#include "include/config.h"
 
 #define LINE_HEIGHT         (0.05)
 #define LINE_HEIGHT_3_2     (0.075)
 
-enum ActionType
-{
-  ACTIONTYPE_DRAW,
-  ACTIONTYPE_GETHEIGHT,
-  ACTIONTYPE_SELECT,
-  ACTIONTYPE_INCREMENT,
-  ACTIONTYPE_DECREMENT
-};
-
-enum ElementState
-{
-  ELEMENT_HIDDEN,
-  ELEMENT_DISABLED,
-  ELEMENT_ENABLED
-};
-
-struct MenuElem;
-struct TabElem;
-
-typedef void (*ActionHandler)(struct TabElem* tab, struct MenuElem* element, int actionType, void * actionArg);
-typedef void (*ButtonSelectHandler)(struct TabElem* tab, struct MenuElem* element);
-typedef void (*TabStateHandler)(struct TabElem* tab, int * state);
-
-typedef struct MenuElem
-{
-  char name[32];
-  int enabled;
-  ActionHandler handler;
-  void * userdata;
-} MenuElem_t;
-
-typedef struct MenuElem_ListData
-{
-  char * value;
-  int count;
-  char * items[];
-} MenuElem_ListData_t;
-
-typedef struct TabElem
-{
-  char name[32];
-  TabStateHandler stateHandler;
-  MenuElem_t * elements;
-  int elementsCount;
-} TabElem_t;
 
 // config
 extern PatchConfig_t config;
@@ -183,6 +141,16 @@ MenuElem_ListData_t dataCustomModes = {
       "Hoverbike Race",
       "Search and Destroy"
     }
+};
+
+// 
+const char* CustomModeShortNames[] = {
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  NULL,
+  "SND"
 };
 
 // weather override list item
@@ -669,7 +637,7 @@ void drawTab(TabElem_t* tab)
 }
 
 //------------------------------------------------------------------------------
-void onUpdate(int inGame)
+void onMenuUpdate(int inGame)
 {
   TabElem_t* tab = &tabElements[selectedTabItem];
 
@@ -721,6 +689,36 @@ void onUpdate(int inGame)
   }
 }
 
+//------------------------------------------------------------------------------
+void onConfigUpdate(void)
+{
+  // in staging, update game info
+  GameSettings * gameSettings = gameGetSettings();
+  if (gameSettings && gameSettings->GameLoadStartTime < 0)
+  {
+    // 
+    char * mapName = mapGetName(gameSettings->GameLevel);
+    char * modeName = gameGetGameModeName(gameSettings->GameRules);
+
+    // get map override name
+    if (gameConfig.customMapId > 0)
+      mapName = dataCustomMaps.items[(int)gameConfig.customMapId];
+
+    // get mode override name
+    if (gameConfig.customModeId > 0)
+    {
+      modeName = (char*)CustomModeShortNames[(int)gameConfig.customModeId];
+      if (!modeName)
+        modeName = dataCustomModes.items[(int)gameConfig.customModeId];
+    }
+
+    // update ui strings
+    strncpy((char*)0x013C8C30, mapName, 32);
+    strncpy((char*)0x013EC974, mapName, 32);
+    strncpy((char*)0x013C8D68, modeName, 32);
+    strncpy((char*)0x013ECAAC, modeName, 32);
+  }
+}
 
 //------------------------------------------------------------------------------
 void navTab(int direction)
@@ -768,13 +766,13 @@ int onSetGameConfig(void * connection, void * data)
 //------------------------------------------------------------------------------
 void onConfigGameMenu(void)
 {
-  onUpdate(1);
+  onMenuUpdate(1);
 }
 
 //------------------------------------------------------------------------------
 void onConfigOnlineMenu(void)
 {
-  onUpdate(0);
+  onMenuUpdate(0);
 }
 
 //------------------------------------------------------------------------------

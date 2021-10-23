@@ -2,6 +2,7 @@
 #include <libdl/net.h>
 #include "rpc.h"
 #include "messageid.h"
+#include "config.h"
 #include <libdl/mc.h>
 #include <libdl/string.h>
 #include <libdl/ui.h>
@@ -9,6 +10,7 @@
 #include <libdl/pad.h>
 #include <libdl/gamesettings.h>
 #include <libdl/game.h>
+#include "include/config.h"
 
 #include <sifcmd.h>
 #include <iopheap.h>
@@ -37,6 +39,12 @@ void * usbFsModuleStart = (void*)0x000E3000;
 int usbFsModuleSize = 0;
 void * usbSrvModuleStart = (void*)0x000F0000;
 int usbSrvModuleSize = 0;
+
+// game config
+extern PatchGameConfig_t gameConfig;
+
+// game mode overrides
+extern struct MenuElem_ListData dataCustomModes;
 
 enum MenuActionId
 {
@@ -535,23 +543,23 @@ void hookedGetTable(u32 startSector, u32 sectorCount, u8 * dest, u32 levelId)
 	// Check if loading MP map
 	if (State.Enabled && HAS_LOADED_MODULES)
 	{
-        // Disable if map doesn't match
-        if (levelId != State.MapId && (levelId - 20) != State.MapId)
-        {
-					State.Enabled = 0;
-					return;
-        }
+		// Disable if map doesn't match
+		if (levelId != State.MapId && (levelId - 20) != State.MapId)
+		{
+			State.Enabled = 0;
+			return;
+		}
 
-        int fSize = getLevelSizeUsb();
-        if (fSize > 0)
-        {
-            ((int*)dest)[7] = (fSize / 0x800) + 1;
-        }
-        else
-        {
-            State.Enabled = 0;
-            DPRINTF("Error reading level wad from usb\n");
-        }
+		int fSize = getLevelSizeUsb();
+		if (fSize > 0)
+		{
+				((int*)dest)[7] = (fSize / 0x800) + 1;
+		}
+		else
+		{
+				State.Enabled = 0;
+				DPRINTF("Error reading level wad from usb\n");
+		}
 	}
 }
 
@@ -592,6 +600,16 @@ char* hookedLoadScreenMapNameString(char * dest, char * src)
 {
 	if (State.Enabled)
 		strncpy(dest, State.MapName, 32);
+	else
+		strncpy(dest, src, 32);
+	return dest;
+}
+
+//------------------------------------------------------------------------------
+char* hookedLoadScreenModeNameString(char * dest, char * src)
+{
+	if (gameConfig.customModeId > 0)
+		strncpy(dest, dataCustomModes.items[(int)gameConfig.customModeId], 32);
 	else
 		strncpy(dest, src, 32);
 	return dest;
@@ -690,6 +708,7 @@ void hook(void)
 	u32 * hookAudioAddr = (u32*)0x0053F970;
 	u32 * hookLoadCdvdAddr = (u32*)0x00163814;
 	u32 * hookLoadScreenMapNameStringAddr = (u32*)0x007055B4;
+	u32 * hookLoadScreenModeNameStringAddr = (u32*)0x0070583C;
 
 	// Load modules
 	u32 * hookLoadModulesAddr = (u32*)0x00161364;
@@ -719,6 +738,7 @@ void hook(void)
 	if (!initialized || *hookLoadScreenMapNameStringAddr == 0x0C046A7B)
 	{
 		*hookLoadScreenMapNameStringAddr = 0x0C000000 | ((u32)(&hookedLoadScreenMapNameString) / 4);
+		*hookLoadScreenModeNameStringAddr = 0x0C000000 | ((u32)(&hookedLoadScreenModeNameString) / 4);
 	}
 }
 

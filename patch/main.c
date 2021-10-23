@@ -82,7 +82,9 @@ void onMapLoaderOnlineMenu(void);
 void onConfigOnlineMenu(void);
 void onConfigGameMenu(void);
 void onConfigInitialize(void);
+void onConfigUpdate(void);
 void configMenuEnable(void);
+void configMenuDisable(void);
 void configTrySendGameConfig(void);
 
 // 
@@ -957,6 +959,9 @@ int main (void)
 	// Patch weapon shot to be sent reliably
 	//patchWeaponShotNetSendFlag();
 
+	// config update
+	onConfigUpdate();
+
 	// in game stuff
 	if (gameIsIn())
 	{
@@ -975,7 +980,7 @@ int main (void)
 		// Hook game start menu back callback
 		if (*(u32*)0x003106a0 == 0x00560E30)
 		{
-			*(u32*)0x003106a0  = &onGameStartMenuBack;
+			*(u32*)0x003106a0  = (u32)&onGameStartMenuBack;
 		}
 
 		// patch lod
