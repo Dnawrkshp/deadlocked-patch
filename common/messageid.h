@@ -75,6 +75,16 @@ enum CustomMessageId
      * Sent from the server to the host when the server wants the host to update all the teams
      */
     CUSTOM_MSG_ID_SERVER_REQUEST_TEAM_CHANGE = 10,
+    
+    /*
+     * Sent from the client to the server when the client has updated their patch game config.
+     */
+    CUSTOM_MSG_ID_CLIENT_USER_GAME_CONFIG = 11,
+
+    /*
+     * Sent from the server to the client when the host has changed and is propogating the patch game config.
+     */
+    CUSTOM_MSG_ID_SERVER_SET_GAME_CONFIG = 12,
 };
 
 #endif // _MESSAGEID_H_

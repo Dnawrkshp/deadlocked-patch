@@ -6,8 +6,8 @@
 #include <libdl/color.h>
 #include <libdl/string.h>
 #include <libdl/game.h>
-#include "include/config.h"
 #include "messageid.h"
+#include "config.h"
 
 #define LINE_HEIGHT         (0.05)
 #define LINE_HEIGHT_3_2     (0.075)
@@ -131,10 +131,10 @@ MenuElem_ListData_t dataLevelOfDetail = {
 
 // general tab menu items
 MenuElem_t menuElementsGeneral[] = {
+  { "Enable custom maps", 1, buttonActionHandler, mapsSelectHandler },
 #ifdef DEBUG
   { "Redownload patch", 1, buttonActionHandler, downloadPatchSelectHandler },
 #endif
-  { "Enable custom maps", 1, buttonActionHandler, mapsSelectHandler },
   { "Disable framelimiter", 1, toggleActionHandler, &config.disableFramelimiter },
   { "Announcers on all gamemodes", 1, toggleActionHandler, &config.enableGamemodeAnnouncements },
   { "Spectate mode", 1, toggleActionHandler, &config.enableSpectate },
@@ -147,7 +147,7 @@ MenuElem_t menuElementsGeneral[] = {
 // map override list item
 MenuElem_ListData_t dataCustomMaps = {
     &gameConfig.customMapId,
-    17,
+    18,
     {
       "None",
       "Sarathos SP",
@@ -165,20 +165,47 @@ MenuElem_ListData_t dataCustomMaps = {
       "Tyhrranosis",
       "Ghost Ship",
       "Duck Hunt",
-      "Spleef"
+      "Spleef",
+      "Battledome SP"
     }
 };
 
 // gamemode override list item
 MenuElem_ListData_t dataCustomModes = {
     &gameConfig.customModeId,
-    5,
+    6,
     {
       "None",
       "Infected",
+      "Gun Game",
       "Infinite Climber",
       "Hoverbike Race",
       "Search and Destroy"
+    }
+};
+
+// weather override list item
+MenuElem_ListData_t dataWeather = {
+    &gameConfig.grWeatherId,
+    17,
+    {
+      "Off",
+      "Random",
+      "Dust Storm",
+      "Heavy Sand Storm",
+      "Light Snow",
+      "Blizzard",
+      "Heavy Rain",
+      "All Off",
+      "Green Mist",
+      "Meteor Lightning",
+      "Black Hole",
+      "Light Rain Lightning",
+      "Settling Smoke",
+      "Upper Atmosphere",
+      "Ghost Station",
+      "Embossed",
+      "Lightning Storm",
     }
 };
 
@@ -199,9 +226,11 @@ MenuElem_t menuElementsGameSettings[] = {
   { "Reset", 1, buttonActionHandler, gmResetSelectHandler },
   { "Map override", 1, listActionHandler, &dataCustomMaps },
   { "Gamemode override", 1, listActionHandler, &dataCustomModes },
+  { "Weather override", 1, listActionHandler, &dataWeather },
   { "Disable weapon packs", 1, toggleActionHandler, &gameConfig.grNoPacks },
   { "Disable v2s", 1, toggleActionHandler, &gameConfig.grNoV2s },
   { "Disable health boxes", 1, toggleActionHandler, &gameConfig.grNoHealthBoxes },
+  { "Mirror World", 1, toggleActionHandler, &gameConfig.grMirrorWorld },
   { "Vampire", 1, listActionHandler, &dataVampire },
   { "Half time", 1, toggleActionHandler, &gameConfig.grHalfTime },
   { "Better hills", 1, toggleActionHandler, &gameConfig.grBetterHills },
@@ -728,6 +757,14 @@ void navTab(int direction)
 }
 
 //------------------------------------------------------------------------------
+int onSetGameConfig(void * connection, void * data)
+{
+  // copy it over
+  memcpy(&gameConfig, data, sizeof(PatchGameConfig_t));
+  return sizeof(PatchGameConfig_t);
+}
+
+//------------------------------------------------------------------------------
 void onConfigGameMenu(void)
 {
   onUpdate(1);
@@ -740,6 +777,26 @@ void onConfigOnlineMenu(void)
 }
 
 //------------------------------------------------------------------------------
+void onConfigInitialize(void)
+{
+	// install net handlers
+	netInstallCustomMsgHandler(CUSTOM_MSG_ID_SERVER_SET_GAME_CONFIG, &onSetGameConfig);
+}
+
+//------------------------------------------------------------------------------
+void configTrySendGameConfig(void)
+{
+  int state = 0;
+
+  // send game config to server for saving if tab is enabled
+  tabElements[1].stateHandler(&tabElements[1], &state);
+  if (state == ELEMENT_ENABLED)
+  {
+    netSendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_USER_GAME_CONFIG, sizeof(PatchGameConfig_t), &gameConfig);
+  }
+}
+
+//------------------------------------------------------------------------------
 void configMenuDisable(void)
 {
   if (!isConfigMenuActive)
@@ -749,6 +806,9 @@ void configMenuDisable(void)
 
   // send config to server for saving
   netSendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_USER_CONFIG, sizeof(PatchConfig_t), &config);
+
+  // 
+  configTrySendGameConfig();
 
   // re-enable pad
   padEnableInput();

@@ -29,23 +29,6 @@
 #include "halftime.h"
 
 /*
- * Gamerule ids.
- * Each id is mapped to a single bit in a 32-bit integer.
- */
-enum GameRuleIdBitMask
-{
-	GAMERULE_NONE = 			(0),
-	GAMERULE_NO_PACKS =			(1 << 0),
-	GAMERULE_NO_V2S =			(1 << 1),
-	GAMERULE_MIRROR =			(1 << 2),
-	GAMERULE_NO_HB =			(1 << 3),
-	GAMERULE_VAMPIRE =			(1 << 4),
-	GAMERULE_HALFTIME =			(1 << 5),
-	GAMERULE_BETTERHILLS = 		(1 << 6),
-	GAMERULE_HEALTHBARS = 		(1 << 7)
-};
-
-/*
  *
  */
 int Initialized = 0;
@@ -61,9 +44,23 @@ int betterHillsInitialized = 0;
 int HasDisabledHealthboxes = 0;
 
 /*
+ *
+ */
+int weatherOverrideId = 0;
+
+/*
  * 
  */
 short PlayerKills[GAME_MAX_PLAYERS];
+
+/*
+ *
+ */
+float VampireHealRate[] = {
+	PLAYER_MAX_HEALTH * 0.25,
+	PLAYER_MAX_HEALTH * 0.50,
+	PLAYER_MAX_HEALTH * 1.00
+};
 
 /*
  * Custom hill spawn points
@@ -188,7 +185,7 @@ enum BETTER_HILL_PTS
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void vampireLogic(GameModule * module)
+void vampireLogic(GameModule * module, float healRate)
 {
 	int i;
 	Player ** playerObjects = playerGetAll();
@@ -203,7 +200,7 @@ void vampireLogic(GameModule * module)
 			// Try to heal if player exists
 			player = playerObjects[i];
 			if (player)
-				player->Health = PLAYER_MAX_HEALTH;
+				player->Health = clamp(player->Health + healRate, 0, PLAYER_MAX_HEALTH);
 			
 			// Update our cached kills count
 			PlayerKills[i] = stats->Kills[i];
@@ -415,17 +412,35 @@ void initialize(void)
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void gameStart(GameModule * module)
+void gameStart(GameModule * module, PatchConfig_t * config, PatchGameConfig_t * gameConfig)
 {
-	u32 bitmask = *(u32*)module->Argbuffer;
-	char weatherId = module->Argbuffer[4];
+	GameSettings * gameSettings = gameGetSettings();
 
 	// Initialize
 	if (Initialized != 1)
+	{
+		// 
 		initialize();
 
+		// convert weather id to game value
+		weatherOverrideId = gameConfig->grWeatherId;
+
+		// random weather
+		if (weatherOverrideId == 1)
+		{
+			weatherOverrideId = 1 + gameSettings->GameLoadStartTime % 16;
+			if (weatherOverrideId == 8)
+				weatherOverrideId = 9;
+			else if (weatherOverrideId == 15)
+				weatherOverrideId = 16;
+		}
+		// shift down weather (so that the list value is equivalent to game value)
+		else if (weatherOverrideId > 1 && weatherOverrideId < 9)
+			--weatherOverrideId;
+	}
+
 	// Apply weather
-	cheatsApplyWeather(weatherId);
+	cheatsApplyWeather(weatherOverrideId);
 
 #if DEBUG
 	dlPreUpdate();
@@ -440,32 +455,28 @@ void gameStart(GameModule * module)
 	dlPostUpdate();
 #endif
 
-	// If no game rules then exit
-	if (bitmask == GAMERULE_NONE)
-		return;
-
-	if (bitmask & GAMERULE_NO_PACKS)
+	if (gameConfig->grNoPacks)
 		cheatsApplyNoPacks();
 
-	if (bitmask & GAMERULE_NO_V2S)
+	if (gameConfig->grNoV2s)
 		cheatsApplyNoV2s();
 
-	if (bitmask & GAMERULE_MIRROR)
+	if (gameConfig->grMirrorWorld)
 		cheatsApplyMirrorWorld(1);
 
-	if (bitmask & GAMERULE_NO_HB && !HasDisabledHealthboxes)
+	if (gameConfig->grNoHealthBoxes && !HasDisabledHealthboxes)
 		HasDisabledHealthboxes = cheatsDisableHealthboxes();
 
-	if (bitmask & GAMERULE_VAMPIRE)
-		vampireLogic(module);
+	if (gameConfig->grVampire)
+		vampireLogic(module, VampireHealRate[gameConfig->grVampire-1]);
 
-	if (bitmask & GAMERULE_HALFTIME)
+	if (gameConfig->grHalfTime)
 		halftimeLogic(module);
 
-	if (bitmask & GAMERULE_BETTERHILLS)
+	if (gameConfig->grBetterHills && gameConfig->customMapId == 0)
 		betterHillsLogic(module);
 
-	if (bitmask & GAMERULE_HEALTHBARS)
+	if (gameConfig->grHealthBars)
 		healthbarsLogic(module);
 }
 

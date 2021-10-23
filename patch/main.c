@@ -20,7 +20,7 @@
 #include <libdl/net.h>
 #include "module.h"
 #include "messageid.h"
-#include "include/config.h"
+#include "config.h"
 #include <libdl/game.h>
 #include <libdl/string.h>
 #include <libdl/stdio.h>
@@ -81,13 +81,16 @@ void runMapLoader(void);
 void onMapLoaderOnlineMenu(void);
 void onConfigOnlineMenu(void);
 void onConfigGameMenu(void);
+void onConfigInitialize(void);
 void configMenuEnable(void);
+void configTrySendGameConfig(void);
 
 // 
 int hasInitialized = 0;
 int sentGameStart = 0;
 int lastMenuInvokedTime = 0;
 int lastGameState = 0;
+int isInStaging = 0;
 int hasInstalledExceptionHandler = 0;
 const char * patchConfigStr = "PATCH CONFIG";
 
@@ -99,6 +102,22 @@ typedef struct ChangeTeamRequest {
 	int PoolSize;
 	char Pool[GAME_MAX_PLAYERS];
 } ChangeTeamRequest_t;
+
+
+//
+enum PlayerStateConditionType
+{
+	PLAYERSTATECONDITION_REMOTE_EQUALS,
+	PLAYERSTATECONDITION_LOCAL_EQUALS,
+	PLAYERSTATECONDITION_LOCAL_OR_REMOTE_EQUALS
+};
+
+typedef struct PlayerStateCondition
+{
+	enum PlayerStateConditionType Type;
+	int TimeSince;
+	int StateId;
+} PlayerStateCondition_t;
 
 //
 const PlayerStateCondition_t stateSkipRemoteConditions[] = {
@@ -139,6 +158,7 @@ PatchConfig_t config __attribute__((section(".config"))) = {
 
 // 
 PatchGameConfig_t gameConfig = {
+	0,
 	0,
 	0,
 	0,
@@ -702,7 +722,7 @@ void processGameModules()
 					{
 						// Invoke module
 						if (module->GameEntrypoint)
-							module->GameEntrypoint(module);
+							module->GameEntrypoint(module, &config, &gameConfig);
 					}
 				}
 				else
@@ -710,7 +730,7 @@ void processGameModules()
 					// Invoke lobby module if still active
 					if (module->LobbyEntrypoint)
 					{
-						module->LobbyEntrypoint(module);
+						module->LobbyEntrypoint(module, &config, &gameConfig);
 					}
 				}
 			}
@@ -727,7 +747,7 @@ void processGameModules()
 			// Invoke lobby module if still active
 			if (!gameIsIn() && module->LobbyEntrypoint)
 			{
-				module->LobbyEntrypoint(module);
+				module->LobbyEntrypoint(module, &config, &gameConfig);
 			}
 		}
 
@@ -849,6 +869,7 @@ void onOnlineMenu(void)
 	if (!hasInitialized)
 	{
 		padEnableInput();
+		onConfigInitialize();
 		hasInitialized = 1;
 	}
 
@@ -958,6 +979,7 @@ int main (void)
 		if (!hasInitialized)
 		{
 			DPRINTF("patch loaded\n");
+			onConfigInitialize();
 			hasInitialized = 1;
 		}
 
@@ -1015,6 +1037,21 @@ int main (void)
 		// Hook menu loop
 		if (*(u32*)0x00594CBC == 0)
 			*(u32*)0x00594CB8 = 0x0C000000 | ((u32)(&onOnlineMenu) / 4);
+
+		// send patch game config on create game
+		GameSettings * gameSettings = gameGetSettings();
+		if (gameSettings && gameSettings->GameLoadStartTime < 0)
+		{
+			// if host and just entered staging, send patch game config
+			if (*(u8*)0x00172170 == 0 && !isInStaging)
+				configTrySendGameConfig();
+
+			isInStaging = 1;
+		}
+		else
+		{
+			isInStaging = 0;
+		}
 
 		// close config menu on transition to lobby
 		if (lastGameState != 0)

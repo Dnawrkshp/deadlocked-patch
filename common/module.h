@@ -18,7 +18,7 @@
 
 
 #include <tamtypes.h>
-
+#include "config.h"
 
 // Forward declarations
 struct GameModule;
@@ -41,7 +41,7 @@ struct GameModule;
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-typedef void (*ModuleStart)(struct GameModule * module);
+typedef void (*ModuleStart)(struct GameModule * module, PatchConfig_t * config, PatchGameConfig_t * gameConfig);
 
 
 /*

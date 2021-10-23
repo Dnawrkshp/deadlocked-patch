@@ -138,6 +138,10 @@ int onSetMapOverride(void * connection, void * data)
 			strncpy(State.MapName, payload->MapName, 32);
 			strncpy(State.MapFileName, payload->MapFileName, 128);
 		}
+		else
+		{
+			State.Enabled = 0;
+		}
 	}
 
 	return sizeof(MapOverrideMessage);
@@ -185,6 +189,8 @@ int onServerSentMapIrxModules(void * connection, void * data)
 			// Indicate maps installed
 			actionState = ACTION_MODULES_INSTALLED;
 		}
+		
+		DPRINTF("local maps version %d || remote maps version %d\n", localVersion, remoteVersion);
 	}
 
 	return sizeof(MapServerSentModulesMessage);
