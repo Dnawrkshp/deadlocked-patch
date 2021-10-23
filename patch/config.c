@@ -158,7 +158,7 @@ MenuElem_ListData_t dataWeather = {
     &gameConfig.grWeatherId,
     17,
     {
-      "Off",
+      "None",
       "Random",
       "Dust Storm",
       "Heavy Sand Storm",
