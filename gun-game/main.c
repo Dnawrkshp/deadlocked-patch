@@ -626,7 +626,7 @@ void setLobbyGameOptions(void)
 {
 	// deathmatch options
 	static char options[] = { 
-		0, 0, 			// 0x06 - 0x08
+		0, 0, 				// 0x06 - 0x08
 		0, 0, 0, 0, 	// 0x08 - 0x0C
 		1, 1, 1, 0,  	// 0x0C - 0x10
 		0, 1, 0, 0,		// 0x10 - 0x14

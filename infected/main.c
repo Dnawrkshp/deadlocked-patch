@@ -21,6 +21,7 @@
 #include <libdl/player.h>
 #include <libdl/cheats.h>
 #include <libdl/ui.h>
+#include <libdl/string.h>
 
 /*
  * Infected team.
@@ -318,6 +319,29 @@ void gameStart(void)
 	return;
 }
 
+void setLobbyGameOptions(void)
+{
+	// deathmatch options
+	static char options[] = { 
+		0, 0, 			  // 0x06 - 0x08
+		0, 0, 0, 0, 	// 0x08 - 0x0C
+		1, 1, 1, 0,  	// 0x0C - 0x10
+		0, 1, 0, 0,		// 0x10 - 0x14
+		-1, -1, 0, 1,	// 0x14 - 0x18
+	};
+
+	// set game options
+	GameOptions * gameOptions = gameGetOptions();
+	if (!gameOptions)
+		return;
+		
+	// apply options
+	memcpy((void*)&gameOptions->GameFlags.Raw[6], (void*)options, sizeof(options)/sizeof(char));
+	gameOptions->GameFlags.MultiplayerGameFlags.Juggernaut = 0;
+	gameOptions->GameFlags.MultiplayerGameFlags.Lockdown = 0;
+	gameOptions->GameFlags.MultiplayerGameFlags.NodeType = 0;
+}
+
 /*
  * NAME :		lobbyStart
  * 
@@ -335,5 +359,15 @@ void gameStart(void)
  */
 void lobbyStart(void)
 {
+	int activeId = uiGetActive();
 
+	// scoreboard
+	switch (activeId)
+	{
+		case UI_ID_GAME_LOBBY:
+		{
+			setLobbyGameOptions();
+			break;
+		}
+	}
 }

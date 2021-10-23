@@ -32,6 +32,27 @@
 #define MAX_WATER_RATE			(0.03)
 #define MAX_SPAWN_RATE			(TIME_SECOND * 0.5)
 
+/*
+ * When non-zero, it refreshes the in-game scoreboard.
+ */
+#define GAME_SCOREBOARD_REFRESH_FLAG        (*(u32*)0x00310248)
+
+/*
+ * Target scoreboard value.
+ */
+#define GAME_SCOREBOARD_TARGET              (*(u32*)0x002FA084)
+
+/*
+ * Collection of scoreboard items.
+ */
+#define GAME_SCOREBOARD_ARRAY               ((ScoreboardItem**)0x002FA04C)
+
+/*
+ * Number of items in the scoreboard.
+ */
+#define GAME_SCOREBOARD_ITEM_COUNT          (*(u32*)0x002F9FCC)
+
+
 typedef struct MobyDef
 {
 	float ScaleHorizontal;
@@ -41,6 +62,16 @@ typedef struct MobyDef
 	short MobyId;
 	short MapMask;
 } MobyDef;
+
+struct State
+{
+	int TimePlayerDied[GAME_MAX_PLAYERS];
+	float PlayerFinalHeight[GAME_MAX_PLAYERS];
+	float PlayerBestHeight[GAME_MAX_PLAYERS];
+	int StartTime;
+	int EndTime;
+	float StartHeight;
+} State;
 
 /*
  *
@@ -106,6 +137,89 @@ MobyDef MobyDefs[] = {
 	{ 3, 0.8, 0.5, MOBY_ID_TELEPORT_PAD, MAP_MASK_ALL },
 	//{ 3, 0.8, 0.5, MOBY_ID_PICKUP_PAD, MAP_MASK_ALL }
 };
+
+
+/*
+ *
+ */
+ScoreboardItem PlayerScores[GAME_MAX_PLAYERS];
+
+/*
+ *
+ */
+ScoreboardItem * SortedPlayerScores[GAME_MAX_PLAYERS];
+
+
+/*
+ * NAME :		sortScoreboard
+ * 
+ * DESCRIPTION :
+ * 			Sorts the scoreboard by value.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 		player			:		Target player's player object.
+ * 		playerState 	:		Target player's gun game state.
+ * 		playerWepStats 	:		Target player's weapon stats.
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void sortScoreboard(int dontLockLocal)
+{
+	int i = 0;
+	int j = 0;
+
+	// bubble sort
+	for (j = GAME_MAX_PLAYERS - 1; j > 0; --j)
+	{
+		for (i = 0; i < j; ++i)
+		{
+			// Swap
+			if (SortedPlayerScores[i]->TeamId < 0 ||
+				((dontLockLocal || SortedPlayerScores[i]->UNK != 1) &&
+				 (SortedPlayerScores[i]->Value < SortedPlayerScores[i+1]->Value || 
+				 SortedPlayerScores[i+1]->UNK == 1)))
+			{
+				ScoreboardItem * temp = SortedPlayerScores[i];
+				SortedPlayerScores[i] = SortedPlayerScores[i+1];
+				SortedPlayerScores[i+1] = temp;
+			}
+		}
+	}
+}
+
+/*
+ * NAME :		updateScoreboard
+ * 
+ * DESCRIPTION :
+ * 			Updates the in game scoreboard.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void updateScoreboard(void)
+{
+	int i;
+
+	// Correct scoreboard
+	for (i = 0; i < GAME_SCOREBOARD_ITEM_COUNT; ++i)
+	{
+		// Force scoreboard to custom scoreboard values
+		if (GAME_SCOREBOARD_ARRAY[i] != SortedPlayerScores[i])
+		{
+			GAME_SCOREBOARD_ARRAY[i] = SortedPlayerScores[i];
+			GAME_SCOREBOARD_REFRESH_FLAG = 1;
+		}
+	}
+}
 
 float RandomRange(float min, float max)
 {
@@ -324,6 +438,7 @@ void initialize(void)
 	// 
 	GameSettings * gameSettings = gameGetSettings();
 	GameOptions * gameOptions = gameGetOptions();
+	Player ** players = playerGetAll();
 
 	// Init seed
 	shaBuffer = (short)gameSettings->GameLoadStartTime;
@@ -417,6 +532,33 @@ void initialize(void)
 		}
 	}
 
+	// 
+	State.StartTime = gameGetTime();
+	State.StartHeight = startPos[2];
+	State.EndTime = 0;
+
+	// 
+	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+	{
+		State.PlayerFinalHeight[i] = 0;
+		State.PlayerBestHeight[i] = 0;
+		State.TimePlayerDied[i] = 0;
+	}
+	
+	// Initialize scoreboard
+	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+	{
+		Player * p = players[i];
+		PlayerScores[i].TeamId = p ? i : -1;
+		PlayerScores[i].UNK = playerIsLocal(p);
+		PlayerScores[i].Value = 0;
+		SortedPlayerScores[i] = &PlayerScores[i];
+	}
+
+	//
+	sortScoreboard(0);
+	updateScoreboard();
+
 	// Populate moby defs
 	int mapIdMask = mapIdToMask(gameSettings->GameLevel);
 	for (i = 0; i < sizeof(MobyDefs)/sizeof(MobyDef); ++i)
@@ -476,10 +618,92 @@ void gameStart(void)
 		if (!p || p->Health <= 0)
 			continue;
 
+		// set max height
+		float height = p->PlayerPosition[2] - State.StartHeight;
+		State.PlayerFinalHeight[i] = height;
+		if (height > State.PlayerBestHeight[i])
+		{
+			State.PlayerBestHeight[i] = height;
+			PlayerScores[i].Value = (int)height;
+			sortScoreboard(0);
+			GAME_SCOREBOARD_REFRESH_FLAG = 1;
+		}
+
+		// kill or give health
 		if (p->PlayerPosition[2] <= (WaterHeight - 0.5))
+		{
 			p->Health = 0;
+			State.TimePlayerDied[i] = gameGetTime();
+		}
 		else
+		{
 			p->Health = PLAYER_MAX_HEALTH;
+		}
+	}
+
+	// 
+	updateScoreboard();
+}
+
+void setLobbyGameOptions(void)
+{
+	// deathmatch options
+	static char options[] = { 
+		0, 0, 				// 0x06 - 0x08
+		0, 0, 0, 0, 	// 0x08 - 0x0C
+		1, 1, 1, 0,  	// 0x0C - 0x10
+		0, 1, 0, 0,		// 0x10 - 0x14
+		-1, -1, 0, 1,	// 0x14 - 0x18
+	};
+
+	// set game options
+	GameOptions * gameOptions = gameGetOptions();
+	if (!gameOptions)
+		return;
+		
+	// apply options
+	memcpy((void*)&gameOptions->GameFlags.Raw[6], (void*)options, sizeof(options)/sizeof(char));
+	gameOptions->GameFlags.MultiplayerGameFlags.Juggernaut = 0;
+}
+
+void setEndGameScoreboard(void)
+{
+	u32 * uiElements = (u32*)(*(u32*)(0x011C7064 + 4*18) + 0xB0);
+	int i;
+	char buf[24];
+
+	// reset buf
+	memset(buf, 0, sizeof(buf));
+
+	// give more detail to player score
+	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+	{
+		PlayerScores[i].Value = (int)(State.PlayerBestHeight[i] * 100);
+	}
+
+	// sort scoreboard again
+	sortScoreboard(1);
+
+	// names start at 6
+	// column headers start at 17
+	strncpy((char*)(uiElements[18] + 0x60), "TIME", 5);
+	strncpy((char*)(uiElements[19] + 0x60), "DISTANCE", 9);
+
+	// rows
+	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+	{
+		int pid = SortedPlayerScores[i]->TeamId;
+		if (pid >= 0)
+		{
+			// set time alive
+			int pTime = State.TimePlayerDied[pid] - State.StartTime;
+			sprintf(buf, "%02d:%02d", pTime / TIME_MINUTE, (pTime % TIME_MINUTE) / TIME_SECOND);
+			strncpy((char*)(uiElements[22 + (i*4) + 0] + 0x60), buf, strlen(buf) + 1);
+
+			// set distance
+			sprintf(buf, "%.2f", SortedPlayerScores[i]->Value / 100.0);
+			strncpy((char*)(uiElements[22 + (i*4) + 1] + 0x60), buf, strlen(buf) + 1);
+		}
 	}
 }
 
@@ -500,5 +724,29 @@ void gameStart(void)
  */
 void lobbyStart(void)
 {
+	int activeId = uiGetActive();
+	static int initializedScoreboard = 0;
 
+	// set time ended
+	if (Initialized && State.StartTime && !State.EndTime)
+		State.EndTime = gameGetTime();
+
+	// scoreboard
+	switch (activeId)
+	{
+		case 0x15C:
+		{
+			if (initializedScoreboard)
+				break;
+
+			setEndGameScoreboard();
+			initializedScoreboard = 1;
+			break;
+		}
+		case UI_ID_GAME_LOBBY:
+		{
+			setLobbyGameOptions();
+			break;
+		}
+	}
 }

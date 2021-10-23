@@ -148,8 +148,8 @@ const char* CustomModeShortNames[] = {
   NULL,
   NULL,
   NULL,
-  NULL,
-  NULL,
+  "Climber",
+  "Race",
   "SND"
 };
 
