@@ -61,8 +61,9 @@ typedef struct TabElem
 // config
 extern PatchConfig_t config;
 
-// temp config
+// game config
 extern PatchGameConfig_t gameConfig;
+extern PatchGameConfig_t gameConfigHostBackup;
 
 // 
 int isConfigMenuActive = 0;
@@ -781,6 +782,10 @@ void onConfigInitialize(void)
 {
 	// install net handlers
 	netInstallCustomMsgHandler(CUSTOM_MSG_ID_SERVER_SET_GAME_CONFIG, &onSetGameConfig);
+
+  // reset game configs
+  memset(&gameConfigHostBackup, 0, sizeof(gameConfigHostBackup));
+  memset(&gameConfig, 0, sizeof(gameConfig));
 }
 
 //------------------------------------------------------------------------------
@@ -792,6 +797,10 @@ void configTrySendGameConfig(void)
   tabElements[1].stateHandler(&tabElements[1], &state);
   if (state == ELEMENT_ENABLED)
   {
+    // backup
+    memcpy(&gameConfigHostBackup, &gameConfig, sizeof(PatchGameConfig_t));
+
+    // send
     netSendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_USER_GAME_CONFIG, sizeof(PatchGameConfig_t), &gameConfig);
   }
 }

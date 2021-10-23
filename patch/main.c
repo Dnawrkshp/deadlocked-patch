@@ -157,19 +157,8 @@ PatchConfig_t config __attribute__((section(".config"))) = {
 };
 
 // 
-PatchGameConfig_t gameConfig = {
-	0,
-	0,
-	0,
-	0,
-	0,
-	0,
-	0,
-	0,
-	0,
-	0,
-	0
-};
+PatchGameConfig_t gameConfig;
+PatchGameConfig_t gameConfigHostBackup;
 
 /*
  * NAME :		patchCameraSpeed
@@ -1044,7 +1033,13 @@ int main (void)
 		{
 			// if host and just entered staging, send patch game config
 			if (*(u8*)0x00172170 == 0 && !isInStaging)
+			{
+				// copy over last game config as host
+				memcpy(&gameConfig, &gameConfigHostBackup, sizeof(PatchGameConfig_t));
+
+				// send
 				configTrySendGameConfig();
+			}
 
 			isInStaging = 1;
 		}
