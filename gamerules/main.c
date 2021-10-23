@@ -23,6 +23,7 @@
 #include <libdl/stdio.h>
 #include <libdl/pad.h>
 #include <libdl/dl.h>
+#include <libdl/sha1.h>
 #include <libdl/spawnpoint.h>
 #include <libdl/graphics.h>
 #include "module.h"
@@ -428,7 +429,8 @@ void gameStart(GameModule * module, PatchConfig_t * config, PatchGameConfig_t * 
 		// random weather
 		if (weatherOverrideId == 1)
 		{
-			weatherOverrideId = 1 + gameSettings->GameLoadStartTime % 16;
+			sha1(&gameSettings->GameLoadStartTime, 4, &weatherOverrideId, 4);
+			weatherOverrideId = 1 + (weatherOverrideId % 16);
 			if (weatherOverrideId == 8)
 				weatherOverrideId = 9;
 			else if (weatherOverrideId == 15)
