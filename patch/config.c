@@ -62,6 +62,7 @@ void configMenuEnable(void);
 // action handlers
 void buttonActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
 void toggleActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
+void toggleInvertedActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
 void listActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
 void labelActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
 
@@ -215,20 +216,20 @@ MenuElem_ListData_t dataVampire = {
 MenuElem_t menuElementsGameSettings[] = {
   { "Reset", buttonActionHandler, menuStateAlwaysEnabledHandler, gmResetSelectHandler },
 
-  { "Game Settings", labelActionHandler, menuLabelStateHandler, NULL },
+  // { "Game Settings", labelActionHandler, menuLabelStateHandler, NULL },
   { "Map override", listActionHandler, menuStateAlwaysEnabledHandler, &dataCustomMaps },
   { "Gamemode override", listActionHandler, menuStateHandler_GameModeOverride, &dataCustomModes },
 
   { "Game Rules", labelActionHandler, menuLabelStateHandler, NULL },
-  { "Weather override", listActionHandler, menuStateAlwaysEnabledHandler, &dataWeather },
-  { "Disable weapon packs", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grNoPacks },
-  { "Disable v2s", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grNoV2s },
-  { "Disable health boxes", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grNoHealthBoxes },
-  { "Mirror World", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grMirrorWorld },
-  { "Vampire", listActionHandler, menuStateAlwaysEnabledHandler, &dataVampire },
-  { "Half time", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grHalfTime },
   { "Better hills", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grBetterHills },
-  { "Healthbars", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grHealthBars }
+  { "Half time", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grHalfTime },
+  { "Healthbars", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grHealthBars },
+  { "Healthboxes", toggleInvertedActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grNoHealthBoxes },
+  { "Mirror World", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grMirrorWorld },
+  { "V2s", toggleInvertedActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grNoV2s },
+  { "Vampire", listActionHandler, menuStateAlwaysEnabledHandler, &dataVampire },
+  { "Weapon packs", toggleInvertedActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grNoPacks },
+  { "Weather override", listActionHandler, menuStateAlwaysEnabledHandler, &dataWeather },
 };
 
 // tab items
@@ -406,6 +407,26 @@ void drawToggleMenuElement(TabElem_t* tab, MenuElem_t* element, RECT* rect)
   // draw value
   x = (rect->TopRight[0] * SCREEN_WIDTH) - 5;
   gfxScreenSpaceText(x, y, 1, 1, color, *(char*)element->userdata ? "On" : "Off", -1, 2);
+}
+
+//------------------------------------------------------------------------------
+void drawToggleInvertedMenuElement(TabElem_t* tab, MenuElem_t* element, RECT* rect)
+{
+  // get element state
+  int state = getMenuElementState(tab, element);
+
+  float x,y;
+  float lerp = (state & ELEMENT_EDITABLE) ? 0.0 : 0.5;
+  u32 color = colorLerp(colorText, 0, lerp);
+
+  // draw name
+  x = (rect->TopLeft[0] * SCREEN_WIDTH) + 5;
+  y = (rect->TopLeft[1] * SCREEN_HEIGHT) + 5;
+  gfxScreenSpaceText(x, y, 1, 1, color, element->name, -1, 0);
+
+  // draw value
+  x = (rect->TopRight[0] * SCREEN_WIDTH) - 5;
+  gfxScreenSpaceText(x, y, 1, 1, color, *(char*)element->userdata ? "Off" : "On", -1, 2);
 }
 
 //------------------------------------------------------------------------------
@@ -590,6 +611,41 @@ void listActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void
     case ACTIONTYPE_DRAW:
     {
       drawListMenuElement(tab, element, listData, (RECT*)actionArg);
+      break;
+    }
+  }
+}
+
+//------------------------------------------------------------------------------
+void toggleInvertedActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg)
+{
+  // get element state
+  int state = getMenuElementState(tab, element);
+
+  // do nothing if hidden
+  if ((state & ELEMENT_VISIBLE) == 0)
+    return;
+
+  switch (actionType)
+  {
+    case ACTIONTYPE_INCREMENT:
+    case ACTIONTYPE_SELECT:
+    case ACTIONTYPE_DECREMENT:
+    {
+      if ((state & ELEMENT_EDITABLE) == 0)
+        break;
+      // toggle
+      *(char*)element->userdata = !(*(char*)element->userdata);;
+      break;
+    }
+    case ACTIONTYPE_GETHEIGHT:
+    {
+      *(float*)actionArg = LINE_HEIGHT;
+      break;
+    }
+    case ACTIONTYPE_DRAW:
+    {
+      drawToggleInvertedMenuElement(tab, element, (RECT*)actionArg);
       break;
     }
   }

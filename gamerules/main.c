@@ -47,7 +47,7 @@ int HasDisabledHealthboxes = 0;
 /*
  *
  */
-int weatherOverrideId = 0;
+u32 weatherOverrideId = 0;
 
 /*
  * 
