@@ -109,6 +109,7 @@ MenuElem_t menuElementsGeneral[] = {
 #ifdef DEBUG
   { "Redownload patch", buttonActionHandler, menuStateAlwaysEnabledHandler, downloadPatchSelectHandler },
 #endif
+  { "Install custom maps on login", toggleActionHandler, menuStateAlwaysEnabledHandler, &config.enableAutoMaps },
   { "Disable framelimiter", toggleActionHandler, menuStateAlwaysEnabledHandler, &config.disableFramelimiter },
   { "Announcers on all gamemodes", toggleActionHandler, menuStateAlwaysEnabledHandler, &config.enableGamemodeAnnouncements },
   { "Spectate mode", toggleActionHandler, menuStateAlwaysEnabledHandler, &config.enableSpectate },

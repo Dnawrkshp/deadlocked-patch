@@ -9,6 +9,7 @@ typedef struct PatchConfig
   char enableSingleplayerMusic;
   char levelOfDetail;
   char enablePlayerStateSync;
+  char enableAutoMaps;
 } PatchConfig_t;
 
 typedef struct PatchGameConfig

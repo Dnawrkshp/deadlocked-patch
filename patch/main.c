@@ -155,6 +155,7 @@ PatchConfig_t config __attribute__((section(".config"))) = {
 	0,
 	0,
 	1,
+	0,
 	0
 };
 
