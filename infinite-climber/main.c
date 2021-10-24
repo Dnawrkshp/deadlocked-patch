@@ -686,8 +686,8 @@ void setEndGameScoreboard(void)
 
 	// names start at 6
 	// column headers start at 17
-	strncpy((char*)(uiElements[18] + 0x60), "TIME", 5);
-	strncpy((char*)(uiElements[19] + 0x60), "DISTANCE", 9);
+	strncpy((char*)(uiElements[18] + 0x60), "DISTANCE", 9);
+	strncpy((char*)(uiElements[19] + 0x60), "TIME", 5);
 
 	// rows
 	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
@@ -695,14 +695,18 @@ void setEndGameScoreboard(void)
 		int pid = SortedPlayerScores[i]->TeamId;
 		if (pid >= 0)
 		{
-			// set time alive
-			int pTime = State.TimePlayerDied[pid] - State.StartTime;
-			sprintf(buf, "%02d:%02d", pTime / TIME_MINUTE, (pTime % TIME_MINUTE) / TIME_SECOND);
-			strncpy((char*)(uiElements[22 + (i*4) + 0] + 0x60), buf, strlen(buf) + 1);
-
 			// set distance
 			sprintf(buf, "%.2f", SortedPlayerScores[i]->Value / 100.0);
+			strncpy((char*)(uiElements[22 + (i*4) + 0] + 0x60), buf, strlen(buf) + 1);
+
+			// set time alive
+			int pTime = State.TimePlayerDied[pid] - State.StartTime;
+			if (pTime < 0)
+				pTime = State.EndTime - State.StartTime;
+
+			sprintf(buf, "%02d:%02d", pTime / TIME_MINUTE, (pTime % TIME_MINUTE) / TIME_SECOND);
 			strncpy((char*)(uiElements[22 + (i*4) + 1] + 0x60), buf, strlen(buf) + 1);
+
 		}
 	}
 }
