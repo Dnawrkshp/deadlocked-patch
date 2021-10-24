@@ -46,6 +46,13 @@ extern PatchGameConfig_t gameConfig;
 // game mode overrides
 extern struct MenuElem_ListData dataCustomModes;
 
+// map overrides
+extern struct MenuElem_ListData dataCustomMaps;
+
+// 
+extern char dataCustomMapsWithExclusiveGameMode[];
+extern const int dataCustomMapsWithExclusiveGameModeCount;
+
 enum MenuActionId
 {
 	ACTION_ERROR_LOADING_MODULES = -1,
@@ -608,10 +615,26 @@ char* hookedLoadScreenMapNameString(char * dest, char * src)
 //------------------------------------------------------------------------------
 char* hookedLoadScreenModeNameString(char * dest, char * src)
 {
+	int i = 0;
+
+	// if we're loading a custom map
+	// and that map has an exclusive gamemode
+	// save map name as gamemode
+	for (i = 0; i < dataCustomMapsWithExclusiveGameModeCount; ++i)
+	{
+		if (gameConfig.customMapId == dataCustomMapsWithExclusiveGameMode[i])
+		{
+			strncpy(dest, dataCustomMaps.items[(int)gameConfig.customMapId], 32);
+			return dest;
+		}
+	}
+
+	// if custom mode is set
 	if (gameConfig.customModeId > 0)
 		strncpy(dest, dataCustomModes.items[(int)gameConfig.customModeId], 32);
 	else
 		strncpy(dest, src, 32);
+	
 	return dest;
 }
 

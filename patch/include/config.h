@@ -22,13 +22,14 @@ struct TabElem;
 
 typedef void (*ActionHandler)(struct TabElem* tab, struct MenuElem* element, int actionType, void * actionArg);
 typedef void (*ButtonSelectHandler)(struct TabElem* tab, struct MenuElem* element);
+typedef void (*MenuElementStateHandler)(struct TabElem* tab, struct MenuElem* element, int * state);
 typedef void (*TabStateHandler)(struct TabElem* tab, int * state);
 
 typedef struct MenuElem
 {
   char name[32];
-  int enabled;
   ActionHandler handler;
+  MenuElementStateHandler stateHandler;
   void * userdata;
 } MenuElem_t;
 
@@ -45,6 +46,8 @@ typedef struct TabElem
   TabStateHandler stateHandler;
   MenuElem_t * elements;
   int elementsCount;
+  int selectedMenuItem;
+  int menuOffset;
 } TabElem_t;
 
 #endif // __PATCH_CONFIG_H__

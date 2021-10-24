@@ -25,9 +25,7 @@ extern PatchGameConfig_t gameConfigHostBackup;
 
 // 
 int isConfigMenuActive = 0;
-int selectedMenuItem = 0;
 int selectedTabItem = 0;
-int menuOffset = 0;
 u32 padPointer = 0;
 
 // constants
@@ -61,20 +59,32 @@ const float tabBarPaddingX = 0.005;
 void configMenuDisable(void);
 void configMenuEnable(void);
 
+// action handlers
 void buttonActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
 void toggleActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
 void listActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
 
+// state handlers
+void menuStateAlwaysHiddenHandler(TabElem_t* tab, MenuElem_t* element, int* state);
+void menuStateAlwaysDisabledHandler(TabElem_t* tab, MenuElem_t* element, int* state);
+void menuStateAlwaysEnabledHandler(TabElem_t* tab, MenuElem_t* element, int* state);
+void menuStateHandler_InstallCustomMaps(TabElem_t* tab, MenuElem_t* element, int* state);
+void menuStateHandler_GameModeOverride(TabElem_t* tab, MenuElem_t* element, int* state);
+
+void tabDefaultStateHandler(TabElem_t* tab, int * state);
+void tabGameSettingsStateHandler(TabElem_t* tab, int * state);
+
+// list select handlers
 void mapsSelectHandler(TabElem_t* tab, MenuElem_t* element);
 void gmResetSelectHandler(TabElem_t* tab, MenuElem_t* element);
 #ifdef DEBUG
 void downloadPatchSelectHandler(TabElem_t* tab, MenuElem_t* element);
 #endif
 
-
 void tabDefaultStateHandler(TabElem_t* tab, int * state);
 void tabGameSettingsStateHandler(TabElem_t* tab, int * state);
 
+void navMenu(TabElem_t* tab, int direction, int loop);
 void navTab(int direction);
 
 int mapsHasTriedLoading(void);
@@ -90,17 +100,17 @@ MenuElem_ListData_t dataLevelOfDetail = {
 
 // general tab menu items
 MenuElem_t menuElementsGeneral[] = {
-  { "Enable custom maps", 1, buttonActionHandler, mapsSelectHandler },
+  { "Enable custom maps", buttonActionHandler, menuStateHandler_InstallCustomMaps, mapsSelectHandler },
 #ifdef DEBUG
-  { "Redownload patch", 1, buttonActionHandler, downloadPatchSelectHandler },
+  { "Redownload patch", buttonActionHandler, menuStateAlwaysEnabledHandler, downloadPatchSelectHandler },
 #endif
-  { "Disable framelimiter", 1, toggleActionHandler, &config.disableFramelimiter },
-  { "Announcers on all gamemodes", 1, toggleActionHandler, &config.enableGamemodeAnnouncements },
-  { "Spectate mode", 1, toggleActionHandler, &config.enableSpectate },
-  { "Singleplayer music", 0, toggleActionHandler, &config.enableSingleplayerMusic },
-  { "Level of Detail", 1, listActionHandler, &dataLevelOfDetail },
-  { "Sync player state", 1, toggleActionHandler, &config.enablePlayerStateSync },
-  { "Progressive Scan", 1, toggleActionHandler, (char*)0x0021DE6C },
+  { "Disable framelimiter", toggleActionHandler, menuStateAlwaysEnabledHandler, &config.disableFramelimiter },
+  { "Announcers on all gamemodes", toggleActionHandler, menuStateAlwaysEnabledHandler, &config.enableGamemodeAnnouncements },
+  { "Spectate mode", toggleActionHandler, menuStateAlwaysEnabledHandler, &config.enableSpectate },
+  { "Singleplayer music", toggleActionHandler, menuStateAlwaysHiddenHandler, &config.enableSingleplayerMusic },
+  { "Level of Detail", listActionHandler, menuStateAlwaysEnabledHandler, &dataLevelOfDetail },
+  { "Sync player state", toggleActionHandler, menuStateAlwaysEnabledHandler, &config.enablePlayerStateSync },
+  { "Progressive Scan", toggleActionHandler, menuStateAlwaysEnabledHandler, (char*)0x0021DE6C },
 };
 
 // map override list item
@@ -128,6 +138,13 @@ MenuElem_ListData_t dataCustomMaps = {
       "Battledome SP"
     }
 };
+
+// maps with their own exclusive gamemode
+char dataCustomMapsWithExclusiveGameMode[] = {
+  15,
+  16
+};
+const int dataCustomMapsWithExclusiveGameModeCount = sizeof(dataCustomMapsWithExclusiveGameMode)/sizeof(char);
 
 // gamemode override list item
 MenuElem_ListData_t dataCustomModes = {
@@ -192,18 +209,18 @@ MenuElem_ListData_t dataVampire = {
 
 // game settings tab menu items
 MenuElem_t menuElementsGameSettings[] = {
-  { "Reset", 1, buttonActionHandler, gmResetSelectHandler },
-  { "Map override", 1, listActionHandler, &dataCustomMaps },
-  { "Gamemode override", 1, listActionHandler, &dataCustomModes },
-  { "Weather override", 1, listActionHandler, &dataWeather },
-  { "Disable weapon packs", 1, toggleActionHandler, &gameConfig.grNoPacks },
-  { "Disable v2s", 1, toggleActionHandler, &gameConfig.grNoV2s },
-  { "Disable health boxes", 1, toggleActionHandler, &gameConfig.grNoHealthBoxes },
-  { "Mirror World", 1, toggleActionHandler, &gameConfig.grMirrorWorld },
-  { "Vampire", 1, listActionHandler, &dataVampire },
-  { "Half time", 1, toggleActionHandler, &gameConfig.grHalfTime },
-  { "Better hills", 1, toggleActionHandler, &gameConfig.grBetterHills },
-  { "Healthbars", 1, toggleActionHandler, &gameConfig.grHealthBars }
+  { "Reset", buttonActionHandler, menuStateAlwaysEnabledHandler, gmResetSelectHandler },
+  { "Map override", listActionHandler, menuStateAlwaysEnabledHandler, &dataCustomMaps },
+  { "Gamemode override", listActionHandler, menuStateHandler_GameModeOverride, &dataCustomModes },
+  { "Weather override", listActionHandler, menuStateAlwaysEnabledHandler, &dataWeather },
+  { "Disable weapon packs", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grNoPacks },
+  { "Disable v2s", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grNoV2s },
+  { "Disable health boxes", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grNoHealthBoxes },
+  { "Mirror World", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grMirrorWorld },
+  { "Vampire", listActionHandler, menuStateAlwaysEnabledHandler, &dataVampire },
+  { "Half time", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grHalfTime },
+  { "Better hills", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grBetterHills },
+  { "Healthbars", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grHealthBars }
 };
 
 // tab items
@@ -264,10 +281,8 @@ void mapsSelectHandler(TabElem_t* tab, MenuElem_t* element)
   // close menu
   configMenuDisable();
 
-  // try and load the map
-  // disable on success
-  if (mapsPromptEnableCustomMaps())
-    element->enabled = 0;
+  // 
+  mapsPromptEnableCustomMaps();
 }
 
 // 
@@ -277,14 +292,69 @@ void gmResetSelectHandler(TabElem_t* tab, MenuElem_t* element)
 }
 
 //------------------------------------------------------------------------------
+void menuStateAlwaysHiddenHandler(TabElem_t* tab, MenuElem_t* element, int* state)
+{
+  *state = ELEMENT_HIDDEN;
+}
+
+// 
+void menuStateAlwaysDisabledHandler(TabElem_t* tab, MenuElem_t* element, int* state)
+{
+  *state = ELEMENT_DISABLED;
+}
+
+// 
+void menuStateAlwaysEnabledHandler(TabElem_t* tab, MenuElem_t* element, int* state)
+{
+  *state = ELEMENT_ENABLED;
+}
+
+// 
+void menuStateHandler_InstallCustomMaps(TabElem_t* tab, MenuElem_t* element, int* state)
+{
+  *state = mapsHasTriedLoading() ? ELEMENT_DISABLED : ELEMENT_ENABLED;
+}
+
+// 
+void menuStateHandler_GameModeOverride(TabElem_t* tab, MenuElem_t* element, int* state)
+{
+  int i = 0;
+
+  // hide gamemode for maps with exclusive gamemode
+  for (i = 0; i < dataCustomMapsWithExclusiveGameModeCount; ++i)
+  {
+    if (gameConfig.customMapId == dataCustomMapsWithExclusiveGameMode[i])
+    {
+      *state = ELEMENT_HIDDEN;
+      return;
+    }
+  }
+
+  *state = ELEMENT_ENABLED;
+}
+
+int getMenuElementState(TabElem_t* tab, MenuElem_t* element)
+{
+  // get tab and element state
+  int tabState = 0, state = 0;
+  tab->stateHandler(tab, &tabState);
+  element->stateHandler(tab, element, &state);
+
+  // return the smaller of the two states
+  if (state < tabState)
+    return state;
+  
+  return tabState;
+}
+
+//------------------------------------------------------------------------------
 void drawToggleMenuElement(TabElem_t* tab, MenuElem_t* element, RECT* rect)
 {
-  // get tab state
-  int tabState = 0;
-  tab->stateHandler(tab, &tabState);
+  // get element state
+  int state = getMenuElementState(tab, element);
 
   float x,y;
-  float lerp = (element->enabled && tabState == ELEMENT_ENABLED) ? 0.0 : 0.5;
+  float lerp = (state == ELEMENT_ENABLED) ? 0.0 : 0.5;
   u32 color = colorLerp(colorText, 0, lerp);
 
   // draw name
@@ -300,12 +370,11 @@ void drawToggleMenuElement(TabElem_t* tab, MenuElem_t* element, RECT* rect)
 //------------------------------------------------------------------------------
 void drawListMenuElement(TabElem_t* tab, MenuElem_t* element, MenuElem_ListData_t * listData, RECT* rect)
 {
-  // get tab state
-  int tabState = 0;
-  tab->stateHandler(tab, &tabState);
+  // get element state
+  int state = getMenuElementState(tab, element);
 
   float x,y;
-  float lerp = (element->enabled && tabState == ELEMENT_ENABLED) ? 0.0 : 0.5;
+  float lerp = (state == ELEMENT_ENABLED) ? 0.0 : 0.5;
   u32 color = colorLerp(colorText, 0, lerp);
 
   // draw name
@@ -321,12 +390,11 @@ void drawListMenuElement(TabElem_t* tab, MenuElem_t* element, MenuElem_ListData_
 //------------------------------------------------------------------------------
 void drawButtonMenuElement(TabElem_t* tab, MenuElem_t* element, RECT* rect)
 {
-  // get tab state
-  int tabState = 0;
-  tab->stateHandler(tab, &tabState);
+  // get element state
+  int state = getMenuElementState(tab, element);
 
   float x,y,b = 0.005;
-  float lerp = (element->enabled && tabState == ELEMENT_ENABLED) ? 0.0 : 0.5;
+  float lerp = (state == ELEMENT_ENABLED) ? 0.0 : 0.5;
   u32 color;
   RECT rBg = {
     { rect->TopLeft[0] + 0.05, rect->TopLeft[1] },
@@ -362,16 +430,20 @@ void drawButtonMenuElement(TabElem_t* tab, MenuElem_t* element, RECT* rect)
 //------------------------------------------------------------------------------
 void buttonActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg)
 {
-  // get tab state
-  int tabState = 0;
-  tab->stateHandler(tab, &tabState);
+  // get element state
+  int state = getMenuElementState(tab, element);
+
+  // do nothing if hidden
+  if (state == ELEMENT_HIDDEN)
+    return;
 
   switch (actionType)
   {
     case ACTIONTYPE_SELECT:
     {
-      if (tabState != ELEMENT_ENABLED)
+      if (state != ELEMENT_ENABLED)
         break;
+
       if (element->userdata)
         ((ButtonSelectHandler)element->userdata)(tab, element);
       break;
@@ -395,16 +467,19 @@ void listActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void
   MenuElem_ListData_t* listData = (MenuElem_ListData_t*)element->userdata;
   int itemCount = listData->count;
 
-  // get tab state
-  int tabState = 0;
-  tab->stateHandler(tab, &tabState);
+  // get element state
+  int state = getMenuElementState(tab, element);
+
+  // do nothing if hidden
+  if (state == ELEMENT_HIDDEN)
+    return;
 
   switch (actionType)
   {
     case ACTIONTYPE_INCREMENT:
     case ACTIONTYPE_SELECT:
     {
-      if (tabState != ELEMENT_ENABLED)
+      if (state != ELEMENT_ENABLED)
         break;
       char newValue = *listData->value + 1;
       if (newValue >= itemCount)
@@ -414,7 +489,7 @@ void listActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void
     }
     case ACTIONTYPE_DECREMENT:
     {
-      if (tabState != ELEMENT_ENABLED)
+      if (state != ELEMENT_ENABLED)
         break;
       char newValue = *listData->value - 1;
       if (newValue < 0)
@@ -438,9 +513,12 @@ void listActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void
 //------------------------------------------------------------------------------
 void toggleActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg)
 {
-  // get tab state
-  int tabState = 0;
-  tab->stateHandler(tab, &tabState);
+  // get element state
+  int state = getMenuElementState(tab, element);
+
+  // do nothing if hidden
+  if (state == ELEMENT_HIDDEN)
+    return;
 
   switch (actionType)
   {
@@ -448,7 +526,7 @@ void toggleActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, vo
     case ACTIONTYPE_SELECT:
     case ACTIONTYPE_DECREMENT:
     {
-      if (tabState != ELEMENT_ENABLED)
+      if (state != ELEMENT_ENABLED)
         break;
       // toggle
       *(char*)element->userdata = !(*(char*)element->userdata);;
@@ -535,7 +613,7 @@ void drawTab(TabElem_t* tab)
     return;
 
   int i = 0;
-  int menuElementRenderEnd = menuOffset;
+  int menuElementRenderEnd = tab->menuOffset;
   MenuElem_t * menuElements = tab->elements;
 	int menuElementsCount = tab->elementsCount;
   MenuElem_t* currentElement;
@@ -552,7 +630,7 @@ void drawTab(TabElem_t* tab)
   };
 
   // draw items
-  for (i = menuOffset; i < menuElementsCount; ++i)
+  for (i = tab->menuOffset; i < menuElementsCount; ++i)
   {
     currentElement = &menuElements[i];
     float itemHeight = 0;
@@ -567,7 +645,7 @@ void drawTab(TabElem_t* tab)
     drawRect.BottomRight[1] = drawRect.TopRight[1] + itemHeight;
 
     // draw selection
-    if (i == selectedMenuItem) {
+    if (i == tab->selectedMenuItem) {
       gfxScreenSpaceQuad(&drawRect, colorSelected, colorSelected, colorSelected, colorSelected);
     }
 
@@ -582,9 +660,9 @@ void drawTab(TabElem_t* tab)
   }
   
   // draw scroll bar
-  if (menuOffset > 0 || menuElementRenderEnd < menuElementsCount)
+  if (tab->menuOffset > 0 || menuElementRenderEnd < menuElementsCount)
   {
-    float scrollValue = menuOffset / (float)(menuElementsCount - (menuElementRenderEnd-menuOffset));
+    float scrollValue = tab->menuOffset / (float)(menuElementsCount - (menuElementRenderEnd-tab->menuOffset));
     float scrollBarHeight = 0.05;
     float contentRectHeight = contentH - scrollBarHeight;
 
@@ -592,46 +670,48 @@ void drawTab(TabElem_t* tab)
   }
 
   // 
-  if (selectedMenuItem >= menuElementRenderEnd)
-    ++menuOffset;
-  if (selectedMenuItem < menuOffset)
-    menuOffset = selectedMenuItem;
+  if (tab->selectedMenuItem >= menuElementRenderEnd)
+    ++tab->menuOffset;
+  if (tab->selectedMenuItem < tab->menuOffset)
+    tab->menuOffset = tab->selectedMenuItem;
 
   // get selected element
-  if (selectedMenuItem >= menuElementsCount)
+  if (tab->selectedMenuItem >= menuElementsCount)
     return;
-  currentElement = &menuElements[selectedMenuItem];
+
+  currentElement = &menuElements[tab->selectedMenuItem];
+  int state = getMenuElementState(tab, currentElement);
+
+  // find next selectable item if hidden
+  if (state == ELEMENT_HIDDEN)
+    navMenu(tab, 1, 1);
 
   // nav down
   if (padGetButtonDown(0, PAD_DOWN) > 0)
   {
-    ++selectedMenuItem;
-    if (selectedMenuItem >= menuElementsCount)
-      selectedMenuItem = menuElementsCount - 1;
+    navMenu(tab, 1, 0);
   }
   // nav up
   else if (padGetButtonDown(0, PAD_UP) > 0)
   {
-    --selectedMenuItem;
-    if (selectedMenuItem < 0)
-      selectedMenuItem = 0;
+    navMenu(tab, -1, 0);
   }
   // nav select
   else if (padGetButtonDown(0, PAD_CROSS) > 0)
   {
-    if (currentElement->enabled)
+    if (state == ELEMENT_ENABLED)
       currentElement->handler(tab, currentElement, ACTIONTYPE_SELECT, NULL);
   }
   // nav inc
   else if (padGetButtonDown(0, PAD_RIGHT) > 0)
   {
-    if (currentElement->enabled)
+    if (state == ELEMENT_ENABLED)
       currentElement->handler(tab, currentElement, ACTIONTYPE_INCREMENT, NULL);
   }
   // nav dec
   else if (padGetButtonDown(0, PAD_LEFT) > 0)
   {
-    if (currentElement->enabled)
+    if (state == ELEMENT_ENABLED)
       currentElement->handler(tab, currentElement, ACTIONTYPE_DECREMENT, NULL);
   }
 }
@@ -692,6 +772,8 @@ void onMenuUpdate(int inGame)
 //------------------------------------------------------------------------------
 void onConfigUpdate(void)
 {
+  int i;
+
   // in staging, update game info
   GameSettings * gameSettings = gameGetSettings();
   if (gameSettings && gameSettings->GameLoadStartTime < 0)
@@ -711,6 +793,16 @@ void onConfigUpdate(void)
       if (!modeName)
         modeName = dataCustomModes.items[(int)gameConfig.customModeId];
     }
+    
+    // override gamemode name with map if map has exclusive gamemode
+    for (i = 0; i < dataCustomMapsWithExclusiveGameModeCount; ++i)
+    {
+      if (gameConfig.customMapId == dataCustomMapsWithExclusiveGameMode[i])
+      {
+        modeName = mapName;
+        break;
+      }
+    }
 
     // update ui strings
     strncpy((char*)0x013C8C30, mapName, 32);
@@ -721,6 +813,54 @@ void onConfigUpdate(void)
 }
 
 //------------------------------------------------------------------------------
+void navMenu(TabElem_t* tab, int direction, int loop)
+{
+  int newElement = tab->selectedMenuItem + direction;
+  MenuElem_t *elem = NULL;
+  int state = 0;
+
+  // handle case where tab has no items
+  if (tab->elementsCount == 0)
+  {
+    tab->selectedMenuItem = 0;
+    tab->menuOffset = 0;
+    return;
+  }
+
+  while (newElement != tab->selectedMenuItem)
+  {
+    if (newElement >= tab->elementsCount)
+    {
+      if (loop)
+        newElement = 0;
+      else
+        break;
+    }
+    else if (newElement < 0)
+    {
+      if (loop)
+        newElement = tab->elementsCount - 1;
+      else
+        break;
+    }
+
+    // get newly selected element state
+    elem = &tab->elements[newElement];
+    elem->stateHandler(tab, elem, &state);
+
+    // skip if hidden
+    if (state == ELEMENT_HIDDEN)
+    {
+      newElement += direction;
+      continue;
+    }
+
+    // set new tab
+    tab->selectedMenuItem = newElement;
+    break;
+  }
+}
+
 void navTab(int direction)
 {
   int newTab = selectedTabItem + direction;
@@ -747,10 +887,6 @@ void navTab(int direction)
 
     // set new tab
     selectedTabItem = newTab;
-
-    // reset menu state
-    selectedMenuItem = 0;
-    menuOffset = 0;
     break;
   }
 }
@@ -827,11 +963,9 @@ void configMenuEnable(void)
   // enable
   isConfigMenuActive = 1;
 
-  // reset menu state
-  selectedMenuItem = 0;
-  selectedTabItem = 0;
-  menuOffset = 0;
-
-  // ensure custom map installer button is only enabled if not yet tried to install
-  menuElementsGeneral[0].enabled = !mapsHasTriedLoading();
+  // return to first tab if current is hidden
+  int state = 0;
+  tabElements[selectedTabItem].stateHandler(&tabElements[selectedTabItem], &state);
+  if (state == ELEMENT_HIDDEN)
+    selectedTabItem = 0;
 }
