@@ -121,46 +121,46 @@ MenuElem_t menuElementsGeneral[] = {
 // map override list item
 MenuElem_ListData_t dataCustomMaps = {
     &gameConfig.customMapId,
-    18,
+    CUSTOM_MAP_COUNT,
     {
       "None",
-      "Sarathos SP",
-      "Desert Prison",
-      "Torval SP",
-      "Mining Facility SP",
+      "Annihilation Nation",
+      "Bakisi Isles",
+      "Battledome SP",
+      "Blackwater Docks",
       "Dark Cathedral Interior",
-      "Shaar SP",
+      "Desert Prison",
+      "Duck Hunt",
+      "Ghost Ship",
       "Hoven Gorge",
       "Launch Site",
       "Metropolis MP",
-      "Annihilation Nation",
-      "Blackwater Docks",
-      "Bakisi Isles",
-      "Tyhrranosis",
-      "Ghost Ship",
-      "Duck Hunt",
+      "Mining Facility SP",
+      "Sarathos SP",
+      "Shaar SP",
       "Spleef",
-      "Battledome SP"
+      "Torval SP",
+      "Tyhrranosis",
     }
 };
 
 // maps with their own exclusive gamemode
 char dataCustomMapsWithExclusiveGameMode[] = {
-  15,
-  16
+  CUSTOM_MAP_SPLEEF,
+  CUSTOM_MAP_DUCK_HUNT
 };
 const int dataCustomMapsWithExclusiveGameModeCount = sizeof(dataCustomMapsWithExclusiveGameMode)/sizeof(char);
 
 // gamemode override list item
 MenuElem_ListData_t dataCustomModes = {
     &gameConfig.customModeId,
-    6,
+    CUSTOM_MODE_COUNT,
     {
       "None",
-      "Infected",
       "Gun Game",
-      "Infinite Climber",
       "Hoverbike Race",
+      "Infected",
+      "Infinite Climber",
       "Search and Destroy"
     }
 };
@@ -169,9 +169,9 @@ MenuElem_ListData_t dataCustomModes = {
 const char* CustomModeShortNames[] = {
   NULL,
   NULL,
+  "Race",
   NULL,
   "Climber",
-  "Race",
   "SND"
 };
 
@@ -945,11 +945,20 @@ void onConfigUpdate(void)
       }
     }
 
+	  u32 * stagingUiElements = (u32*)(*(u32*)(0x011C7064 + 4*33) + 0xB0);
+	  u32 * stagingDetailsUiElements = (u32*)(*(u32*)(0x011C7064 + 4*34) + 0xB0);
+
     // update ui strings
-    strncpy((char*)0x013C8C30, mapName, 32);
-    strncpy((char*)0x013EC974, mapName, 32);
-    strncpy((char*)0x013C8D68, modeName, 32);
-    strncpy((char*)0x013ECAAC, modeName, 32);
+    if ((u32)stagingUiElements > 0x100000)
+    {
+      strncpy((char*)(stagingUiElements[3] + 0x60), mapName, 32);
+      strncpy((char*)(stagingUiElements[4] + 0x60), modeName, 32);
+    }
+    if ((u32)stagingDetailsUiElements > 0x100000)
+    {
+      strncpy((char*)(stagingDetailsUiElements[2] + 0x60), mapName, 32);
+      strncpy((char*)(stagingDetailsUiElements[3] + 0x60), modeName, 32);
+    }
   }
 }
 
