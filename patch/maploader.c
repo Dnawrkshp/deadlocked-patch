@@ -41,6 +41,9 @@ int usbFsModuleSize = 0;
 void * usbSrvModuleStart = (void*)0x000F0000;
 int usbSrvModuleSize = 0;
 
+// patch config
+extern PatchConfig_t config;
+
 // game config
 extern PatchGameConfig_t gameConfig;
 
@@ -785,6 +788,17 @@ void runMapLoader(void)
 		// set map loader defaults
 		State.Enabled = 0;
 		State.CheckState = 0;
+
+		// install on login
+		if (config.enableAutoMaps && LOAD_MODULES_RESULT == 0)
+		{
+			// request irx modules from server
+			MapClientRequestModulesMessage request = { 0, 0 };
+			request.Module1Start = (u32)usbFsModuleStart;
+			request.Module2Start = (u32)usbSrvModuleStart;
+			netSendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_REQUEST_MAP_IRX_MODULES, sizeof(MapClientRequestModulesMessage), &request);
+			actionState = ACTION_DOWNLOADING_MODULES;
+		}
 
 		initialized = 1;
 	}
