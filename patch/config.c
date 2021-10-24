@@ -71,6 +71,7 @@ void menuStateAlwaysDisabledHandler(TabElem_t* tab, MenuElem_t* element, int* st
 void menuStateAlwaysEnabledHandler(TabElem_t* tab, MenuElem_t* element, int* state);
 void menuLabelStateHandler(TabElem_t* tab, MenuElem_t* element, int* state);
 void menuStateHandler_InstallCustomMaps(TabElem_t* tab, MenuElem_t* element, int* state);
+void menuStateHandler_InstalledCustomMaps(TabElem_t* tab, MenuElem_t* element, int* state);
 void menuStateHandler_GameModeOverride(TabElem_t* tab, MenuElem_t* element, int* state);
 
 void tabDefaultStateHandler(TabElem_t* tab, int * state);
@@ -89,7 +90,7 @@ void tabGameSettingsStateHandler(TabElem_t* tab, int * state);
 void navMenu(TabElem_t* tab, int direction, int loop);
 void navTab(int direction);
 
-int mapsHasTriedLoading(void);
+int mapsGetInstallationResult(void);
 int mapsPromptEnableCustomMaps(void);
 int mapsDownloadingModules(void);
 
@@ -103,6 +104,7 @@ MenuElem_ListData_t dataLevelOfDetail = {
 // general tab menu items
 MenuElem_t menuElementsGeneral[] = {
   { "Enable custom maps", buttonActionHandler, menuStateHandler_InstallCustomMaps, mapsSelectHandler },
+  { "", labelActionHandler, menuStateHandler_InstalledCustomMaps, NULL },
 #ifdef DEBUG
   { "Redownload patch", buttonActionHandler, menuStateAlwaysEnabledHandler, downloadPatchSelectHandler },
 #endif
@@ -324,7 +326,38 @@ void menuLabelStateHandler(TabElem_t* tab, MenuElem_t* element, int* state)
 // 
 void menuStateHandler_InstallCustomMaps(TabElem_t* tab, MenuElem_t* element, int* state)
 {
-  *state = ELEMENT_VISIBLE | (mapsHasTriedLoading() ? (ELEMENT_EDITABLE | ELEMENT_SELECTABLE) : 0);
+  *state = !gameIsIn() && mapsGetInstallationResult() == 0 ? (ELEMENT_VISIBLE | ELEMENT_EDITABLE | ELEMENT_SELECTABLE) : ELEMENT_HIDDEN;
+}
+
+// 
+void menuStateHandler_InstalledCustomMaps(TabElem_t* tab, MenuElem_t* element, int* state)
+{
+  *state = ELEMENT_VISIBLE | ELEMENT_EDITABLE;
+  
+  int installResult = mapsGetInstallationResult();
+  switch (installResult)
+  {
+    case 1:
+    {
+      strncpy(element->name, "Custom map modules installed", 40);
+      break;
+    }
+    case 2:
+    {
+      strncpy(element->name, "There are custom map updates available", 40);
+      break;
+    }
+    case 255:
+    {
+      strncpy(element->name, "Error installing custom map modules", 40);
+      break;
+    }
+    default:
+    {
+      *state = ELEMENT_HIDDEN;
+      break;
+    }
+  }
 }
 
 // 

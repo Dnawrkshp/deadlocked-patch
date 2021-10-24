@@ -23,6 +23,7 @@
 
 #define MAP_FRAG_PAYLOAD_MAX_SIZE               (1024)
 #define LOAD_MODULES_STATE                      (*(u8*)0x000E2FF0)
+#define LOAD_MODULES_RESULT                     (*(u8*)0x000E2FF1)
 #define HAS_LOADED_MODULES                      (LOAD_MODULES_STATE == 100)
 
 #define USB_FS_ID                               (*(u8*)0x000E2FF4)
@@ -639,9 +640,9 @@ char* hookedLoadScreenModeNameString(char * dest, char * src)
 }
 
 //------------------------------------------------------------------------------
-int mapsHasTriedLoading(void)
+int mapsGetInstallationResult(void)
 {
-	return LOAD_MODULES_STATE != 0;
+	return LOAD_MODULES_RESULT;
 }
 
 //------------------------------------------------------------------------------
@@ -698,6 +699,7 @@ void onMapLoaderOnlineMenu(void)
 		uiShowOkDialog("Custom Maps", "Custom maps have been enabled.");
 
 		actionState = ACTION_NONE;
+		LOAD_MODULES_RESULT = 1;
 	}
 	else if (actionState == ACTION_NEW_MAPS_UPDATE)
 	{
@@ -706,6 +708,7 @@ void onMapLoaderOnlineMenu(void)
 		
 		uiShowOkDialog("Custom Maps", "New updates are available. Please download them at https://dl.uyaonline.com/maps");
 		actionState = ACTION_MODULES_INSTALLED;
+		LOAD_MODULES_RESULT = 2;
 	}
 	else if (actionState == ACTION_ERROR_LOADING_MODULES)
 	{
@@ -714,6 +717,7 @@ void onMapLoaderOnlineMenu(void)
 		
 		uiShowOkDialog("Custom Maps", "There was an error loading the custom map modules.");
 		actionState = ACTION_NONE;
+		LOAD_MODULES_RESULT = -1;
 	}
 
 	return;
