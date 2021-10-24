@@ -134,6 +134,7 @@ MenuElem_ListData_t dataCustomMaps = {
       "Duck Hunt",
       "Ghost Ship",
       "Hoven Gorge",
+      "Hoverbike Race",
       "Launch Site",
       "Metropolis MP",
       "Mining Facility SP",
@@ -148,7 +149,8 @@ MenuElem_ListData_t dataCustomMaps = {
 // maps with their own exclusive gamemode
 char dataCustomMapsWithExclusiveGameMode[] = {
   CUSTOM_MAP_SPLEEF,
-  CUSTOM_MAP_DUCK_HUNT
+  CUSTOM_MAP_DUCK_HUNT,
+  CUSTOM_MAP_HOVERBIKE_RACE
 };
 const int dataCustomMapsWithExclusiveGameModeCount = sizeof(dataCustomMapsWithExclusiveGameMode)/sizeof(char);
 
@@ -159,7 +161,6 @@ MenuElem_ListData_t dataCustomModes = {
     {
       "None",
       "Gun Game",
-      "Hoverbike Race",
       "Infected",
       "Infinite Climber",
       "Search and Destroy"
@@ -170,7 +171,6 @@ MenuElem_ListData_t dataCustomModes = {
 const char* CustomModeShortNames[] = {
   NULL,
   NULL,
-  "Race",
   NULL,
   "Climber",
   "SND"
