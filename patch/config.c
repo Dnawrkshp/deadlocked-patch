@@ -63,11 +63,13 @@ void configMenuEnable(void);
 void buttonActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
 void toggleActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
 void listActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
+void labelActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
 
 // state handlers
 void menuStateAlwaysHiddenHandler(TabElem_t* tab, MenuElem_t* element, int* state);
 void menuStateAlwaysDisabledHandler(TabElem_t* tab, MenuElem_t* element, int* state);
 void menuStateAlwaysEnabledHandler(TabElem_t* tab, MenuElem_t* element, int* state);
+void menuLabelStateHandler(TabElem_t* tab, MenuElem_t* element, int* state);
 void menuStateHandler_InstallCustomMaps(TabElem_t* tab, MenuElem_t* element, int* state);
 void menuStateHandler_GameModeOverride(TabElem_t* tab, MenuElem_t* element, int* state);
 
@@ -210,8 +212,12 @@ MenuElem_ListData_t dataVampire = {
 // game settings tab menu items
 MenuElem_t menuElementsGameSettings[] = {
   { "Reset", buttonActionHandler, menuStateAlwaysEnabledHandler, gmResetSelectHandler },
+
+  { "Game Settings", labelActionHandler, menuLabelStateHandler, NULL },
   { "Map override", listActionHandler, menuStateAlwaysEnabledHandler, &dataCustomMaps },
   { "Gamemode override", listActionHandler, menuStateHandler_GameModeOverride, &dataCustomModes },
+
+  { "Game Rules", labelActionHandler, menuLabelStateHandler, NULL },
   { "Weather override", listActionHandler, menuStateAlwaysEnabledHandler, &dataWeather },
   { "Disable weapon packs", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grNoPacks },
   { "Disable v2s", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grNoV2s },
@@ -235,7 +241,7 @@ const int tabsCount = sizeof(tabElements)/sizeof(TabElem_t);
 // 
 void tabDefaultStateHandler(TabElem_t* tab, int * state)
 {
-  *state = ELEMENT_ENABLED;
+  *state = ELEMENT_SELECTABLE | ELEMENT_VISIBLE | ELEMENT_EDITABLE;
 }
 
 // 
@@ -244,16 +250,16 @@ void tabGameSettingsStateHandler(TabElem_t* tab, int * state)
   GameSettings * gameSettings = gameGetSettings();
   if (!gameSettings)
   {
-    *state = ELEMENT_HIDDEN;
+    *state = ELEMENT_VISIBLE;
   }
-  // if game has started or not the host, disable
+  // if game has started or not the host, disable editing
   else if (gameSettings->GameLoadStartTime > 0 || *(u8*)0x00172170 != 0)
   {
-    *state = ELEMENT_DISABLED;
+    *state = ELEMENT_SELECTABLE | ELEMENT_VISIBLE;
   }
   else
   {
-    *state = ELEMENT_ENABLED;
+    *state = ELEMENT_SELECTABLE | ELEMENT_VISIBLE | ELEMENT_EDITABLE;
   }
 }
 
@@ -300,19 +306,25 @@ void menuStateAlwaysHiddenHandler(TabElem_t* tab, MenuElem_t* element, int* stat
 // 
 void menuStateAlwaysDisabledHandler(TabElem_t* tab, MenuElem_t* element, int* state)
 {
-  *state = ELEMENT_DISABLED;
+  *state = ELEMENT_VISIBLE | ELEMENT_SELECTABLE;
 }
 
 // 
 void menuStateAlwaysEnabledHandler(TabElem_t* tab, MenuElem_t* element, int* state)
 {
-  *state = ELEMENT_ENABLED;
+  *state = ELEMENT_VISIBLE | ELEMENT_EDITABLE | ELEMENT_SELECTABLE;
+}
+
+// 
+void menuLabelStateHandler(TabElem_t* tab, MenuElem_t* element, int* state)
+{
+  *state = ELEMENT_VISIBLE | ELEMENT_EDITABLE;
 }
 
 // 
 void menuStateHandler_InstallCustomMaps(TabElem_t* tab, MenuElem_t* element, int* state)
 {
-  *state = mapsHasTriedLoading() ? ELEMENT_DISABLED : ELEMENT_ENABLED;
+  *state = ELEMENT_VISIBLE | (mapsHasTriedLoading() ? (ELEMENT_EDITABLE | ELEMENT_SELECTABLE) : 0);
 }
 
 // 
@@ -330,7 +342,7 @@ void menuStateHandler_GameModeOverride(TabElem_t* tab, MenuElem_t* element, int*
     }
   }
 
-  *state = ELEMENT_ENABLED;
+  *state = ELEMENT_SELECTABLE | ELEMENT_VISIBLE | ELEMENT_EDITABLE;
 }
 
 int getMenuElementState(TabElem_t* tab, MenuElem_t* element)
@@ -340,11 +352,7 @@ int getMenuElementState(TabElem_t* tab, MenuElem_t* element)
   tab->stateHandler(tab, &tabState);
   element->stateHandler(tab, element, &state);
 
-  // return the smaller of the two states
-  if (state < tabState)
-    return state;
-  
-  return tabState;
+  return tabState & state;
 }
 
 //------------------------------------------------------------------------------
@@ -354,7 +362,7 @@ void drawToggleMenuElement(TabElem_t* tab, MenuElem_t* element, RECT* rect)
   int state = getMenuElementState(tab, element);
 
   float x,y;
-  float lerp = (state == ELEMENT_ENABLED) ? 0.0 : 0.5;
+  float lerp = (state & ELEMENT_EDITABLE) ? 0.0 : 0.5;
   u32 color = colorLerp(colorText, 0, lerp);
 
   // draw name
@@ -374,7 +382,7 @@ void drawListMenuElement(TabElem_t* tab, MenuElem_t* element, MenuElem_ListData_
   int state = getMenuElementState(tab, element);
 
   float x,y;
-  float lerp = (state == ELEMENT_ENABLED) ? 0.0 : 0.5;
+  float lerp = (state & ELEMENT_EDITABLE) ? 0.0 : 0.5;
   u32 color = colorLerp(colorText, 0, lerp);
 
   // draw name
@@ -394,7 +402,7 @@ void drawButtonMenuElement(TabElem_t* tab, MenuElem_t* element, RECT* rect)
   int state = getMenuElementState(tab, element);
 
   float x,y,b = 0.005;
-  float lerp = (state == ELEMENT_ENABLED) ? 0.0 : 0.5;
+  float lerp = (state & ELEMENT_EDITABLE) ? 0.0 : 0.5;
   u32 color;
   RECT rBg = {
     { rect->TopLeft[0] + 0.05, rect->TopLeft[1] },
@@ -428,20 +436,39 @@ void drawButtonMenuElement(TabElem_t* tab, MenuElem_t* element, RECT* rect)
 }
 
 //------------------------------------------------------------------------------
+void drawLabelMenuElement(TabElem_t* tab, MenuElem_t* element, RECT* rect)
+{
+  // get element state
+  int state = getMenuElementState(tab, element);
+
+  float x,y;
+  float lerp = (state & ELEMENT_EDITABLE) ? 0.0 : 0.5;
+
+  // draw label
+  x = 0.5 * SCREEN_WIDTH;
+  y = ((rect->TopLeft[1] + rect->BottomLeft[1]) * SCREEN_HEIGHT * 0.5);
+  gfxScreenSpaceText(x, y, 1, 1, colorLerp(colorText, 0, lerp), element->name, -1, 4);
+
+  // add some padding
+  rect->TopLeft[1] += 0.01;
+  rect->TopRight[1] += 0.01;
+}
+
+//------------------------------------------------------------------------------
 void buttonActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg)
 {
   // get element state
   int state = getMenuElementState(tab, element);
 
   // do nothing if hidden
-  if (state == ELEMENT_HIDDEN)
+  if ((state & ELEMENT_VISIBLE) == 0)
     return;
 
   switch (actionType)
   {
     case ACTIONTYPE_SELECT:
     {
-      if (state != ELEMENT_ENABLED)
+      if ((state & ELEMENT_EDITABLE) == 0)
         break;
 
       if (element->userdata)
@@ -462,6 +489,31 @@ void buttonActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, vo
 }
 
 //------------------------------------------------------------------------------
+void labelActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg)
+{
+  // get element state
+  int state = getMenuElementState(tab, element);
+
+  // do nothing if hidden
+  if ((state & ELEMENT_VISIBLE) == 0)
+    return;
+
+  switch (actionType)
+  {
+    case ACTIONTYPE_GETHEIGHT:
+    {
+      *(float*)actionArg = LINE_HEIGHT * 2;
+      break;
+    }
+    case ACTIONTYPE_DRAW:
+    {
+      drawLabelMenuElement(tab, element, (RECT*)actionArg);
+      break;
+    }
+  }
+}
+
+//------------------------------------------------------------------------------
 void listActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg)
 {
   MenuElem_ListData_t* listData = (MenuElem_ListData_t*)element->userdata;
@@ -471,7 +523,7 @@ void listActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void
   int state = getMenuElementState(tab, element);
 
   // do nothing if hidden
-  if (state == ELEMENT_HIDDEN)
+  if ((state & ELEMENT_VISIBLE) == 0)
     return;
 
   switch (actionType)
@@ -479,7 +531,7 @@ void listActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void
     case ACTIONTYPE_INCREMENT:
     case ACTIONTYPE_SELECT:
     {
-      if (state != ELEMENT_ENABLED)
+      if ((state & ELEMENT_EDITABLE) == 0)
         break;
       char newValue = *listData->value + 1;
       if (newValue >= itemCount)
@@ -489,7 +541,7 @@ void listActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void
     }
     case ACTIONTYPE_DECREMENT:
     {
-      if (state != ELEMENT_ENABLED)
+      if ((state & ELEMENT_EDITABLE) == 0)
         break;
       char newValue = *listData->value - 1;
       if (newValue < 0)
@@ -517,7 +569,7 @@ void toggleActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, vo
   int state = getMenuElementState(tab, element);
 
   // do nothing if hidden
-  if (state == ELEMENT_HIDDEN)
+  if ((state & ELEMENT_VISIBLE) == 0)
     return;
 
   switch (actionType)
@@ -526,7 +578,7 @@ void toggleActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, vo
     case ACTIONTYPE_SELECT:
     case ACTIONTYPE_DECREMENT:
     {
-      if (state != ELEMENT_ENABLED)
+      if ((state & ELEMENT_EDITABLE) == 0)
         break;
       // toggle
       *(char*)element->userdata = !(*(char*)element->userdata);;
@@ -583,13 +635,13 @@ void drawFrame(void)
     tab->stateHandler(tab, &state);
 
     // skip hidden elements
-    if (state != ELEMENT_HIDDEN)
+    if (state & ELEMENT_VISIBLE)
     {
       // get tab title width
       float pWidth = (4 * tabBarPaddingX) + gfxGetFontWidth(tab->name, -1, 1) / (float)SCREEN_WIDTH;
 
       // get color
-      float lerp = state == ELEMENT_ENABLED ? 0.0 : 0.5;
+      float lerp = state & ELEMENT_EDITABLE ? 0.0 : 0.5;
       u32 color = colorLerp(colorText, 0, lerp);
 
       // draw bar
@@ -682,8 +734,8 @@ void drawTab(TabElem_t* tab)
   currentElement = &menuElements[tab->selectedMenuItem];
   int state = getMenuElementState(tab, currentElement);
 
-  // find next selectable item if hidden
-  if (state == ELEMENT_HIDDEN)
+  // find next selectable item if hidden or not selectable
+  if ((state & ELEMENT_VISIBLE) == 0 || (state & ELEMENT_SELECTABLE) == 0)
     navMenu(tab, 1, 1);
 
   // nav down
@@ -699,19 +751,19 @@ void drawTab(TabElem_t* tab)
   // nav select
   else if (padGetButtonDown(0, PAD_CROSS) > 0)
   {
-    if (state == ELEMENT_ENABLED)
+    if (state & ELEMENT_EDITABLE)
       currentElement->handler(tab, currentElement, ACTIONTYPE_SELECT, NULL);
   }
   // nav inc
   else if (padGetButtonDown(0, PAD_RIGHT) > 0)
   {
-    if (state == ELEMENT_ENABLED)
+    if (state & ELEMENT_EDITABLE)
       currentElement->handler(tab, currentElement, ACTIONTYPE_INCREMENT, NULL);
   }
   // nav dec
   else if (padGetButtonDown(0, PAD_LEFT) > 0)
   {
-    if (state == ELEMENT_ENABLED)
+    if (state & ELEMENT_EDITABLE)
       currentElement->handler(tab, currentElement, ACTIONTYPE_DECREMENT, NULL);
   }
 }
@@ -793,7 +845,7 @@ void onConfigUpdate(void)
       if (!modeName)
         modeName = dataCustomModes.items[(int)gameConfig.customModeId];
     }
-    
+
     // override gamemode name with map if map has exclusive gamemode
     for (i = 0; i < dataCustomMapsWithExclusiveGameModeCount; ++i)
     {
@@ -849,7 +901,7 @@ void navMenu(TabElem_t* tab, int direction, int loop)
     elem->stateHandler(tab, elem, &state);
 
     // skip if hidden
-    if (state == ELEMENT_HIDDEN)
+    if ((state & ELEMENT_VISIBLE) == 0 || (state & ELEMENT_SELECTABLE) == 0)
     {
       newElement += direction;
       continue;
@@ -879,7 +931,7 @@ void navTab(int direction)
     tab->stateHandler(tab, &state);
 
     // skip if hidden
-    if (state == ELEMENT_HIDDEN)
+    if ((state & ELEMENT_VISIBLE) == 0 || (state & ELEMENT_SELECTABLE) == 0)
     {
       newTab += direction;
       continue;
@@ -929,7 +981,7 @@ void configTrySendGameConfig(void)
 
   // send game config to server for saving if tab is enabled
   tabElements[1].stateHandler(&tabElements[1], &state);
-  if (state == ELEMENT_ENABLED)
+  if (state & ELEMENT_EDITABLE)
   {
     // backup
     memcpy(&gameConfigHostBackup, &gameConfig, sizeof(PatchGameConfig_t));
@@ -966,6 +1018,6 @@ void configMenuEnable(void)
   // return to first tab if current is hidden
   int state = 0;
   tabElements[selectedTabItem].stateHandler(&tabElements[selectedTabItem], &state);
-  if (state == ELEMENT_HIDDEN)
+  if ((state & ELEMENT_SELECTABLE) == 0 || (state & ELEMENT_VISIBLE) == 0)
     selectedTabItem = 0;
 }

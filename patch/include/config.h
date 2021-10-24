@@ -12,9 +12,10 @@ enum ActionType
 
 enum ElementState
 {
-  ELEMENT_HIDDEN,
-  ELEMENT_DISABLED,
-  ELEMENT_ENABLED
+  ELEMENT_HIDDEN = 0,
+  ELEMENT_VISIBLE = (1 << 0),
+  ELEMENT_EDITABLE = (1 << 1),
+  ELEMENT_SELECTABLE = (1 << 2),
 };
 
 struct MenuElem;
