@@ -895,6 +895,8 @@ void onOnlineMenu(void)
  */
 int main (void)
 {
+	int i;
+
 	// Call this first
 	dlPreUpdate();
 
@@ -1052,6 +1054,20 @@ int main (void)
 		else
 		{
 			isInStaging = 0;
+		}
+
+		// patch server hostname
+		char * muisServerHostname = (char*)0x001B1ECD;
+		char * serverHostname = (char*)0x004BF4F0;
+		if (!gameSettings && strlen(muisServerHostname) > 0)
+		{
+			for (i = 0; i < 32; ++i)
+			{
+				char c = muisServerHostname[i];
+				if (c < 0x20)
+					c = '.';
+				serverHostname[i] = c;
+			}
 		}
 
 		// close config menu on transition to lobby
