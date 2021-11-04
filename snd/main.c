@@ -471,25 +471,6 @@ void replaceString(int textId, const char * str)
 	strncpy(strPtr, str, 32);
 }
 
-void SNDHideMobyEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_func eventHandler)
-{
-	eventHandler(moby, event);
-	hideMoby(moby, 1);
-}
-
-void SNDNodeBaseEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_func eventHandler)
-{
-	// 
-	if (!NodeBaseCollisionPointer)
-		NodeBaseCollisionPointer = moby->CollisionPointer;
-
-	//u32 eventId = event->NetEvent[0] & 0xF;
-	//if (eventId == 0)
-	//	hideNodes(0);
-
-	eventHandler(moby, event);
-}
-
 void SNDHackerOrbEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_func eventHandler)
 {
 	int nodeIndex = -1;
@@ -524,10 +505,6 @@ void SNDHackerOrbEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_
 		nodeIndex = 1;
 		SNDState.Nodes[1].OrbGuberMoby = moby->GuberMoby;
 	}
-
-	// update collision pointer
-	if (!HackerOrbCollisionPointer)
-		HackerOrbCollisionPointer = moby->CollisionPointer;
 
 	// get id of event
 	u32 eventId = event->NetEvent[0] & 0xF;
@@ -663,9 +640,6 @@ void GuberMobyEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_fun
 	{
 		case MOBY_ID_CONQUEST_HACKER_ORB: SNDHackerOrbEventHandler(moby, event, eventHandler); break;
 		case MOBY_ID_WEAPON_PACK: SNDWeaponPackEventHandler(moby, event, eventHandler); break;
-		case MOBY_ID_NODE_BASE: SNDNodeBaseEventHandler(moby, event, eventHandler); break;
-			SNDHideMobyEventHandler(moby, event, eventHandler);
-			break;
 		default:
 			DPRINTF("GuberMoby event (%04x) with %08x and %08x, handler=%08x\n", moby->MobyId, (u32)moby, (u32)event, (u32)eventHandler);
 			eventHandler(moby, event);
@@ -1161,9 +1135,6 @@ void initialize(void)
 	SNDState.BombPackGuber = 0;
 	SNDState.DefenderTeamId = TEAM_BLUE;
 	SNDState.AttackerTeamId = TEAM_RED;
-
-	NodeBaseCollisionPointer = 0;
-	HackerOrbCollisionPointer = 0;
 
 	// Hook set outcome net event
 	netInstallCustomMsgHandler(CUSTOM_MSG_ID_SEARCH_AND_DESTROY_SET_OUTCOME, &onSetRoundOutcomeRemote);
