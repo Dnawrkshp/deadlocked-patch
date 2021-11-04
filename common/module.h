@@ -24,11 +24,6 @@
 struct GameModule;
 
 /*
- * Size of game module arg buffer.
- */
-#define GAME_MODULE_ARG_SIZE            (8)
-
-/*
  * NAME :		ModuleStart
  * 
  * DESCRIPTION :
@@ -107,9 +102,9 @@ typedef struct GameModule
     ModuleStart LobbyEntrypoint;
 
     /*
-     * Buffer containing module specific arguments given by the server.
+     * Entrypoint of module to be invoked just before the level loads the map but after the map is read from the disc.
      */
-    char Argbuffer[GAME_MODULE_ARG_SIZE];
+    ModuleStart LoadEntrypoint;
 
 } GameModule;
 

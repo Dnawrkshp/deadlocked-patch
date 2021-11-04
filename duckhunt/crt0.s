@@ -23,3 +23,7 @@ _start:
 _lobbyStart:
 	j lobbyStart
 	nop
+
+_loadStart:
+	j loadStart
+	nop

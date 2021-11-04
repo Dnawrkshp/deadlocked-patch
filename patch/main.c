@@ -75,6 +75,10 @@
 
 #define DRAW_SHADOW_FUNC						((u32*)0x00587b30)
 
+
+// 
+typedef void (*ProcessLevelHandler)(void);
+
 // 
 void processSpectate(void);
 void runMapLoader(void);
@@ -674,6 +678,67 @@ void onGameStartMenuBack(long a0)
 }
 
 /*
+ * NAME :		hookedProcessLevel
+ * 
+ * DESCRIPTION :
+ * 		 	Function hook that the game will invoke when it is about to start processing a newly loaded level.
+ * 			The argument passed is the address of the function to call to start processing the level.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void hookedProcessLevel(ProcessLevelHandler funcPtr)
+{
+	// ensure that the game is loading and not exiting
+	GameSettings * gs = gameGetSettings();
+	if (gs && gs->GameStartTime < 0)
+	{
+		// Start at the first game module
+		GameModule * module = GLOBAL_GAME_MODULES_START;
+
+		// pass event to modules
+		while (module->GameEntrypoint || module->LobbyEntrypoint)
+		{
+			if (module->State > GAMEMODULE_OFF && module->LoadEntrypoint)
+				module->LoadEntrypoint(module, &config, &gameConfig);
+
+			++module;
+		}
+	}
+
+	// pass to gamemode
+	// call function
+	funcPtr();
+}
+
+/*
+ * NAME :		patchProcessLevel
+ * 
+ * DESCRIPTION :
+ * 			Installs hook at where the game starts the process a newly loaded level.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchProcessLevel(void)
+{
+	// jal hookedProcessLevel
+	// or a0, s0, zero
+	*(u32*)0x00157D30 = 0x0C000000 | (u32)&hookedProcessLevel / 4;
+	*(u32*)0x00157D34 = 0x02002025;
+}
+
+/*
  * NAME :		processGameModules
  * 
  * DESCRIPTION :
@@ -961,6 +1026,9 @@ int main (void)
 
 	// Patch weapon shot to be sent reliably
 	//patchWeaponShotNetSendFlag();
+
+	// Patch process level call
+	patchProcessLevel();
 
 	// config update
 	onConfigUpdate();

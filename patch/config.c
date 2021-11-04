@@ -14,7 +14,7 @@
 
 #define LINE_HEIGHT         (0.05)
 #define LINE_HEIGHT_3_2     (0.075)
-
+#define DEFAULT_GAMEMODE    (4)
 
 // config
 extern PatchConfig_t config;
@@ -1080,6 +1080,11 @@ void onConfigInitialize(void)
   // reset game configs
   memset(&gameConfigHostBackup, 0, sizeof(gameConfigHostBackup));
   memset(&gameConfig, 0, sizeof(gameConfig));
+
+#if DEFAULT_GAMEMODE > 0
+  gameConfigHostBackup.customModeId = DEFAULT_GAMEMODE;
+  gameConfig.customModeId = DEFAULT_GAMEMODE;
+#endif
 }
 
 //------------------------------------------------------------------------------

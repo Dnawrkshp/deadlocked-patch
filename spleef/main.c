@@ -888,3 +888,23 @@ void lobbyStart(void)
 		}
 	}
 }
+
+/*
+ * NAME :		loadStart
+ * 
+ * DESCRIPTION :
+ * 			Load logic entrypoint.
+ * 
+ * NOTES :
+ * 			This is called only when the game has finished reading the level from the disc and before it has started processing the data.
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void loadStart(void)
+{
+	
+}

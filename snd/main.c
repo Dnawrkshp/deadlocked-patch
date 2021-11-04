@@ -147,6 +147,45 @@ typedef struct SNDOutcomeMessage
 /*
  *
  */
+typedef struct GameplayMobyDef
+{
+	u32 Size;
+	char Mission;
+	int UID;
+	int Bolts;
+	int OClass;
+	float Scale;
+	float DrawDistance;
+	float UpdateDistance;
+	short UNK_20;
+	short UNK_22;
+	short UNK_24;
+	short UNK_26;
+	float PosX;
+	float PosY;
+	float PosZ;
+	float RotX;
+	float RotY;
+	float RotZ;
+	int Group;
+	int IsRooted;
+	float RootedDistance;
+	short UNK_4C;
+	short UNK_4E;
+	int PVarIndex;
+	short UNK_54;
+	short UNK_56;
+	int UNK_58;
+	int Red;
+	int Green;
+	int Blue;
+	int Light;
+	int UNK_6C;
+} GameplayMobyDef_t;
+
+/*
+ *
+ */
 enum SNDOutcome
 {
 	SND_OUTCOME_INCOMPLETE = 0,
@@ -208,17 +247,17 @@ int InitializedTime = 0;
 /*
  *
  */
-char shaBuffer;
+char shaBuffer = 0;
 
 /*
  * Needed when moving hacker orbs
  */
-void * HackerOrbCollisionPointer;
+void * HackerOrbCollisionPointer = 0;
 
 /*
  * Needed when moving hacker orbs
  */
-void * NodeBaseCollisionPointer;
+void * NodeBaseCollisionPointer = 0;
 
 /*
  * Configurable settings
@@ -351,12 +390,16 @@ void hideNode(Moby * nodeBaseMoby, int keepNode, int keepOrb, int move)
 	// hide base and orb
 	if (!keepNode)
 	{
+		if (nodeBaseMoby->CollisionPointer && !NodeBaseCollisionPointer)
+			NodeBaseCollisionPointer = nodeBaseMoby->CollisionPointer;
 		hideMoby(nodeBaseMoby, move);
 		i = 0;
 	}
 
 	if (!keepOrb)
 	{
+		if (orb->CollisionPointer && !HackerOrbCollisionPointer)
+			HackerOrbCollisionPointer = orb->CollisionPointer;
 		hideMoby(orb, move);
 	}
 
@@ -365,7 +408,7 @@ void hideNode(Moby * nodeBaseMoby, int keepNode, int keepOrb, int move)
 		hideMoby(subItems[i], 1);
 }
 
-void moveNode(Moby * nodeBaseMoby, VECTOR position)
+void showNode(Moby * nodeBaseMoby, VECTOR position)
 {
 	int i = 1;
 	NodeBasePVar_t * nodePvars = (NodeBasePVar_t*)nodeBaseMoby->PropertiesPointer;
@@ -377,52 +420,21 @@ void moveNode(Moby * nodeBaseMoby, VECTOR position)
 	nodeBaseMoby->UNK_34[0] &= ~4;
 	nodeBaseMoby->RenderDistance = 0xFF;
 	nodeBaseMoby->Opacity = 0x80;
-	nodeBaseMoby->CollisionPointer = NodeBaseCollisionPointer;
+	if (NodeBaseCollisionPointer)
+		nodeBaseMoby->CollisionPointer = NodeBaseCollisionPointer;
+	
 	if (orb)
 	{
 		vector_copy(orb->Position, position);
 		orb->RenderDistance = 0xFF;
 		orb->Opacity = 0x80;
-		orb->CollisionPointer = HackerOrbCollisionPointer;
+		if (HackerOrbCollisionPointer)
+			orb->CollisionPointer = HackerOrbCollisionPointer;
 	}
 
 	for (i = 0; i < 2; ++i)
 		if (subItems[i])
 			vector_copy(subItems[i]->Position, position);
-}
-
-void hideNodes(int ignoreNodeBase)
-{
-	Moby * moby = mobyGetFirst();
-	
-	while (moby)
-	{
-		Moby * next = moby->NextMoby;
-
-		if (!ignoreNodeBase && moby->MobyId == MOBY_ID_NODE_BASE)
-		{
-			int isBombSite = moby == SNDState.Nodes[0].Moby || moby == SNDState.Nodes[1].Moby;
-			hideNode(moby, isBombSite, isBombSite, 1);
-
-			// Move node
-			if (isBombSite)
-			{
-				if (moby == SNDState.Nodes[0].Moby)
-					moveNode(moby, Node1SpawnPoint);
-				else
-					moveNode(moby, Node2SpawnPoint);
-			}
-		}
-		else if (  moby->MobyId == MOBY_ID_BLUE_TEAM_HEALTH_PAD 
-				|| moby->MobyId == MOBY_ID_PLAYER_TURRET 
-				|| moby->MobyId == MOBY_ID_PICKUP_PAD
-				)
-		{
-			hideMoby(moby, 1);
-		}
-
-		moby = next;
-	}
 }
 
 void nodeCapture(GuberMoby * guberMoby, int team)
@@ -471,9 +483,9 @@ void SNDNodeBaseEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_f
 	if (!NodeBaseCollisionPointer)
 		NodeBaseCollisionPointer = moby->CollisionPointer;
 
-	u32 eventId = event->NetEvent[0] & 0xF;
-	if (eventId == 0)
-		hideNodes(0);
+	//u32 eventId = event->NetEvent[0] & 0xF;
+	//if (eventId == 0)
+	//	hideNodes(0);
 
 	eventHandler(moby, event);
 }
@@ -1017,8 +1029,8 @@ void resetRoundState(void)
 	if (Initialized)
 	{
 		// move
-		moveNode(SNDState.Nodes[0].Moby, Node1SpawnPoint);
-		moveNode(SNDState.Nodes[1].Moby, Node2SpawnPoint);
+		showNode(SNDState.Nodes[0].Moby, Node1SpawnPoint);
+		showNode(SNDState.Nodes[1].Moby, Node2SpawnPoint);
 
 		// capture
 		nodeCapture(SNDState.Nodes[0].OrbGuberMoby, SNDState.DefenderTeamId);
@@ -1035,6 +1047,80 @@ void resetRoundState(void)
 	}
 
 	SNDState.RoundInitialized = 1;
+}
+
+void spawnGuberHook(void * a0, GuberEvent  * a1)
+{
+	if ((a1->NetEvent[0] & 0xF) == 0)
+	{
+		switch (*(u16*)(a1->NetEvent + 0x10))
+		{
+			case MOBY_ID_CONQUEST_NODE_TURRET:
+			case MOBY_ID_CONQUEST_POWER_TURRET:
+			case MOBY_ID_CONQUEST_ROCKET_TURRET:
+			{
+				return;
+			}
+		}
+	}
+
+	// pass through
+	((void (*)(void*,GuberEvent *))0x0061CD30)(a0, a1);
+}
+
+void loadGameplayHook(void * gameplayMobies, void * a1, u32 a2)
+{
+	printf("loading gameplay at %08X\n", (u32)gameplayMobies);
+
+	//
+	int mobyCount = *(int*)gameplayMobies;
+	GameplayMobyDef_t* defs = (GameplayMobyDef_t*)((u32)gameplayMobies + 0x10);
+	int i;
+	int nodeCount = 0;
+	VECTOR empty;
+	float * point;
+
+	memset(empty, 0, sizeof(empty));
+
+	for (i = 0; i < mobyCount; ++i)
+	{
+		if (defs->OClass == MOBY_ID_NODE_BASE)
+		{
+			switch (nodeCount)
+			{
+				case 0:
+				{
+					point = Node1SpawnPoint;
+					break;
+				}
+				case 1:
+				{
+					point = Node2SpawnPoint;
+					break;
+				}
+				default:
+				{
+					point = empty;
+					break;
+				}
+			}
+
+			defs->PosX = point[0];
+			defs->PosY = point[1];
+			defs->PosZ = point[2];
+			++nodeCount;
+		}
+		else if (defs->OClass == MOBY_ID_PLAYER_TURRET)
+		{
+			defs->PosX = defs->PosY = defs->PosZ = 0;
+		}
+
+		++defs;
+	}
+
+
+	// call load gameplay func
+	((void (*)(void*,void*,u32))0x004ECF70)(gameplayMobies, a1, a2);
 }
 
 /*
@@ -1075,6 +1161,9 @@ void initialize(void)
 	SNDState.BombPackGuber = 0;
 	SNDState.DefenderTeamId = TEAM_BLUE;
 	SNDState.AttackerTeamId = TEAM_RED;
+
+	NodeBaseCollisionPointer = 0;
+	HackerOrbCollisionPointer = 0;
 
 	// Hook set outcome net event
 	netInstallCustomMsgHandler(CUSTOM_MSG_ID_SEARCH_AND_DESTROY_SET_OUTCOME, &onSetRoundOutcomeRemote);
@@ -1136,15 +1225,15 @@ void initialize(void)
 	{
 		GuberMoby * next = (GuberMoby*)guberMoby->Guber.Prev;
 
-		if (guberMoby->Moby && guberMoby->Moby->MobyId == MOBY_ID_NODE_BASE)
+		if (guberMoby->Moby && guberMoby->Moby->MobyId == MOBY_ID_NODE_BASE && guberMoby->Moby->Position[0] > 0)
 		{
-			if (guberMoby->Guber.Id.UID == 0xF6000002)
+			if (SNDState.Nodes[0].Moby == 0)
 			{
 				SNDState.Nodes[0].GuberMoby = guberMoby;
 				SNDState.Nodes[0].Moby = guberMoby->Moby;
 				DPRINTF("Node1: %08x\n", (u32)guberMoby->Moby);
 			}
-			else if (guberMoby->Guber.Id.UID == 0xF6000003)
+			else if (SNDState.Nodes[1].Moby == 0)
 			{
 				SNDState.Nodes[1].GuberMoby = guberMoby;
 				SNDState.Nodes[1].Moby = guberMoby->Moby;
@@ -1155,9 +1244,6 @@ void initialize(void)
 		guberMoby = next;
 	}
 	
-	// Disable all other nodes
-	hideNodes(0);
-
 	// reset snd round state
 	resetRoundState();
 
@@ -1289,9 +1375,6 @@ void gameStart(void)
 		}
 		else
 		{
-			// Disable all other nodes
-			hideNodes(1);
-
 			// Set lifetime of bomb pack moby
 			if (SNDState.BombPackMoby)
 			{
@@ -1495,4 +1578,32 @@ void lobbyStart(void)
 		
 	// set to conquest homenodes
 	memcpy((void*)&gameOptions->GameFlags.Raw[6], (void*)cqOptions, sizeof(cqOptions)/sizeof(char));
+}
+
+/*
+ * NAME :		loadStart
+ * 
+ * DESCRIPTION :
+ * 			SND load logic entrypoint.
+ * 
+ * NOTES :
+ * 			This is called only when the game has finished reading the level from the disc and before it has started processing the data.
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void loadStart(void)
+{
+	DPRINTF("LEVEL LOAD\n");
+
+	// Hook load gameplay file
+	if (*(u32*)0x004EE664 == 0x0C13B3DC)
+		*(u32*)0x004EE664 = 0x0C000000 | (u32)&loadGameplayHook / 4;
+
+	// Patch spawning node turrets
+	if (*(u32*)0x0061CB18 == 0x0C18734C)
+		*(u32*)0x0061CB18 = 0x0C000000 | (u32)&spawnGuberHook / 4;
 }

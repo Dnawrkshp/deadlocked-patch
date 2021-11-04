@@ -506,10 +506,29 @@ void lobbyStart(GameModule * module)
 		return;
 
 	// Reset
-	memset(module->Argbuffer, 0, GAME_MODULE_ARG_SIZE);
 	module->State = GAMEMODULE_OFF;
 	Initialized = 0;
 
 	// Reset mirror world in lobby
 	cheatsApplyMirrorWorld(0);
+}
+
+/*
+ * NAME :		loadStart
+ * 
+ * DESCRIPTION :
+ * 			Load logic entrypoint.
+ * 
+ * NOTES :
+ * 			This is called only when the game has finished reading the level from the disc and before it has started processing the data.
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void loadStart(void)
+{
+	
 }
