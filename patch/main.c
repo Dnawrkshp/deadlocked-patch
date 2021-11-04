@@ -1057,19 +1057,22 @@ int main (void)
 		}
 
 		// patch server hostname
-		char * muisServerHostname = (char*)0x001B1ECD;
-		char * serverHostname = (char*)0x004BF4F0;
-		if (!gameSettings && strlen(muisServerHostname) > 0)
+		if (0)
 		{
-			for (i = 0; i < 32; ++i)
+			char * muisServerHostname = (char*)0x001B1ECD;
+			char * serverHostname = (char*)0x004BF4F0;
+			if (!gameSettings && strlen(muisServerHostname) > 0)
 			{
-				char c = muisServerHostname[i];
-				if (c < 0x20)
-					c = '.';
-				serverHostname[i] = c;
+				for (i = 0; i < 32; ++i)
+				{
+					char c = muisServerHostname[i];
+					if (c < 0x20)
+						c = '.';
+					serverHostname[i] = c;
+				}
 			}
 		}
-
+		
 		// close config menu on transition to lobby
 		if (lastGameState != 0)
 			configMenuDisable();

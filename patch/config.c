@@ -861,6 +861,7 @@ void drawTab(TabElem_t* tab)
 //------------------------------------------------------------------------------
 void onMenuUpdate(int inGame)
 {
+  char buf[16];
   TabElem_t* tab = &tabElements[selectedTabItem];
 
   if (isConfigMenuActive)
@@ -876,6 +877,14 @@ void onMenuUpdate(int inGame)
 
       // draw tab
       drawTab(tab);
+
+      // draw ping overlay
+      if (gameGetSettings())
+      {
+        int ping = gameGetPing();
+        sprintf(buf, "%d ms", ping);
+        gfxScreenSpaceText(0.9 * SCREEN_WIDTH, 0.1 * SCREEN_HEIGHT, 1, 1, 0x808080FF, buf, -1, 2);
+      }
     }
 
     // nav tab right
