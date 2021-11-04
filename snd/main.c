@@ -1044,7 +1044,7 @@ void spawnGuberHook(void * a0, GuberEvent  * a1)
 
 void loadGameplayHook(void * gameplayMobies, void * a1, u32 a2)
 {
-	printf("loading gameplay at %08X\n", (u32)gameplayMobies);
+	DPRINTF("loading gameplay at %08X\n", (u32)gameplayMobies);
 
 	//
 	int mobyCount = *(int*)gameplayMobies;

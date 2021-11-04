@@ -14,7 +14,7 @@
 
 #define LINE_HEIGHT         (0.05)
 #define LINE_HEIGHT_3_2     (0.075)
-#define DEFAULT_GAMEMODE    (4)
+#define DEFAULT_GAMEMODE    (0)
 
 // config
 extern PatchConfig_t config;
