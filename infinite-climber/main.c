@@ -699,11 +699,11 @@ void setEndGameScoreboard(void)
 	sortScoreboard(1);
 
 	// names start at 7
-	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
-	{
-		int pid = SortedPlayerScores[i]->TeamId;
-		strncpy((char*)(uiElements[7 + i] + 0x18), gs->PlayerNames[pid], 16);
-	}
+	//for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+	//{
+	//	int pid = SortedPlayerScores[i]->TeamId;
+	//	strncpy((char*)(uiElements[7 + i] + 0x18), gs->PlayerNames[pid], 16);
+	//}
 
 	// column headers start at 17
 	strncpy((char*)(uiElements[18] + 0x60), "DISTANCE", 9);
