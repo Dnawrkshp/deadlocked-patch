@@ -64,6 +64,9 @@
 
 #define GAMESETTINGS_SURVIVOR			(*(u8*)0x00173806)
 
+#define KILL_STEAL_WHO_HIT_ME_PATCH				(*(u32*)0x005E07C8)
+#define KILL_STEAL_WHO_HIT_ME_PATCH2			(*(u32*)0x005E11B0)
+
 #define FRAME_SKIP_WRITE0				(*(u32*)0x004A9400)
 #define FRAME_SKIP						(*(u32*)0x0021E1D8)
 
@@ -451,6 +454,54 @@ void patchCreateGame()
 	if (GAMESETTINGS_CREATE_PATCH == 0x0C1C2D50)
 	{
 		GAMESETTINGS_CREATE_PATCH = 0x0C000000 | ((u32)&patchCreateGame_Hook >> 2);
+	}
+}
+
+/*
+ * NAME :		patchKillStealing_Hook
+ * 
+ * DESCRIPTION :
+ * 			Filters out hits when player is already dead.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+int patchKillStealing_Hook(Player * target, Moby * damageSource, u64 a2)
+{
+	// if player is already dead return 0
+	if (target->Health <= 0)
+		return 0;
+
+	// pass through
+	return ((int (*)(Player*,Moby*,u64))0x005DFF08)(target, damageSource, a2);
+}
+
+/*
+ * NAME :		patchKillStealing
+ * 
+ * DESCRIPTION :
+ * 			Patches who hit me on weapon hit with patchKillStealing_Hook.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchKillStealing()
+{
+	// 
+	if (gameIsIn() || KILL_STEAL_WHO_HIT_ME_PATCH == 0x0C177FC2)
+	{
+		KILL_STEAL_WHO_HIT_ME_PATCH = 0x0C000000 | ((u32)&patchKillStealing_Hook >> 2);
+		KILL_STEAL_WHO_HIT_ME_PATCH2 = KILL_STEAL_WHO_HIT_ME_PATCH;
 	}
 }
 
@@ -1029,6 +1080,9 @@ int main (void)
 
 	// Patch process level call
 	patchProcessLevel();
+
+	// Patch kill stealing
+	patchKillStealing();
 
 	// config update
 	onConfigUpdate();
