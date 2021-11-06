@@ -170,7 +170,7 @@ void sortScoreboard(int dontLockLocal)
 			if (SortedPlayerScores[i]->TeamId < 0 ||
 				((dontLockLocal || SortedPlayerScores[i]->UNK != 1) &&
 				 (SortedPlayerScores[i]->Value < SortedPlayerScores[i+1]->Value || 
-				 SortedPlayerScores[i+1]->UNK == 1)))
+				 (SortedPlayerScores[i+1]->UNK == 1 && !dontLockLocal))))
 			{
 				ScoreboardItem * temp = SortedPlayerScores[i];
 				SortedPlayerScores[i] = SortedPlayerScores[i+1];

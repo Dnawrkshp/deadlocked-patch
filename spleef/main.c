@@ -176,7 +176,7 @@ void sortScoreboard(int dontLockLocal)
 			if (SortedPlayerScores[i]->TeamId < 0 ||
 				((dontLockLocal || SortedPlayerScores[i]->UNK != 1) &&
 				 (SortedPlayerScores[i]->Value < SortedPlayerScores[i+1]->Value || 
-				 SortedPlayerScores[i+1]->UNK == 1)))
+				 (SortedPlayerScores[i+1]->UNK == 1 && !dontLockLocal))))
 			{
 				ScoreboardItem * temp = SortedPlayerScores[i];
 				SortedPlayerScores[i] = SortedPlayerScores[i+1];
@@ -522,6 +522,11 @@ void resetRoundState(void)
 	#endif
 }
 
+int whoKilledMeHook(void)
+{
+	return 0;
+}
+
 /*
  * NAME :		initialize
  * 
@@ -578,6 +583,10 @@ void initialize(void)
 		PlayerScores[i].Value = 0;
 		SortedPlayerScores[i] = &PlayerScores[i];
 	}
+
+	// patch who killed me to prevent damaging others
+	*(u32*)0x005E07C8 = 0x0C000000 | ((u32)&whoKilledMeHook >> 2);
+	*(u32*)0x005E11B0 = *(u32*)0x005E07C8;
 
 	//
 	sortScoreboard(0);

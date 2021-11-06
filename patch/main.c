@@ -498,7 +498,7 @@ int patchKillStealing_Hook(Player * target, Moby * damageSource, u64 a2)
 void patchKillStealing()
 {
 	// 
-	if (gameIsIn() || KILL_STEAL_WHO_HIT_ME_PATCH == 0x0C177FC2)
+	if (KILL_STEAL_WHO_HIT_ME_PATCH == 0x0C177FC2)
 	{
 		KILL_STEAL_WHO_HIT_ME_PATCH = 0x0C000000 | ((u32)&patchKillStealing_Hook >> 2);
 		KILL_STEAL_WHO_HIT_ME_PATCH2 = KILL_STEAL_WHO_HIT_ME_PATCH;
