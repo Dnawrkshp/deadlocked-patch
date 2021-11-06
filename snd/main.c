@@ -86,12 +86,18 @@
  */
 #define SND_BOMB_TIMER_BASE_COLOR1			(0xFFB700B7)
 #define SND_BOMB_TIMER_BASE_COLOR2			(0xFF670067)
-#define SND_BOMB_TIMER_HIGH_COLOR			(0xFFFFFFFF)
+#define SND_BOMB_TIMER_HIGH_COLOR				(0xFFFFFFFF)
 
 /*
  * Amount of time after a round ends before switching to next round.
  */
 #define SND_ROUND_TRANSITION_WAIT_MS		(5 * TIME_SECOND)
+
+/*
+ *
+ */
+#define SND_NODE1_BLIP_TEAM							(7)
+#define SND_NODE2_BLIP_TEAM							(4)
 
 /*
  * Popup strings
@@ -498,11 +504,15 @@ void SNDHackerOrbEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_
 	if (SNDState.Nodes[0].GuberMoby->Guber.Id.UID == nodeUid)
 	{
 		nodeIndex = 0;
+		if (!SNDState.Nodes[0].OrbGuberMoby)
+			nodeCapture(moby->GuberMoby, SND_TEAM_DEFENDER_ID);
 		SNDState.Nodes[0].OrbGuberMoby = moby->GuberMoby;
 	}
 	else if (SNDState.Nodes[1].GuberMoby->Guber.Id.UID == nodeUid)
 	{
 		nodeIndex = 1;
+		if (!SNDState.Nodes[1].OrbGuberMoby)
+			nodeCapture(moby->GuberMoby, SND_TEAM_DEFENDER_ID);
 		SNDState.Nodes[1].OrbGuberMoby = moby->GuberMoby;
 	}
 
@@ -1074,6 +1084,8 @@ void loadGameplayHook(void * gameplayMobies, void * a1, u32 a2)
 				}
 				default:
 				{
+					defs->OClass = MOBY_ID_BETA_BOX;
+					defs->PVarIndex = -1;
 					point = empty;
 					break;
 				}
@@ -1086,6 +1098,8 @@ void loadGameplayHook(void * gameplayMobies, void * a1, u32 a2)
 		}
 		else if (defs->OClass == MOBY_ID_PLAYER_TURRET || defs->OClass == MOBY_ID_PICKUP_PAD || defs->OClass == MOBY_ID_BLUE_TEAM_HEALTH_PAD)
 		{
+			defs->OClass = MOBY_ID_BETA_BOX;
+			defs->PVarIndex = -1;
 			defs->PosX = defs->PosY = defs->PosZ = 0;
 		}
 
@@ -1152,6 +1166,9 @@ void initialize(void)
 	*(u32*)0x006219B8 = 0;	// survivor (8)
 	*(u32*)0x00620F54 = 0;	// time end (1)
 	*(u32*)0x00621240 = 0;	// homenode (4)
+
+	// Remove pulsing blips
+	*(u32*)0x005564A0 = 0x10000071;
 
 	// Overwrite 'you picked up a weapon pack' string to pickup bomb message
 	replaceString(0x2331, SND_BOMB_YOU_PICKED_UP);
@@ -1370,18 +1387,22 @@ void gameStart(void)
 			}
 
 			// Draw objective
+			int targetTeams[2] = {0,1};
 			Moby * target[2] = {0,0};
 
 			// If bomb is planted, make objective bombsite for all
 			if (SNDState.BombPlantSiteIndex >= 0)
 			{
 				target[0] = SNDState.Nodes[SNDState.BombPlantSiteIndex].Moby;
+				targetTeams[0] = SNDState.BombPlantSiteIndex ? SND_NODE2_BLIP_TEAM : SND_NODE1_BLIP_TEAM;
 			}
 			else if (localPlayer->Team == SNDState.DefenderTeamId || localPlayer == SNDState.BombCarrier)
 			{
 				// Defenders and bomb carrier's targets are the two nodes
 				target[0] = SNDState.Nodes[0].Moby;
 				target[1] = SNDState.Nodes[1].Moby;
+				targetTeams[0] = SND_NODE1_BLIP_TEAM;
+				targetTeams[1] = SND_NODE2_BLIP_TEAM;
 			}
 			else
 			{
@@ -1408,7 +1429,7 @@ void gameStart(void)
 						blip->Y = target[i]->Position[1];
 						blip->Life = 0x1F;
 						blip->Type = 0x11;
-						blip->Team = 0;
+						blip->Team = targetTeams[i];
 					}
 				}
 			}
@@ -1422,6 +1443,10 @@ void gameStart(void)
 
 				if (p)
 				{
+					// turn off blown up state if not dead
+					if (!SNDState.Players[i].IsDead)
+						*(u8*)((u32)p + 0x2ed6) = 0;
+
 					if (p->Team == SNDState.AttackerTeamId)
 					{
 						hasAttackers = 1;
