@@ -62,7 +62,8 @@
 #define GAMESETTINGS_RESPAWN_TIME      	(*(char*)0x0017380C)
 #define GAMESETTINGS_RESPAWN_TIME2      (*(char*)0x012B3638)
 
-#define GAMESETTINGS_SURVIVOR			(*(u8*)0x00173806)
+#define GAMESETTINGS_SURVIVOR						(*(u8*)0x00173806)
+#define GAMESETTINGS_CRAZYMODE					(*(u8*)0x0017381F)
 
 #define KILL_STEAL_WHO_HIT_ME_PATCH				(*(u32*)0x005E07C8)
 #define KILL_STEAL_WHO_HIT_ME_PATCH2			(*(u32*)0x005E11B0)
@@ -101,6 +102,9 @@ int lastMenuInvokedTime = 0;
 int lastGameState = 0;
 int isInStaging = 0;
 int hasInstalledExceptionHandler = 0;
+int lastSurvivor = 0;
+int lastRespawnTime = 5;
+int lastCrazyMode = 0;
 const char * patchConfigStr = "PATCH CONFIG";
 
 extern float _lodScale;
@@ -305,12 +309,14 @@ void patchGameSettingsLoad_Hook(void * a0, void * a1)
 	{
 		case GAMERULE_DM:
 		{
-			// Get survivor
-			index = ((int (*)(int))GAMESETTINGS_GET_INDEX_FUNC)(9);
-			value = ((int (*)(void *, int))GAMESETTINGS_GET_VALUE_FUNC)(a1, index);
-
 			// Save survivor
-			patchGameSettingsLoad_Save(a0, 0x100, 0xA4, value);
+			patchGameSettingsLoad_Save(a0, 0x100, 0xA4, lastSurvivor);
+			break;
+		}
+		case GAMERULE_CTF:
+		{
+			// Save crazy mode
+			patchGameSettingsLoad_Save(a0, 0x10C, 0xA4, !lastCrazyMode);
 			break;
 		}
 	}
@@ -318,11 +324,11 @@ void patchGameSettingsLoad_Hook(void * a0, void * a1)
 	if (gamemode != GAMERULE_CQ)
 	{
 		// respawn timer
-		GAMESETTINGS_RESPAWN_TIME2 = *(u8*)0x002126DC;
+		GAMESETTINGS_RESPAWN_TIME2 = lastRespawnTime; //*(u8*)0x002126DC;
 	}
 
 	if (GAMESETTINGS_RESPAWN_TIME2 < 0)
-		GAMESETTINGS_RESPAWN_TIME2 = 5;
+		GAMESETTINGS_RESPAWN_TIME2 = lastRespawnTime;
 }
 
 /*
@@ -407,7 +413,7 @@ void patchPopulateCreateGame()
 	}
 
 	// Patch default respawn timer
-	GAMESETTINGS_RESPAWN_TIME = GAMESETTINGS_RESPAWN_TIME2;
+	GAMESETTINGS_RESPAWN_TIME = lastRespawnTime;
 }
 
 /*
@@ -427,8 +433,9 @@ void patchPopulateCreateGame()
 u64 patchCreateGame_Hook(void * a0)
 {
 	// Save respawn timer if not survivor
-	if (!GAMESETTINGS_SURVIVOR)
-		GAMESETTINGS_RESPAWN_TIME = GAMESETTINGS_RESPAWN_TIME2;
+	lastSurvivor = GAMESETTINGS_SURVIVOR;
+	lastRespawnTime = GAMESETTINGS_RESPAWN_TIME2;
+	lastCrazyMode = GAMESETTINGS_CRAZYMODE;
 
 	// Load normal
 	return ((u64 (*)(void *))GAMESETTINGS_CREATE_FUNC)(a0);
