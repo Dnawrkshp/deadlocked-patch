@@ -79,10 +79,6 @@
 
 #define DRAW_SHADOW_FUNC						((u32*)0x00587b30)
 
-
-// 
-typedef void (*ProcessLevelHandler)(void);
-
 // 
 void processSpectate(void);
 void runMapLoader(void);
@@ -750,7 +746,7 @@ void onGameStartMenuBack(long a0)
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void hookedProcessLevel(ProcessLevelHandler funcPtr)
+u64 hookedProcessLevel()
 {
 	// ensure that the game is loading and not exiting
 	GameSettings * gs = gameGetSettings();
@@ -771,7 +767,7 @@ void hookedProcessLevel(ProcessLevelHandler funcPtr)
 
 	// pass to gamemode
 	// call function
-	funcPtr();
+	return ((u64 (*)(void))0x001579A0)();
 }
 
 /*
@@ -791,9 +787,7 @@ void hookedProcessLevel(ProcessLevelHandler funcPtr)
 void patchProcessLevel(void)
 {
 	// jal hookedProcessLevel
-	// or a0, s0, zero
-	*(u32*)0x00157D30 = 0x0C000000 | (u32)&hookedProcessLevel / 4;
-	*(u32*)0x00157D34 = 0x02002025;
+	*(u32*)0x00157D38 = 0x0C000000 | (u32)&hookedProcessLevel / 4;
 }
 
 /*

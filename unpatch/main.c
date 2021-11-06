@@ -35,6 +35,7 @@ const int patches[][3] = {
 	{ -1, 0x01EAAB10, 0x03E00008 }, // GET_MEDIUS_APP_HANDLER_HOOK
 	{ -1, 0x00211E64, 0x00000000 }, // net global callbacks ptr
 	{ -1, 0x00212164, 0x00000000 }, // dme callback table custom msg handler ptr
+	{ -1, 0x00157D38, 0x0C055E68 }, // process level jal
 	// maploader
 	{ 0, 0x005CFB48, 0x0C058E10 }, // hookLoadAddr
 	{ 0, 0x00705554, 0x0C058E02 }, // hookLoadingScreenAddr
