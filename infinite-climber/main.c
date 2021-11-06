@@ -257,6 +257,8 @@ Moby * spawn(MobyDef * def, VECTOR position, VECTOR rotation, float scale)
 
 	// Spawn box so we know the correct model and collision pointers
 	sourceBox = spawnWithPVars(def->MobyId);
+	if (!sourceBox)
+		return 0;
 
 	// 
 	position[3] = sourceBox->Position[3];
@@ -445,6 +447,9 @@ void initialize(void)
 
 	// Set survivor
 	gameOptions->GameFlags.MultiplayerGameFlags.Survivor = 1;
+
+	// Disable respawn
+	gameOptions->GameFlags.MultiplayerGameFlags.RespawnTime = 0xFF;
 
 	// get water moby
 	WaterMoby = mobyGetFirst(); // big assumption here, could be a problem
@@ -669,6 +674,7 @@ void setLobbyGameOptions(void)
 void setEndGameScoreboard(void)
 {
 	u32 * uiElements = (u32*)(*(u32*)(0x011C7064 + 4*18) + 0xB0);
+	GameSettings * gs = gameGetSettings();
 	int i;
 	char buf[24];
 
@@ -684,7 +690,13 @@ void setEndGameScoreboard(void)
 	// sort scoreboard again
 	sortScoreboard(1);
 
-	// names start at 6
+	// names start at 7
+	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+	{
+		int pid = SortedPlayerScores[i]->TeamId;
+		strncpy((char*)(uiElements[7 + i] + 0x18), gs->PlayerNames[pid], 16);
+	}
+
 	// column headers start at 17
 	strncpy((char*)(uiElements[18] + 0x60), "DISTANCE", 9);
 	strncpy((char*)(uiElements[19] + 0x60), "TIME", 5);
