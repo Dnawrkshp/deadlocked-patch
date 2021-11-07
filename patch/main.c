@@ -750,6 +750,8 @@ void onGameStartMenuBack(long a0)
  */
 u64 hookedProcessLevel()
 {
+	u64 r = ((u64 (*)(void))0x001579A0)();
+
 	// ensure that the game is loading and not exiting
 	GameSettings * gs = gameGetSettings();
 	if (gs && gs->GameStartTime < 0)
@@ -767,9 +769,7 @@ u64 hookedProcessLevel()
 		}
 	}
 
-	// pass to gamemode
-	// call function
-	return ((u64 (*)(void))0x001579A0)();
+	return r;
 }
 
 /*
