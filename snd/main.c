@@ -465,7 +465,8 @@ void spawnPlayer(Player * player, VECTOR position)
 	pos[1] += sinf(theta) * 2.5;
 	r[2] = position[3];
 
-	*(u8*)((u32)player + 0x2ed6) = 0; // turn off blown up state
+	player->Explode = 0;
+	player->Invisible = 0;
 	playerRespawn(player);
 	playerSetPosRot(player, pos, r);
 }
@@ -1445,7 +1446,10 @@ void gameStart(void)
 				{
 					// turn off blown up state if not dead
 					if (!SNDState.Players[i].IsDead)
-						*(u8*)((u32)p + 0x2ed6) = 0;
+					{
+						p->Explode = 0;
+						p->Invisible = 0;
+					}
 
 					if (p->Team == SNDState.AttackerTeamId)
 					{
