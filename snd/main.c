@@ -1097,7 +1097,11 @@ void loadGameplayHook(void * gameplayMobies, void * a1, u32 a2)
 			defs->PosZ = point[2];
 			++nodeCount;
 		}
-		else if (defs->OClass == MOBY_ID_PLAYER_TURRET || defs->OClass == MOBY_ID_PICKUP_PAD || defs->OClass == MOBY_ID_BLUE_TEAM_HEALTH_PAD)
+		else if (defs->OClass == MOBY_ID_PLAYER_TURRET 
+					|| defs->OClass == MOBY_ID_PICKUP_PAD 
+					|| defs->OClass == MOBY_ID_BLUE_TEAM_HEALTH_PAD
+					|| defs->OClass == MOBY_ID_HEALTH_PAD0
+		)
 		{
 			defs->OClass = MOBY_ID_BETA_BOX;
 			defs->PVarIndex = -1;
