@@ -508,6 +508,7 @@ void lobbyStart(GameModule * module)
 	// Reset
 	module->State = GAMEMODULE_OFF;
 	Initialized = 0;
+	HasDisabledHealthboxes = 0;
 
 	// Reset mirror world in lobby
 	cheatsApplyMirrorWorld(0);
