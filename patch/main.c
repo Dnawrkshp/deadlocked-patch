@@ -79,6 +79,8 @@
 
 #define DRAW_SHADOW_FUNC						((u32*)0x00587b30)
 
+#define GADGET_EVENT_MAX_TLL				(*(short*)0x005DF5C8)
+
 // 
 void processSpectate(void);
 void runMapLoader(void);
@@ -1091,6 +1093,9 @@ int main (void)
 	// in game stuff
 	if (gameIsIn())
 	{
+		// 
+		GADGET_EVENT_MAX_TLL = 5 * TIME_SECOND;
+
 		// close config menu on transition to lobby
 		if (lastGameState != 1)
 			configMenuDisable();
