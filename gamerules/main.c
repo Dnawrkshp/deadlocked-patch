@@ -394,6 +394,7 @@ void initialize(void)
 	// reset
 	htReset();
 	betterHillsInitialized = 0;
+	HasDisabledHealthboxes = 0;
 
 	Initialized = 1;
 }
@@ -508,7 +509,6 @@ void lobbyStart(GameModule * module)
 	// Reset
 	module->State = GAMEMODULE_OFF;
 	Initialized = 0;
-	HasDisabledHealthboxes = 0;
 
 	// Reset mirror world in lobby
 	cheatsApplyMirrorWorld(0);
