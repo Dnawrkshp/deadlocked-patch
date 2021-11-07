@@ -1260,6 +1260,7 @@ void gameStart(void)
 	int i = 0;
 	GameSettings * gameSettings = gameGetSettings();
 	Player * localPlayer = (Player*)0x00347AA0;
+	Player ** players = playerGetAll();
 	int gameTime = gameGetTime();
 	GameData * gameData = gameGetData();
 
@@ -1439,7 +1440,7 @@ void gameStart(void)
 			int hasAttackers = 0, hasDefenders = 0;
 			for (i = 0; i < GAME_MAX_PLAYERS; ++i)
 			{
-				Player * p = SNDState.Players[i].Player;
+				Player * p = SNDState.Players[i].Player = players[i];
 				playerLogic(&SNDState.Players[i]);
 
 				if (p)
