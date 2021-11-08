@@ -702,7 +702,7 @@ void killPack()
 		if (SNDState.BombPackMoby->MobyId == MOBY_ID_WEAPON_PACK && SNDState.BombPackMoby->PropertiesPointer)
 			*(u32*)((u32)SNDState.BombPackMoby->PropertiesPointer + 0x8) = 0xFFFFFFFF;
 		
-		DPRINTF("KILLED PACK AT %08X\n", (u32)SNDState.BombPackMoby);
+		printf("KILLED PACK AT %08X\n", (u32)SNDState.BombPackMoby);
 		SNDState.BombPackMoby = NULL;
 		SNDState.BombPackGuber = NULL;
 	}
@@ -723,7 +723,7 @@ void * spawnPackHook(u16 mobyId, int pvarSize, int guberId, int arg4, int arg5)
 		SNDState.BombPackMoby = newMoby;
 		SNDState.BombPackMoby->TextureId = 0x80 + (8 * SNDState.AttackerTeamId);
 
-		DPRINTF("spawnPackHook bomb pack moby = %08x\n", (u32)SNDState.BombPackMoby);
+		printf("spawnPackHook bomb pack moby = %08x\n", (u32)SNDState.BombPackMoby);
 	}
 
 	return result;
