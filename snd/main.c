@@ -96,8 +96,8 @@
 /*
  *
  */
-#define SND_NODE1_BLIP_TEAM							(7)
-#define SND_NODE2_BLIP_TEAM							(4)
+#define SND_NODE1_BLIP_TEAM							(2)
+#define SND_NODE2_BLIP_TEAM							(5)
 
 /*
  * Popup strings
@@ -478,6 +478,16 @@ void replaceString(int textId, const char * str)
 	strncpy(strPtr, str, 32);
 }
 
+inline void disableBlipPulsing(void)
+{
+	*(u32*)0x005564A0 = 0x10000071;
+}
+
+inline void enableBlipPulsing(void)
+{
+	*(u32*)0x005564A0 = 0x10620071;
+}
+
 void SNDHackerOrbEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_func eventHandler)
 {
 	int nodeIndex = -1;
@@ -692,6 +702,7 @@ void killPack()
 		if (SNDState.BombPackMoby->MobyId == MOBY_ID_WEAPON_PACK && SNDState.BombPackMoby->PropertiesPointer)
 			*(u32*)((u32)SNDState.BombPackMoby->PropertiesPointer + 0x8) = 0xFFFFFFFF;
 		
+		DPRINTF("KILLED PACK AT %08X\n", (u32)SNDState.BombPackMoby);
 		SNDState.BombPackMoby = NULL;
 		SNDState.BombPackGuber = NULL;
 	}
@@ -703,8 +714,13 @@ void * spawnPackHook(u16 mobyId, int pvarSize, int guberId, int arg4, int arg5)
 
 	if (mobyId == MOBY_ID_WEAPON_PACK)
 	{
+		Moby * newMoby = (Moby*)(*(u32*)((u32)result + 0x18));
+
 		// only bomb pack can spawn
-		SNDState.BombPackMoby = (Moby*)(*(u32*)((u32)result + 0x18));
+		if (SNDState.BombPackMoby && SNDState.BombPackMoby != newMoby)
+			killPack();
+
+		SNDState.BombPackMoby = newMoby;
 		SNDState.BombPackMoby->TextureId = 0x80 + (8 * SNDState.AttackerTeamId);
 
 		DPRINTF("spawnPackHook bomb pack moby = %08x\n", (u32)SNDState.BombPackMoby);
@@ -991,7 +1007,7 @@ void resetRoundState(void)
 		SNDState.Players[i].Player = player;
 		SNDState.Players[i].IsDead = 0;
 		SNDState.Players[i].IsBombCarrier = 0;
-		
+
 		// Remove hacker rays
 		if (player)
 		{
@@ -1021,9 +1037,6 @@ void resetRoundState(void)
 		nodeCapture(SNDState.Nodes[0].OrbGuberMoby, SNDState.DefenderTeamId);
 		nodeCapture(SNDState.Nodes[1].OrbGuberMoby, SNDState.DefenderTeamId);
 	}
-
-	// Kill pack
-	killPack();
 
 	// spawn hacker ray pack
 	if (SNDState.IsHost)
@@ -1172,8 +1185,8 @@ void initialize(void)
 	*(u32*)0x00620F54 = 0;	// time end (1)
 	*(u32*)0x00621240 = 0;	// homenode (4)
 
-	// Remove pulsing blips
-	*(u32*)0x005564A0 = 0x10000071;
+	// Remove blip type write
+	*(u32*)0x00553C5C = 0;
 
 	// Overwrite 'you picked up a weapon pack' string to pickup bomb message
 	replaceString(0x2331, SND_BOMB_YOU_PICKED_UP);
@@ -1401,28 +1414,27 @@ void gameStart(void)
 			{
 				target[0] = SNDState.Nodes[SNDState.BombPlantSiteIndex].Moby;
 				targetTeams[0] = SNDState.BombPlantSiteIndex ? SND_NODE2_BLIP_TEAM : SND_NODE1_BLIP_TEAM;
+				enableBlipPulsing();
 			}
-			else if (localPlayer->Team == SNDState.DefenderTeamId || localPlayer == SNDState.BombCarrier)
+			else if (localPlayer->Team == SNDState.DefenderTeamId || SNDState.BombCarrier)
 			{
 				// Defenders and bomb carrier's targets are the two nodes
 				target[0] = SNDState.Nodes[0].Moby;
 				target[1] = SNDState.Nodes[1].Moby;
 				targetTeams[0] = SND_NODE1_BLIP_TEAM;
 				targetTeams[1] = SND_NODE2_BLIP_TEAM;
+
+				if (localPlayer->Team == SNDState.DefenderTeamId)
+					disableBlipPulsing();
 			}
-			else
+			else if (SNDState.BombPackMoby)
 			{
-				// If attacker draw objective where bomb is
-				if (SNDState.BombPackMoby)
-				{
-					target[0] = SNDState.BombPackMoby;
-				}
-				else if (SNDState.BombCarrier)
-				{
-					target[0] = SNDState.BombCarrier->PlayerMoby;
-				}
+				// attackers, make objective bomb pack
+				target[0] = SNDState.BombPackMoby;
+				enableBlipPulsing();
 			}
 
+			// set objectives
 			for (i = 0; i < 2; ++i)
 			{
 				if (target[i])
@@ -1436,6 +1448,20 @@ void gameStart(void)
 						blip->Life = 0x1F;
 						blip->Type = 0x11;
 						blip->Team = targetTeams[i];
+					}
+				}
+			}
+				
+			// set bomb carrier as another objective if attacking team
+			for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+			{
+				if (SNDState.Players[i].Player)
+				{
+					int blipId = radarGetBlipIndex(SNDState.Players[i].Player->PlayerMoby);
+					if (blipId >= 0)
+					{
+						RadarBlip * blip = radarGetBlips() + blipId;
+						blip->Type = SNDState.Players[i].IsBombCarrier && localPlayer->Team == SNDState.AttackerTeamId ? 0x01 : 0x00;
 					}
 				}
 			}
