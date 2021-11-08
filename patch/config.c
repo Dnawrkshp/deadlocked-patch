@@ -64,6 +64,7 @@ void buttonActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, vo
 void toggleActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
 void toggleInvertedActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
 void listActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
+void gmOverrideListActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
 void labelActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg);
 
 // state handlers
@@ -74,6 +75,8 @@ void menuLabelStateHandler(TabElem_t* tab, MenuElem_t* element, int* state);
 void menuStateHandler_InstallCustomMaps(TabElem_t* tab, MenuElem_t* element, int* state);
 void menuStateHandler_InstalledCustomMaps(TabElem_t* tab, MenuElem_t* element, int* state);
 void menuStateHandler_GameModeOverride(TabElem_t* tab, MenuElem_t* element, int* state);
+
+int menuStateHandler_SelectedGameModeOverride(MenuElem_ListData_t* listData, char value);
 
 void tabDefaultStateHandler(TabElem_t* tab, int * state);
 void tabGameSettingsStateHandler(TabElem_t* tab, int * state);
@@ -98,6 +101,7 @@ int mapsDownloadingModules(void);
 // level of detail list item
 MenuElem_ListData_t dataLevelOfDetail = {
     &config.levelOfDetail,
+    NULL,
     2,
     { "Low", "Normal", "High" }
 };
@@ -122,6 +126,7 @@ MenuElem_t menuElementsGeneral[] = {
 // map override list item
 MenuElem_ListData_t dataCustomMaps = {
     &gameConfig.customMapId,
+    NULL,
     CUSTOM_MAP_COUNT,
     {
       "None",
@@ -157,6 +162,7 @@ const int dataCustomMapsWithExclusiveGameModeCount = sizeof(dataCustomMapsWithEx
 // gamemode override list item
 MenuElem_ListData_t dataCustomModes = {
     &gameConfig.customModeId,
+    menuStateHandler_SelectedGameModeOverride,
     CUSTOM_MODE_COUNT,
     {
       "None",
@@ -179,6 +185,7 @@ const char* CustomModeShortNames[] = {
 // weather override list item
 MenuElem_ListData_t dataWeather = {
     &gameConfig.grWeatherId,
+    NULL,
     17,
     {
       "None",
@@ -204,6 +211,7 @@ MenuElem_ListData_t dataWeather = {
 // vampire list item
 MenuElem_ListData_t dataVampire = {
     &gameConfig.grVampire,
+    NULL,
     4,
     {
       "Off",
@@ -219,7 +227,7 @@ MenuElem_t menuElementsGameSettings[] = {
 
   // { "Game Settings", labelActionHandler, menuLabelStateHandler, NULL },
   { "Map override", listActionHandler, menuStateAlwaysEnabledHandler, &dataCustomMaps },
-  { "Gamemode override", listActionHandler, menuStateHandler_GameModeOverride, &dataCustomModes },
+  { "Gamemode override", gmOverrideListActionHandler, menuStateHandler_GameModeOverride, &dataCustomModes },
 
   { "Game Rules", labelActionHandler, menuLabelStateHandler, NULL },
   { "Better hills", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grBetterHills },
@@ -378,6 +386,35 @@ void menuStateHandler_GameModeOverride(TabElem_t* tab, MenuElem_t* element, int*
   }
 
   *state = ELEMENT_SELECTABLE | ELEMENT_VISIBLE | ELEMENT_EDITABLE;
+}
+
+// 
+int menuStateHandler_SelectedGameModeOverride(MenuElem_ListData_t* listData, char value)
+{
+  GameSettings* gs = gameGetSettings();
+
+  if (gs)
+  {
+    switch (value)
+    {
+      case CUSTOM_MODE_INFECTED:
+      case CUSTOM_MODE_GUN_GAME:
+      case CUSTOM_MODE_INFINITE_CLIMBER:
+      {
+        if (gs->GameRules != GAMERULE_DM)
+          return 0;
+        break;
+      }
+      case CUSTOM_MODE_SEARCH_AND_DESTROY:
+      {
+        if (gs->GameRules != GAMERULE_CQ)
+          return 0;
+        break;
+      }
+    }
+  }
+
+  return 1;
 }
 
 int getMenuElementState(TabElem_t* tab, MenuElem_t* element)
@@ -588,9 +625,17 @@ void listActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void
     {
       if ((state & ELEMENT_EDITABLE) == 0)
         break;
-      char newValue = *listData->value + 1;
-      if (newValue >= itemCount)
-        newValue = 0;
+      char newValue = *listData->value;
+
+      do
+      {
+        newValue += 1;
+        if (newValue >= itemCount)
+          newValue = 0;
+        if (listData->stateHandler == NULL || listData->stateHandler(listData, newValue))
+          break;
+      } while (newValue != *listData->value);
+
       *listData->value = newValue;
       break;
     }
@@ -598,9 +643,17 @@ void listActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void
     {
       if ((state & ELEMENT_EDITABLE) == 0)
         break;
-      char newValue = *listData->value - 1;
-      if (newValue < 0)
-        newValue = itemCount - 1;
+      char newValue = *listData->value;
+
+      do
+      {
+        newValue -= 1;
+        if (newValue < 0)
+          newValue = itemCount - 1;
+        if (listData->stateHandler == NULL || listData->stateHandler(listData, newValue))
+          break;
+      } while (newValue != *listData->value);
+
       *listData->value = newValue;
       break;
     }
@@ -614,7 +667,24 @@ void listActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void
       drawListMenuElement(tab, element, listData, (RECT*)actionArg);
       break;
     }
+    case ACTIONTYPE_VALIDATE:
+    {
+      if (listData->stateHandler != NULL && !listData->stateHandler(listData, *listData->value))
+        *listData->value = 0;
+      break;
+    }
   }
+}
+
+void gmOverrideListActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, void * actionArg)
+{
+  // update name to be based on current gamemode
+  GameSettings* gs = gameGetSettings();
+  if (gs && actionType == ACTIONTYPE_DRAW)
+    snprintf(element->name, 40, "%s override", gameGetGameModeName(gs->GameRules));
+
+  // pass to default list action handler
+  listActionHandler(tab, element, actionType, actionArg);
 }
 
 //------------------------------------------------------------------------------
@@ -635,8 +705,9 @@ void toggleInvertedActionHandler(TabElem_t* tab, MenuElem_t* element, int action
     {
       if ((state & ELEMENT_EDITABLE) == 0)
         break;
+
       // toggle
-      *(char*)element->userdata = !(*(char*)element->userdata);;
+      *(char*)element->userdata = !(*(char*)element->userdata);
       break;
     }
     case ACTIONTYPE_GETHEIGHT:
@@ -1091,11 +1162,24 @@ void onConfigInitialize(void)
 void configTrySendGameConfig(void)
 {
   int state = 0;
+  int i = 0, j = 0;
 
   // send game config to server for saving if tab is enabled
   tabElements[1].stateHandler(&tabElements[1], &state);
   if (state & ELEMENT_EDITABLE)
   {
+    // validate everything
+    for (i = 0; i < tabsCount; ++i)
+    {
+      TabElem_t* tab = &tabElements[i];
+      for (j = 0; j < tab->elementsCount; ++j)
+      {
+        MenuElem_t* elem = &tab->elements[j];
+        if (elem->handler)
+          elem->handler(tab, elem, ACTIONTYPE_VALIDATE, NULL);
+      }
+    }
+
     // backup
     memcpy(&gameConfigHostBackup, &gameConfig, sizeof(PatchGameConfig_t));
 
