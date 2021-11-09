@@ -235,6 +235,7 @@ MenuElem_t menuElementsGameSettings[] = {
   { "Healthbars", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grHealthBars },
   { "Healthboxes", toggleInvertedActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grNoHealthBoxes },
   { "Mirror World", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grMirrorWorld },
+  { "Nametags", toggleInvertedActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grNoNames },
   { "V2s", toggleInvertedActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grNoV2s },
   { "Vampire", listActionHandler, menuStateAlwaysEnabledHandler, &dataVampire },
   { "Weapon packs", toggleInvertedActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grNoPacks },

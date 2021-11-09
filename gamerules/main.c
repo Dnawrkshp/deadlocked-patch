@@ -481,6 +481,9 @@ void gameStart(GameModule * module, PatchConfig_t * config, PatchGameConfig_t * 
 
 	if (gameConfig->grHealthBars)
 		healthbarsLogic(module);
+
+	if (gameConfig->grNoNames)
+		gameSettings->PlayerNamesOn = 0;
 }
 
 /*
