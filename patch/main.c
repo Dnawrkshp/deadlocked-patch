@@ -80,6 +80,7 @@
 #define DRAW_SHADOW_FUNC						((u32*)0x00587b30)
 
 #define GADGET_EVENT_MAX_TLL				(*(short*)0x005DF5C8)
+#define FUSION_SHOT_BACKWARDS_BRANCH 		(*(u32*)0x003FA614)
 
 // 
 void processSpectate(void);
@@ -1093,8 +1094,12 @@ int main (void)
 	// in game stuff
 	if (gameIsIn())
 	{
-		// 
+		// this lets guber events that are < 5 seconds old be processed (original is 1.2 seconds)
 		GADGET_EVENT_MAX_TLL = 5 * TIME_SECOND;
+
+		// this disables filtering out fusion shots where the player is facing the opposite direction
+		// in other words, a player may appear to shoot behind them but it's just lag/desync
+		FUSION_SHOT_BACKWARDS_BRANCH = 0x1000005F;
 
 		// close config menu on transition to lobby
 		if (lastGameState != 1)
