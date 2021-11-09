@@ -117,7 +117,7 @@ MenuElem_t menuElementsGeneral[] = {
   { "Disable framelimiter", toggleActionHandler, menuStateAlwaysEnabledHandler, &config.disableFramelimiter },
   { "Announcers on all gamemodes", toggleActionHandler, menuStateAlwaysEnabledHandler, &config.enableGamemodeAnnouncements },
   { "Spectate mode", toggleActionHandler, menuStateAlwaysEnabledHandler, &config.enableSpectate },
-  { "Singleplayer music", toggleActionHandler, menuStateAlwaysHiddenHandler, &config.enableSingleplayerMusic },
+  { "Singleplayer music", toggleActionHandler, menuStateAlwaysEnabledHandler, &config.enableSingleplayerMusic },
   { "Level of Detail", listActionHandler, menuStateAlwaysEnabledHandler, &dataLevelOfDetail },
   { "Sync player state", toggleActionHandler, menuStateAlwaysEnabledHandler, &config.enablePlayerStateSync },
   { "Progressive Scan", toggleActionHandler, menuStateAlwaysEnabledHandler, (char*)0x0021DE6C },
