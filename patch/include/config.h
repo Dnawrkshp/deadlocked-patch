@@ -19,6 +19,12 @@ enum ElementState
   ELEMENT_SELECTABLE = (1 << 2),
 };
 
+enum LabelType
+{
+  LABELTYPE_HEADER,
+  LABELTYPE_LABEL
+};
+
 struct MenuElem;
 struct TabElem;
 struct MenuElem_ListData;
@@ -31,7 +37,7 @@ typedef void (*TabStateHandler)(struct TabElem* tab, int * state);
 
 typedef struct MenuElem
 {
-  char name[40];
+  char name[44];
   ActionHandler handler;
   MenuElementStateHandler stateHandler;
   void * userdata;

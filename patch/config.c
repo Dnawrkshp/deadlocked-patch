@@ -80,6 +80,7 @@ int menuStateHandler_SelectedGameModeOverride(MenuElem_ListData_t* listData, cha
 
 void tabDefaultStateHandler(TabElem_t* tab, int * state);
 void tabGameSettingsStateHandler(TabElem_t* tab, int * state);
+void tabCustomMapStateHandler(TabElem_t* tab, int * state);
 
 // list select handlers
 void mapsSelectHandler(TabElem_t* tab, MenuElem_t* element);
@@ -108,8 +109,6 @@ MenuElem_ListData_t dataLevelOfDetail = {
 
 // general tab menu items
 MenuElem_t menuElementsGeneral[] = {
-  { "Enable custom maps", buttonActionHandler, menuStateHandler_InstallCustomMaps, mapsSelectHandler },
-  { "", labelActionHandler, menuStateHandler_InstalledCustomMaps, NULL },
 #ifdef DEBUG
   { "Redownload patch", buttonActionHandler, menuStateAlwaysEnabledHandler, downloadPatchSelectHandler },
 #endif
@@ -225,11 +224,11 @@ MenuElem_ListData_t dataVampire = {
 MenuElem_t menuElementsGameSettings[] = {
   { "Reset", buttonActionHandler, menuStateAlwaysEnabledHandler, gmResetSelectHandler },
 
-  // { "Game Settings", labelActionHandler, menuLabelStateHandler, NULL },
+  // { "Game Settings", labelActionHandler, menuLabelStateHandler, (void*)LABELTYPE_HEADER },
   { "Map override", listActionHandler, menuStateAlwaysEnabledHandler, &dataCustomMaps },
   { "Gamemode override", gmOverrideListActionHandler, menuStateHandler_GameModeOverride, &dataCustomModes },
 
-  { "Game Rules", labelActionHandler, menuLabelStateHandler, NULL },
+  { "Game Rules", labelActionHandler, menuLabelStateHandler, (void*)LABELTYPE_HEADER },
   { "Better hills", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grBetterHills },
   { "Half time", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grHalfTime },
   { "Healthbars", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grHealthBars },
@@ -242,10 +241,22 @@ MenuElem_t menuElementsGameSettings[] = {
   { "Weather override", listActionHandler, menuStateAlwaysEnabledHandler, &dataWeather },
 };
 
+// custom map tab menu items
+MenuElem_t menuElementsCustomMap[] = {
+  { "", labelActionHandler, menuStateHandler_InstalledCustomMaps, (void*)LABELTYPE_HEADER },
+  { "To play on custom maps you must download", labelActionHandler, menuLabelStateHandler, (void*)LABELTYPE_LABEL },
+  { "the map files from dl.uyaonline.com/maps", labelActionHandler, menuLabelStateHandler, (void*)LABELTYPE_LABEL },
+  { "Install the maps onto a USB drive", labelActionHandler, menuLabelStateHandler, (void*)LABELTYPE_LABEL },
+  { "and insert it into your PS2", labelActionHandler, menuLabelStateHandler, (void*)LABELTYPE_LABEL },
+  { "Then install the custom maps modules", labelActionHandler, menuLabelStateHandler, (void*)LABELTYPE_LABEL },
+  { "Install custom map modules", buttonActionHandler, menuStateHandler_InstallCustomMaps, mapsSelectHandler },
+};
+
 // tab items
 TabElem_t tabElements[] = {
   { "General", tabDefaultStateHandler, menuElementsGeneral, sizeof(menuElementsGeneral)/sizeof(MenuElem_t) },
-  { "Game Settings", tabGameSettingsStateHandler, menuElementsGameSettings, sizeof(menuElementsGameSettings)/sizeof(MenuElem_t) }
+  { "Game Settings", tabGameSettingsStateHandler, menuElementsGameSettings, sizeof(menuElementsGameSettings)/sizeof(MenuElem_t) },
+  { "Custom Maps", tabCustomMapStateHandler, menuElementsCustomMap, sizeof(menuElementsCustomMap)/sizeof(MenuElem_t) }
 };
 
 const int tabsCount = sizeof(tabElements)/sizeof(TabElem_t);
@@ -269,6 +280,20 @@ void tabGameSettingsStateHandler(TabElem_t* tab, int * state)
   else if (gameSettings->GameLoadStartTime > 0 || *(u8*)0x00172170 != 0)
   {
     *state = ELEMENT_SELECTABLE | ELEMENT_VISIBLE;
+  }
+  else
+  {
+    *state = ELEMENT_SELECTABLE | ELEMENT_VISIBLE | ELEMENT_EDITABLE;
+  }
+}
+
+// 
+void tabCustomMapStateHandler(TabElem_t* tab, int * state)
+{
+  GameSettings * gameSettings = gameGetSettings();
+  if (gameIsIn())
+  {
+    *state = ELEMENT_VISIBLE;
   }
   else
   {
@@ -541,10 +566,6 @@ void drawLabelMenuElement(TabElem_t* tab, MenuElem_t* element, RECT* rect)
   x = 0.5 * SCREEN_WIDTH;
   y = ((rect->TopLeft[1] + rect->BottomLeft[1]) * SCREEN_HEIGHT * 0.5);
   gfxScreenSpaceText(x, y, 1, 1, colorLerp(colorText, 0, lerp), element->name, -1, 4);
-
-  // add some padding
-  rect->TopLeft[1] += 0.01;
-  rect->TopRight[1] += 0.01;
 }
 
 //------------------------------------------------------------------------------
@@ -595,7 +616,19 @@ void labelActionHandler(TabElem_t* tab, MenuElem_t* element, int actionType, voi
   {
     case ACTIONTYPE_GETHEIGHT:
     {
-      *(float*)actionArg = LINE_HEIGHT * 2;
+      switch ((int)element->userdata)
+      {
+        case LABELTYPE_LABEL:
+        {
+          *(float*)actionArg = LINE_HEIGHT * 0.75;
+          break;
+        }
+        default:
+        {
+          *(float*)actionArg = LINE_HEIGHT * 2;
+          break;
+        }
+      }
       break;
     }
     case ACTIONTYPE_DRAW:
@@ -826,7 +859,7 @@ void drawTab(TabElem_t* tab)
   if (!tab)
     return;
 
-  int i = 0;
+  int i = 0, state = 0;
   int menuElementRenderEnd = tab->menuOffset;
   MenuElem_t * menuElements = tab->elements;
 	int menuElementsCount = tab->elementsCount;
@@ -860,7 +893,10 @@ void drawTab(TabElem_t* tab)
 
     // draw selection
     if (i == tab->selectedMenuItem) {
-      gfxScreenSpaceQuad(&drawRect, colorSelected, colorSelected, colorSelected, colorSelected);
+      state = getMenuElementState(tab, currentElement);
+      if (state & ELEMENT_SELECTABLE) {
+        gfxScreenSpaceQuad(&drawRect, colorSelected, colorSelected, colorSelected, colorSelected);
+      }
     }
 
     // draw
@@ -894,7 +930,7 @@ void drawTab(TabElem_t* tab)
     return;
 
   currentElement = &menuElements[tab->selectedMenuItem];
-  int state = getMenuElementState(tab, currentElement);
+  state = getMenuElementState(tab, currentElement);
 
   // find next selectable item if hidden or not selectable
   if ((state & ELEMENT_VISIBLE) == 0 || (state & ELEMENT_SELECTABLE) == 0)
@@ -1063,14 +1099,14 @@ void navMenu(TabElem_t* tab, int direction, int loop)
   {
     if (newElement >= tab->elementsCount)
     {
-      if (loop)
+      if (loop && tab->selectedMenuItem != 0)
         newElement = 0;
       else
         break;
     }
     else if (newElement < 0)
     {
-      if (loop)
+      if (loop && tab->selectedMenuItem != (tab->elementsCount - 1))
         newElement = tab->elementsCount - 1;
       else
         break;
