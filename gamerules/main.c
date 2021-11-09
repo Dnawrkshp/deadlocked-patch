@@ -316,56 +316,37 @@ void betterHillsLogic(GameModule * module)
  * 
  * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
  */
-void healthbarsLogic(GameModule * module)
+void healthbarsHook(int nameX, int nameY, u32 nameColor, char * nameStr, int nameStrLen)
 {
-	float distanceScale = 0;
+	// get player index
+	int i;
+	asm volatile (
+		"move %0, $s7"
+		: : "r" (i)
+	);
 
-	if (gameIsIn())
-	{
-		Player ** players = playerGetAll();
-		Player * localPlayer = (Player*)0x00347AA0;
-		int px, py, i;
+	// call pass through function
+	gfxScreenSpaceText(nameX, nameY, 1, 1, nameColor, nameStr, nameStrLen, 1);
+	
+	// ensure player index is valid
+	if (i < 0 || i >= GAME_MAX_PLAYERS)
+		return;
 
-		for (i = 0; i < GAME_MAX_PLAYERS; ++i)
-		{
-			Player * player = players[i];
-			VECTOR temp;
-			if (!player || playerIsLocal(player) || player->Health <= 0)
-				continue;
+	// get player and validate state
+	Player ** players = playerGetAll();
+	Player * player = players[i];
+	if (!player || player->Health <= 0)
+		return;
 
-			// Check distance
-			vector_subtract(temp, player->PlayerPosition, localPlayer->PlayerPosition);
-			float distance = vector_length(temp);
-			if (distance > 75)
-				continue;
-			
-			// Check angle
-			if (vector_innerproduct(temp, (float*)0x0022CD20) < 0)
-				continue;
-
-			// get 0-1 based on distance
-			distanceScale = clamp((75 - distance) / 75, 0, 1);
-
-			// move position above player
-			vector_copy(temp, player->PlayerPosition);
-			temp[2] += distanceScale * 1.05;
-
-			if (gfxWorldSpaceToScreenSpace(temp, &px, &py))
-			{
-				py -= powf(distanceScale, 4) * 27;
-				float x = (float)px / SCREEN_WIDTH;
-				float y = (float)py / SCREEN_HEIGHT;
-				float health = player->Health / 50;
-				float w = (0.05 * distanceScale) + 0.02, h = 0.005, p = 0.002;
-				float right = w * health;
-				u32 color = TEAM_COLORS[player->Team];
-
-				// Draw boxes
-				gfxScreenSpaceBox(x,y,w-p,h-p, 0x80000000);
-				gfxScreenSpaceBox(x,y,right,h, color);
-			}
-		}
-	}
+	// Draw boxes
+	float x = (float)nameX / SCREEN_WIDTH;
+	float y = (float)nameY / SCREEN_HEIGHT;
+	float health = player->Health / 50;
+	float w = (0.05 * 1) + 0.02, h = 0.01, p = 0.002;
+	float right = w * health;
+	x -= w / 2;
+	gfxScreenSpaceBox(x,y,w-p,h-p, 0x80000000);
+	gfxScreenSpaceBox(x,y,right,h, nameColor);
 }
 
 /*
@@ -479,8 +460,12 @@ void gameStart(GameModule * module, PatchConfig_t * config, PatchGameConfig_t * 
 	if (gameConfig->grBetterHills && gameConfig->customMapId == 0)
 		betterHillsLogic(module);
 
-	if (gameConfig->grHealthBars)
-		healthbarsLogic(module);
+	if (gameConfig->grHealthBars && gameIsIn())
+	{
+		u32 hookValue = 0x0C000000 | ((u32)&healthbarsHook >> 2);
+		*(u32*)0x005d608c = hookValue;
+		*(u32*)0x005d60c4 = hookValue;
+	}
 
 	if (gameConfig->grNoNames)
 		gameSettings->PlayerNamesOn = 0;
