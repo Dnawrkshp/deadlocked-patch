@@ -244,11 +244,11 @@ MenuElem_t menuElementsGameSettings[] = {
 // custom map tab menu items
 MenuElem_t menuElementsCustomMap[] = {
   { "", labelActionHandler, menuStateHandler_InstalledCustomMaps, (void*)LABELTYPE_HEADER },
-  { "To play on custom maps you must download", labelActionHandler, menuLabelStateHandler, (void*)LABELTYPE_LABEL },
-  { "the map files from dl.uyaonline.com/maps", labelActionHandler, menuLabelStateHandler, (void*)LABELTYPE_LABEL },
-  { "Install the maps onto a USB drive", labelActionHandler, menuLabelStateHandler, (void*)LABELTYPE_LABEL },
-  { "and insert it into your PS2", labelActionHandler, menuLabelStateHandler, (void*)LABELTYPE_LABEL },
-  { "Then install the custom maps modules", labelActionHandler, menuLabelStateHandler, (void*)LABELTYPE_LABEL },
+  { "To play on custom maps you must first go to", labelActionHandler, menuLabelStateHandler, (void*)LABELTYPE_LABEL },
+  { "dl.uyaonline.com/maps and download the maps.", labelActionHandler, menuLabelStateHandler, (void*)LABELTYPE_LABEL },
+  { "Then install the map files onto a USB drive", labelActionHandler, menuLabelStateHandler, (void*)LABELTYPE_LABEL },
+  { "and insert it into your PS2.", labelActionHandler, menuLabelStateHandler, (void*)LABELTYPE_LABEL },
+  { "Finally install the custom maps modules here.", labelActionHandler, menuLabelStateHandler, (void*)LABELTYPE_LABEL },
   { "Install custom map modules", buttonActionHandler, menuStateHandler_InstallCustomMaps, mapsSelectHandler },
 };
 

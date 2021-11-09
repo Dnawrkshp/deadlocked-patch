@@ -37,7 +37,7 @@ typedef void (*TabStateHandler)(struct TabElem* tab, int * state);
 
 typedef struct MenuElem
 {
-  char name[44];
+  char name[48];
   ActionHandler handler;
   MenuElementStateHandler stateHandler;
   void * userdata;
