@@ -1011,25 +1011,25 @@ void runFpsCounter(void)
 	static int tickCounter = 0;
 	static float lastFps = 0;
 
-	if (config.enableFpsCounter)
+	// initialize time
+	if (tickCounter == 0 && lastGameTime == 0)
+		lastGameTime = gameGetTime();
+	
+	// update fps every 60 ticks/frames
+	++tickCounter;
+	if (tickCounter >= 60)
 	{
-		if (tickCounter == 0 && lastGameTime == 0)
-			lastGameTime = gameGetTime();
+		int currentTime = gameGetTime();
+		lastFps = tickCounter / ((currentTime - lastGameTime) / (float)TIME_SECOND);
+		lastGameTime = currentTime;
+		tickCounter = 0;
+	}
 
-		++tickCounter;
-		if (tickCounter >= 60)
-		{
-			int currentTime = gameGetTime();
-			lastFps = tickCounter / ((currentTime - lastGameTime) / (float)TIME_SECOND);
-			lastGameTime = currentTime;
-			tickCounter = 0;
-		}
-
-		if (lastFps > 0)
-		{
-			snprintf(buf, 16, "%.2f", lastFps);
-			gfxScreenSpaceText(SCREEN_WIDTH - 5, 5, 0.75, 0.75, 0x80FFFFFF, buf, -1, 2);
-		}
+	// render if enabled
+	if (config.enableFpsCounter)
+	{			
+		snprintf(buf, 16, "%.2f", lastFps);
+		gfxScreenSpaceText(SCREEN_WIDTH - 5, 5, 0.75, 0.75, 0x80FFFFFF, buf, -1, 2);
 	}
 }
 
