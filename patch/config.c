@@ -119,6 +119,7 @@ MenuElem_t menuElementsGeneral[] = {
   { "Singleplayer music", toggleActionHandler, menuStateAlwaysEnabledHandler, &config.enableSingleplayerMusic },
   { "Level of Detail", listActionHandler, menuStateAlwaysEnabledHandler, &dataLevelOfDetail },
   { "Sync player state", toggleActionHandler, menuStateAlwaysEnabledHandler, &config.enablePlayerStateSync },
+  { "Fps Counter", toggleActionHandler, menuStateAlwaysEnabledHandler, &config.enableFpsCounter },
   { "Progressive Scan", toggleActionHandler, menuStateAlwaysEnabledHandler, (char*)0x0021DE6C },
 };
 

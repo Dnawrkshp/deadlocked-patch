@@ -10,6 +10,7 @@ typedef struct PatchConfig
   char levelOfDetail;
   char enablePlayerStateSync;
   char enableAutoMaps;
+  char enableFpsCounter;
 } PatchConfig_t;
 
 typedef struct PatchGameConfig

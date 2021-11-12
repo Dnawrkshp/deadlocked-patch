@@ -991,6 +991,49 @@ void patchProcessLevel(void)
 }
 
 /*
+ * NAME :		runFpsCounter
+ * 
+ * DESCRIPTION :
+ * 			Displays an fps counter on the top right screen.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void runFpsCounter(void)
+{
+	char buf[16];
+	static int lastGameTime = 0;
+	static int tickCounter = 0;
+	static float lastFps = 0;
+
+	if (config.enableFpsCounter)
+	{
+		if (tickCounter == 0 && lastGameTime == 0)
+			lastGameTime = gameGetTime();
+
+		++tickCounter;
+		if (tickCounter >= 60)
+		{
+			int currentTime = gameGetTime();
+			lastFps = tickCounter * ((currentTime - lastGameTime) / (float)TIME_SECOND);
+			lastGameTime = currentTime;
+			tickCounter = 0;
+		}
+
+		if (lastFps > 0)
+		{
+			snprintf(buf, 16, "%.2f", lastFps);
+			gfxScreenSpaceText(SCREEN_WIDTH - 5, 5, 0.75, 0.75, 0x80FFFFFF, buf, -1, 2);
+		}
+	}
+}
+
+/*
  * NAME :		processGameModules
  * 
  * DESCRIPTION :
@@ -1257,6 +1300,9 @@ int main (void)
 
 	// Run sync player state
 	runPlayerStateSync();
+
+	// 
+	runFpsCounter();
 
 	// Run add singleplayer music
 	runEnableSingleplayerMusic();
