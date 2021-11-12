@@ -530,6 +530,10 @@ void SNDHackerOrbEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_
 	// get id of event
 	u32 eventId = event->NetEvent[0] & 0xF;
 
+	// if round is already over then ignore event
+	if (SNDState.RoundResult)
+		return;
+
 	// handle event
 	switch (eventId)
 	{
