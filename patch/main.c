@@ -1020,7 +1020,7 @@ void runFpsCounter(void)
 		if (tickCounter >= 60)
 		{
 			int currentTime = gameGetTime();
-			lastFps = tickCounter * ((currentTime - lastGameTime) / (float)TIME_SECOND);
+			lastFps = tickCounter / ((currentTime - lastGameTime) / (float)TIME_SECOND);
 			lastGameTime = currentTime;
 			tickCounter = 0;
 		}
