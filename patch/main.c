@@ -557,6 +557,7 @@ void patchFrameSkip()
  */
 void patchWeaponShotNetSendFlag(void)
 {
+	/*
 	u32* ptr = (u32*)0x00627AB4;
 	if (*ptr == 0x906407F8) {
 		// change to reliable
@@ -567,6 +568,69 @@ void patchWeaponShotNetSendFlag(void)
 		*(u32*)0x0060F474 = 0;
 		*(u32*)0x0060F4C4 = 0;
 	}
+	*/
+
+	// send fusion shot reliably
+	if (*(u32*)0x003FCE8C == 0x910407F8)
+		*(u32*)0x003FCE8C = 0x24040040;
+}
+
+/*
+ * NAME :		patchStateUpdate_Hook
+ * 
+ * DESCRIPTION :
+ * 			Performs some extra logic to optimize sending state updates.
+ * 			State updates are sent by default every 4 frames.
+ * 			Every 16 frames a full state update is sent. This sends additional data as position and player state.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+int patchStateUpdate_Hook(void * a0, void * a1)
+{
+	int v0 = ((int (*)(void*,void*))0x0061e130)(a0, a1);
+	Player * p = (Player*)((u32)a0 - 0x2FEC);
+
+	// when we're dead we don't really need to send the state very often
+	// so we'll only send it every second
+	// and when we do we'll send a full update (including position and player state)
+	if (p->Health <= 0)
+	{
+		// only send every 60 frames
+		int tick = *(int*)((u32)a0 + 0x1D8);
+		if (tick % 60 != 0)
+			return 0;
+
+		// set to 1 to force full state update
+		*(u8*)((u32)p + 0x31cf) = 1;
+	}
+
+	return v0;
+}
+
+/*
+ * NAME :		patchStateUpdate
+ * 
+ * DESCRIPTION :
+ * 			Patches state update get size function to call our hooked method.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchStateUpdate(void)
+{
+	if (*(u32*)0x0060eb80 == 0x0C18784C)
+		*(u32*)0x0060eb80 = 0x0C000000 | ((u32)&patchStateUpdate_Hook >> 2);
 }
 
 /*
@@ -1216,7 +1280,10 @@ int main (void)
 	patchFrameSkip();
 
 	// Patch weapon shot to be sent reliably
-	//patchWeaponShotNetSendFlag();
+	patchWeaponShotNetSendFlag();
+
+	// Patch state update to run more optimized
+	patchStateUpdate();
 
 	// Patch process level call
 	patchProcessLevel();
@@ -1231,7 +1298,7 @@ int main (void)
 	if (gameIsIn())
 	{
 		// this lets guber events that are < 5 seconds old be processed (original is 1.2 seconds)
-		GADGET_EVENT_MAX_TLL = 5 * TIME_SECOND;
+		//GADGET_EVENT_MAX_TLL = 5 * TIME_SECOND;
 
 		// this disables filtering out fusion shots where the player is facing the opposite direction
 		// in other words, a player may appear to shoot behind them but it's just lag/desync
