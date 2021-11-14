@@ -1351,8 +1351,7 @@ int main (void)
 		if (gameSettings && gameSettings->GameRules == GAMERULE_CQ)
 		{
 			// put hacker ray in weapon select
-			*(u32*)0x0038a0d0 = 12;
-			*(u32*)0x0038a0d8 = 13;
+			*(u32*)0x0038a0e8 = WEAPON_ID_HACKER_RAY;
 
 			// disable/enable press circle to equip hacker ray
 			*(u32*)0x005DE870 = config.disableCircleToHackerRay ? 0x24040000 : 0x00C0202D;

@@ -153,6 +153,16 @@ typedef struct SNDOutcomeMessage
 /*
  *
  */
+typedef struct SNDBombOutcomeMessage
+{
+	int NodeIndex;
+	int Team;
+} SNDBombOutcomeMessage_t;
+
+
+/*
+ *
+ */
 typedef struct GameplayMobyDef
 {
 	u32 Size;
@@ -319,6 +329,10 @@ void onSetRoundOutcome(int outcome);
 int onSetRoundOutcomeRemote(void * connection, void * data);
 void setRoundOutcome(int outcome);
 
+// forwards
+void onSetBombOutcome(int nodeIndex, int team);
+int onSetBombOutcomeRemote(void * connection, void * data);
+void setBombOutcome(int nodeIndex, int team);
 
 /*
  * NAME :		updateScoreboard
@@ -544,42 +558,17 @@ void SNDHackerOrbEventHandler(Moby * moby, GuberEvent * event, MobyEventHandler_
 			int playerId = *(int*)(event->NetEvent + 16);
 
 			// Only capture if bomb is picked up
-			if (SNDState.RoundInitialized && playerId >= 0 && !SNDState.BombPackMoby && nodeIndex >= 0)
+			if (SNDState.RoundInitialized && SNDState.IsHost && playerId >= 0 && !SNDState.BombPackMoby && nodeIndex >= 0)
 			{
 				if (team == SNDState.AttackerTeamId)
 				{
-					// bomb has been planted
-					uiShowPopup(0, SND_BOMB_PLANTED);
-					uiShowPopup(1, SND_BOMB_PLANTED);
-
-					// change capture time to default (defuse time)
-					*(u16*)0x00440E68 = 0x3C23;
-
-					// set state
-					SNDState.BombPlantedTicks = gameGetTime();
-					SNDState.BombPlantSiteIndex = nodeIndex;
-
-					// remove hacker ray from bomb holder
-					if (playerId >= 0 && playerId < GAME_MAX_PLAYERS)
-					{
-						SNDPlayerState_t * p = &SNDState.Players[playerId];
-						p->IsBombCarrier = 0;
-						PlayerWeaponData * wepData = playerGetWeaponData(playerId);
-						wepData[WEAPON_ID_HACKER_RAY].Level = -1;
-
-						// unequip hacker ray if equipped
-						if (p->Player->WeaponHeldGun == WEAPON_ID_HACKER_RAY)
-							playerSetWeapon(p->Player, WEAPON_ID_WRENCH);
-					}
-
-					// hide the other bomb site
-					hideNode(SNDState.Nodes[!nodeIndex].Moby, 0, 0, 0);
+					// send to others
+					setBombOutcome(nodeIndex, team);
 				}
 				else
 				{
-					// bomb defused
-					uiShowPopup(0, SND_BOMB_DEFUSED);
-					uiShowPopup(1, SND_BOMB_DEFUSED);
+					// send to others
+					setBombOutcome(nodeIndex, team);
 
 					// set state
 					setRoundOutcome(SND_OUTCOME_BOMB_DEFUSED);
@@ -706,7 +695,7 @@ void killPack()
 		if (SNDState.BombPackMoby->MobyId == MOBY_ID_WEAPON_PACK && SNDState.BombPackMoby->PropertiesPointer)
 			*(u32*)((u32)SNDState.BombPackMoby->PropertiesPointer + 0x8) = 0xFFFFFFFF;
 		
-		printf("KILLED PACK AT %08X\n", (u32)SNDState.BombPackMoby);
+		DPRINTF("KILLED PACK AT %08X\n", (u32)SNDState.BombPackMoby);
 		SNDState.BombPackMoby = NULL;
 		SNDState.BombPackGuber = NULL;
 	}
@@ -727,7 +716,7 @@ void * spawnPackHook(u16 mobyId, int pvarSize, int guberId, int arg4, int arg5)
 		SNDState.BombPackMoby = newMoby;
 		SNDState.BombPackMoby->TextureId = 0x80 + (8 * SNDState.AttackerTeamId);
 
-		printf("spawnPackHook bomb pack moby = %08x\n", (u32)SNDState.BombPackMoby);
+		DPRINTF("spawnPackHook bomb pack moby = %08x\n", (u32)SNDState.BombPackMoby);
 	}
 
 	return result;
@@ -848,6 +837,79 @@ void setRoundOutcome(int outcome)
 
 	// set locally
 	onSetRoundOutcome(outcome);
+}
+
+
+void onSetBombOutcome(int nodeIndex, int team)
+{
+	int i;
+
+	// capture node
+	nodeCapture(SNDState.Nodes[nodeIndex].OrbGuberMoby, team);
+
+	if (team == SNDState.AttackerTeamId)
+	{
+		// bomb has been planted
+		uiShowPopup(0, SND_BOMB_PLANTED);
+		uiShowPopup(1, SND_BOMB_PLANTED);
+
+		// change capture time to default (defuse time)
+		*(u16*)0x00440E68 = 0x3C23;
+
+		// set state
+		SNDState.BombPlantedTicks = gameGetTime();
+		SNDState.BombPlantSiteIndex = nodeIndex;
+
+		// remove hacker ray from bomb holder
+		for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+		{
+			SNDPlayerState_t * p = &SNDState.Players[i];
+			if (p && p->Player && p->IsBombCarrier)
+			{
+				p->IsBombCarrier = 0;
+				PlayerWeaponData * wepData = playerGetWeaponData(i);
+				wepData[WEAPON_ID_HACKER_RAY].Level = -1;
+
+				// unequip hacker ray if equipped
+				if (p->Player->WeaponHeldGun == WEAPON_ID_HACKER_RAY)
+					playerSetWeapon(p->Player, WEAPON_ID_WRENCH);
+			}
+		}
+
+		// hide the other bomb site
+		hideNode(SNDState.Nodes[!nodeIndex].Moby, 0, 0, 0);
+	}
+	else
+	{
+		// bomb defused
+		uiShowPopup(0, SND_BOMB_DEFUSED);
+		uiShowPopup(1, SND_BOMB_DEFUSED);
+	}
+}
+
+int onSetBombOutcomeRemote(void * connection, void * data)
+{
+	SNDBombOutcomeMessage_t * message = (SNDBombOutcomeMessage_t*)data;
+	onSetBombOutcome(message->NodeIndex, message->Team);
+
+	return sizeof(SNDBombOutcomeMessage_t);
+}
+
+void setBombOutcome(int nodeIndex, int team)
+{
+	SNDBombOutcomeMessage_t message;
+
+	// don't allow changing outcome when not host
+	if (!SNDState.IsHost)
+		return;
+
+	// send out
+	message.NodeIndex = nodeIndex;
+	message.Team = team;
+	netBroadcastCustomAppMessage(netGetDmeServerConnection(), CUSTOM_MSG_ID_SEARCH_AND_DESTROY_SET_BOMB_OUTCOME, sizeof(SNDBombOutcomeMessage_t), &message);
+
+	// set locally
+	onSetBombOutcome(nodeIndex, team);
 }
 
 void playTimerTickSound()
@@ -1174,6 +1236,7 @@ void initialize(void)
 
 	// Hook set outcome net event
 	netInstallCustomMsgHandler(CUSTOM_MSG_ID_SEARCH_AND_DESTROY_SET_OUTCOME, &onSetRoundOutcomeRemote);
+	netInstallCustomMsgHandler(CUSTOM_MSG_ID_SEARCH_AND_DESTROY_SET_BOMB_OUTCOME, &onSetBombOutcomeRemote);
 
 	// Install spawn pack hook
 	*(u32*)0x0061CDC8 = 0x0C000000 | ((u32)&spawnPackHook / 4);
@@ -1300,6 +1363,14 @@ void gameStart(void)
 #if DEBUG
 	if (!SNDState.GameOver && padGetButton(0, PAD_L3 | PAD_R3) > 0)
 		SNDState.GameOver = 1;
+	if (!SNDState.GameOver && padGetButton(0, PAD_L1 | PAD_UP) > 0 && SNDState.IsHost && !SNDState.BombPlantedTicks)
+		setBombOutcome(0, SNDState.AttackerTeamId);
+	if (!SNDState.GameOver && padGetButton(0, PAD_L1 | PAD_DOWN) > 0 && SNDState.IsHost && !SNDState.BombPlantedTicks)
+		setBombOutcome(1, SNDState.AttackerTeamId);
+	if (!SNDState.GameOver && padGetButton(0, PAD_L1 | PAD_LEFT) > 0 && SNDState.IsHost && SNDState.BombPlantedTicks)
+		setBombOutcome(0, SNDState.DefenderTeamId);
+	if (!SNDState.GameOver && padGetButton(0, PAD_L1 | PAD_RIGHT) > 0 && SNDState.IsHost && SNDState.BombPlantedTicks)
+		setBombOutcome(1, SNDState.DefenderTeamId);
 #endif
 
 	if (!gameHasEnded() && gameIsIn() && !SNDState.GameOver)

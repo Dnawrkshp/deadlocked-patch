@@ -85,6 +85,11 @@ enum CustomMessageId
      * Sent from the server to the client when the host has changed and is propogating the patch game config.
      */
     CUSTOM_MSG_ID_SERVER_SET_GAME_CONFIG = 12,
+
+    /*
+     *
+     */
+    CUSTOM_MSG_ID_SEARCH_AND_DESTROY_SET_BOMB_OUTCOME = 13,
 };
 
 #endif // _MESSAGEID_H_
