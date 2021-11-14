@@ -1346,6 +1346,18 @@ int main (void)
 		// this lets guber events that are < 5 seconds old be processed (original is 1.2 seconds)
 		//GADGET_EVENT_MAX_TLL = 5 * TIME_SECOND;
 
+		// put hacker ray in weapon select
+		GameSettings * gameSettings = gameGetSettings();
+		if (gameSettings && gameSettings->GameRules == GAMERULE_CQ)
+		{
+			// put hacker ray in weapon select
+			*(u32*)0x0038a0d0 = 12;
+			*(u32*)0x0038a0d8 = 13;
+
+			// disable/enable press circle to equip hacker ray
+			*(u32*)0x005DE870 = config.disableCircleToHackerRay ? 0x24040000 : 0x00C0202D;
+		}
+
 		// this disables filtering out fusion shots where the player is facing the opposite direction
 		// in other words, a player may appear to shoot behind them but it's just lag/desync
 		FUSION_SHOT_BACKWARDS_BRANCH = 0x1000005F;

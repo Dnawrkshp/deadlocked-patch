@@ -11,6 +11,7 @@ typedef struct PatchConfig
   char enablePlayerStateSync;
   char enableAutoMaps;
   char enableFpsCounter;
+  char disableCircleToHackerRay;
 } PatchConfig_t;
 
 typedef struct PatchGameConfig
