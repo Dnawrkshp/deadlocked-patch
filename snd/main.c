@@ -1688,6 +1688,9 @@ void lobbyStart(void)
 		
 	// set to conquest homenodes
 	memcpy((void*)&gameOptions->GameFlags.Raw[6], (void*)cqOptions, sizeof(cqOptions)/sizeof(char));
+
+	// force hacker orbs
+	gameOptions->GameFlags.MultiplayerGameFlags.NodeType = 1;
 }
 
 /*
