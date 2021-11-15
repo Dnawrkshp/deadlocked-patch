@@ -170,7 +170,10 @@ MenuElem_ListData_t dataCustomModes = {
       "Gun Game",
       "Infected",
       "Infinite Climber",
-      "Search and Destroy"
+      "Search and Destroy",
+#if BETA
+      "Gridiron"
+#endif
     }
 };
 
@@ -439,6 +442,14 @@ int menuStateHandler_SelectedGameModeOverride(MenuElem_ListData_t* listData, cha
           return 0;
         break;
       }
+#if BETA
+      case CUSTOM_MODE_GRIDIRON:
+      {
+        if (gs->GameRules != GAMERULE_CTF)
+          return 0;
+        break;
+      }
+#endif
     }
   }
 

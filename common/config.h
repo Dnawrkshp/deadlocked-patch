@@ -63,6 +63,10 @@ enum CUSTOM_MODE_ID
   CUSTOM_MODE_INFECTED,
   CUSTOM_MODE_INFINITE_CLIMBER,
   CUSTOM_MODE_SEARCH_AND_DESTROY,
+  
+#if BETA
+  CUSTOM_MODE_GRIDIRON,
+#endif
 
   // always at the end to indicate how many items there are
   CUSTOM_MODE_COUNT

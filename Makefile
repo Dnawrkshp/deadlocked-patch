@@ -11,6 +11,7 @@ all:
 	$(MAKE) -C race
 	$(MAKE) -C snd
 	$(MAKE) -C duckhunt
+	$(MAKE) -C gridiron
 	
 clean:
 	$(MAKE) -C patch clean
@@ -23,4 +24,5 @@ clean:
 	$(MAKE) -C race clean
 	$(MAKE) -C snd clean
 	$(MAKE) -C duckhunt clean
+	$(MAKE) -C gridiron clean
 

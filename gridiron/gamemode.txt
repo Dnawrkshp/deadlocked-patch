@@ -1,0 +1,11 @@
+Gridiron
+
+Objectives:
+    Score as many points as possible
+
+Rules:
+    Two teams.
+    One flag (ball).
+    Flag is spawned in the center.
+    Teams earn points by delivering flag to the enemy's base
+    
