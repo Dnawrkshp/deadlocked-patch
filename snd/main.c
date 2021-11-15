@@ -148,6 +148,7 @@ typedef struct SNDTimerState
 typedef struct SNDOutcomeMessage
 {
 	int Outcome;
+	int GameTime;
 } SNDOutcomeMessage_t;
 
 /*
@@ -157,6 +158,7 @@ typedef struct SNDBombOutcomeMessage
 {
 	int NodeIndex;
 	int Team;
+	int GameTime;
 } SNDBombOutcomeMessage_t;
 
 
@@ -325,12 +327,12 @@ SoundDef ExplosionSoundDef =
 
 
 // forwards
-void onSetRoundOutcome(int outcome);
+void onSetRoundOutcome(int outcome, int gameTime);
 int onSetRoundOutcomeRemote(void * connection, void * data);
 void setRoundOutcome(int outcome);
 
 // forwards
-void onSetBombOutcome(int nodeIndex, int team);
+void onSetBombOutcome(int nodeIndex, int team, int gameTime);
 int onSetBombOutcomeRemote(void * connection, void * data);
 void setBombOutcome(int nodeIndex, int team);
 
@@ -764,7 +766,7 @@ void drawRoundMessage(const char * message, float scale)
 }
 
 
-void onSetRoundOutcome(int outcome)
+void onSetRoundOutcome(int outcome, int gameTime)
 {
 	int i = 0;
 	if (outcome == SND_OUTCOME_BOMB_DETONATED && SNDState.BombPlantSiteIndex >= 0)
@@ -799,7 +801,7 @@ void onSetRoundOutcome(int outcome)
 
 	// 
 	SNDState.RoundResult = outcome;
-	SNDState.RoundEndTicks = gameGetTime() + SND_ROUND_TRANSITION_WAIT_MS;
+	SNDState.RoundEndTicks = gameTime + SND_ROUND_TRANSITION_WAIT_MS;
 
 	// print halftime message
 	if ((SNDState.RoundNumber+1) % RoundsToFlip == 0)
@@ -814,7 +816,7 @@ void onSetRoundOutcome(int outcome)
 int onSetRoundOutcomeRemote(void * connection, void * data)
 {
 	SNDOutcomeMessage_t * message = (SNDOutcomeMessage_t*)data;
-	onSetRoundOutcome(message->Outcome);
+	onSetRoundOutcome(message->Outcome, message->GameTime);
 
 	return sizeof(SNDOutcomeMessage_t);
 }
@@ -833,14 +835,15 @@ void setRoundOutcome(int outcome)
 
 	// send out
 	message.Outcome = outcome;
+	message.GameTime = gameGetTime();
 	netBroadcastCustomAppMessage(netGetDmeServerConnection(), CUSTOM_MSG_ID_SEARCH_AND_DESTROY_SET_OUTCOME, sizeof(SNDOutcomeMessage_t), &message);
 
 	// set locally
-	onSetRoundOutcome(outcome);
+	onSetRoundOutcome(outcome, message.GameTime);
 }
 
 
-void onSetBombOutcome(int nodeIndex, int team)
+void onSetBombOutcome(int nodeIndex, int team, int gameTime)
 {
 	int i;
 
@@ -857,7 +860,7 @@ void onSetBombOutcome(int nodeIndex, int team)
 		*(u16*)0x00440E68 = 0x3C23;
 
 		// set state
-		SNDState.BombPlantedTicks = gameGetTime();
+		SNDState.BombPlantedTicks = gameTime;
 		SNDState.BombPlantSiteIndex = nodeIndex;
 
 		// remove hacker ray from bomb holder
@@ -890,7 +893,7 @@ void onSetBombOutcome(int nodeIndex, int team)
 int onSetBombOutcomeRemote(void * connection, void * data)
 {
 	SNDBombOutcomeMessage_t * message = (SNDBombOutcomeMessage_t*)data;
-	onSetBombOutcome(message->NodeIndex, message->Team);
+	onSetBombOutcome(message->NodeIndex, message->Team, message->GameTime);
 
 	return sizeof(SNDBombOutcomeMessage_t);
 }
@@ -906,10 +909,11 @@ void setBombOutcome(int nodeIndex, int team)
 	// send out
 	message.NodeIndex = nodeIndex;
 	message.Team = team;
+	message.GameTime = gameGetTime();
 	netBroadcastCustomAppMessage(netGetDmeServerConnection(), CUSTOM_MSG_ID_SEARCH_AND_DESTROY_SET_BOMB_OUTCOME, sizeof(SNDBombOutcomeMessage_t), &message);
 
 	// set locally
-	onSetBombOutcome(nodeIndex, team);
+	onSetBombOutcome(nodeIndex, team, message.GameTime);
 }
 
 void playTimerTickSound()
