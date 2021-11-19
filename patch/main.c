@@ -664,6 +664,12 @@ void runEnableSingleplayerMusic(void)
 		int Sector = 0x001CE470;
 		int a;
 		int Offset = 0;
+
+		// Zero out stack by the appropriate heap size (0x2a0 in this case)
+		// This makes sure we get the correct values we need later on.
+		memset((u32*)Stack, 0, 0x2A0);
+
+		// Loop through each Sector
 		for(a = 0; a < 12; a++)
 		{
 			Offset += 0x18;
@@ -723,6 +729,9 @@ void runEnableSingleplayerMusic(void)
 				a--;
 			}
 		}
+		// Zero out stack to finish the job.
+		memset((u32*)Stack, 0, 0x2A0);
+
 		FinishedConvertingTracks = 1;
 		DPRINTF("AddedTracks: %d\n", AddedTracks);
 	};
