@@ -171,8 +171,10 @@ MenuElem_ListData_t dataCustomModes = {
       "Infected",
       "Infinite Climber",
       "Search and Destroy",
-#if BETA
-      "Gridiron"
+      "1000 Kills",
+#if DEV
+      "Gridiron",
+      "Team Defenders"
 #endif
     }
 };
@@ -183,7 +185,12 @@ const char* CustomModeShortNames[] = {
   NULL,
   NULL,
   "Climber",
-  "SND"
+  "SND",
+  NULL,
+#if DEV
+  NULL,
+  NULL,
+#endif
 };
 
 // weather override list item
@@ -431,6 +438,9 @@ int menuStateHandler_SelectedGameModeOverride(MenuElem_ListData_t* listData, cha
       case CUSTOM_MODE_INFECTED:
       case CUSTOM_MODE_GUN_GAME:
       case CUSTOM_MODE_INFINITE_CLIMBER:
+#if DEV
+      case CUSTOM_MODE_1000_KILLS:
+#endif
       {
         if (gs->GameRules != GAMERULE_DM)
           return 0;
@@ -442,8 +452,9 @@ int menuStateHandler_SelectedGameModeOverride(MenuElem_ListData_t* listData, cha
           return 0;
         break;
       }
-#if BETA
+#if DEV
       case CUSTOM_MODE_GRIDIRON:
+      case CUSTOM_MODE_TEAM_DEFENDER:
       {
         if (gs->GameRules != GAMERULE_CTF)
           return 0;

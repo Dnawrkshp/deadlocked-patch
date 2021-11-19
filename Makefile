@@ -12,6 +12,7 @@ all:
 	$(MAKE) -C snd
 	$(MAKE) -C duckhunt
 	$(MAKE) -C gridiron
+	$(MAKE) -C thousand-kills
 	
 clean:
 	$(MAKE) -C patch clean
@@ -25,4 +26,5 @@ clean:
 	$(MAKE) -C snd clean
 	$(MAKE) -C duckhunt clean
 	$(MAKE) -C gridiron clean
+	$(MAKE) -C thousand-kills clean
 

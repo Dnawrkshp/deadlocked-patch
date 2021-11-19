@@ -7,7 +7,7 @@ EE_LIBS = -ldl
 EE_INCS := -I../common -I../libdl/include
 EE_LDFLAGS = -fno-builtin -nostdlib -nostartfiles -L. -L../libdl/lib
 #EE_DEFS = -DDEBUG
-#EE_DEFS := -DBETA
+#EE_DEFS += -DDEV
 
 all: $(EE_BIN) clean copy
 
