@@ -135,6 +135,7 @@ MenuElem_ListData_t dataCustomMaps = {
       "Bakisi Isles",
       "Battledome SP",
       "Blackwater Docks",
+      "Containment Suite",
       "Dark Cathedral Interior",
       "Desert Prison",
       "Duck Hunt",
