@@ -16,8 +16,8 @@ cd deadlocked-patch
 
 If you want to use docker, run the following commands:
 ```sh
-docker pull ps2dev/ps2dev
-docker run -it --rm -v "$PWD\:/src" ps2dev/ps2dev
+docker pull ps2dev/ps2dev:v1.2.0
+docker run -it --rm -v "$PWD\:/src" ps2dev/ps2dev:v1.2.0
 cd src
 ./docker-init.sh
 ```
