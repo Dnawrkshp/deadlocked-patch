@@ -143,6 +143,7 @@ MenuElem_ListData_t dataCustomMaps = {
       "Hoven Gorge",
       "Hoverbike Race",
       "Launch Site",
+      "Marcadia Palace",
       "Metropolis MP",
       "Mining Facility SP",
       "Sarathos SP",
