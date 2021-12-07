@@ -1,7 +1,7 @@
 
 EE_ELF = gridiron-11184.elf
 EE_BIN = gridiron-11184.bin
-EE_OBJS = main.o
+EE_OBJS = main.o ball.o
 EE_LIBS = -ldl
 
 EE_INCS := -I../common -I../libdl/include

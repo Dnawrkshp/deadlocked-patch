@@ -32,6 +32,7 @@
 #include <libdl/net.h>
 #include "module.h"
 #include "messageid.h"
+#include "include/ball.h"
 
 // How long after dropping the ball before you can pick it up again
 #define BALL_CARRY_COOLDOWN			(TIME_SECOND * 3)
@@ -122,7 +123,7 @@ SoundDef ExplosionSoundDef =
 	0,			// Loop
 	0x10,		// Flags
 	0xF4,		// Index
-	3			// Bank
+	3			  // Bank
 };
 
 
@@ -234,7 +235,7 @@ void tryEquipBall(GridironPlayerState_t * playerState)
 		return;
 
 	// hold
-	player->HeldMoby = GridironState.BallMoby;
+	ballPickup(GridironState.BallMoby, player);
 	GridironState.BallCarrier = player;
 }
 
@@ -268,12 +269,15 @@ void playerLogic(GridironPlayerState_t * playerState)
 		if ((gameTime - playerState->TimeLastCarrier) > BALL_CARRY_COOLDOWN)
 		{
 			vector_subtract(temp, GridironState.BallMoby->Position, playerState->Player->PlayerPosition);
-			if (vector_length(temp) < 2)
+			//if (vector_length(temp) < 2)
 				tryEquipBall(playerState);
 		}
 	}
 	else if (GridironState.BallCarrier == playerState->Player)
 	{
+		// get hero state
+		int state = playerState->Player->PlayerState;
+
 		// check if dropped
 		if (playerState->Player->HeldMoby != GridironState.BallMoby)
 		{
@@ -281,8 +285,31 @@ void playerLogic(GridironPlayerState_t * playerState)
 			GridironState.BallCarrier = NULL;
 		}
 		
-		if (!playerStateCanHoldBall(playerState->Player))
+		else if (!playerStateCanHoldBall(playerState->Player))
 			tryDropBall(playerState);
+
+		else if (playerPadGetButton(playerState->Player, PAD_R1) && playerState->Player->WeaponHeldId != WEAPON_ID_SWINGSHOT)
+		{
+			if (state == PLAYER_STATE_CHARGE
+			 || state == PLAYER_STATE_WALK
+			 || state == PLAYER_STATE_IDLE
+			 || state == PLAYER_STATE_THROW_SHURIKEN
+			 || state == PLAYER_STATE_JUMP
+			 || state == PLAYER_STATE_DOUBLE_JUMP
+			 || state == PLAYER_STATE_SKID
+			 || state == PLAYER_STATE_SLIDE
+			 || state == PLAYER_STATE_SLOPESLIDE
+			 )
+			{
+				PlayerVTable * table = playerGetVTable(playerState->Player);
+				table->UpdateState(playerState->Player, PLAYER_STATE_THROW_SHURIKEN, 1, 1, 1);
+			}
+		}
+		else if (playerPadGetButtonUp(playerState->Player, PAD_R1) && state == PLAYER_STATE_THROW_SHURIKEN)
+		{
+			tryDropBall(playerState);
+			ballThrow(GridironState.BallMoby);
+		}
 
 	}
 }
@@ -387,35 +414,7 @@ void initialize(void)
 	*(u32*)0x0061CB38 = 0x0C000000 | ((u32)&GuberMobyEventHandler / 4); // call our func
 
 	// spawn ball
-	Moby * ball = mobySpawn(0x1b37, 0);
-	GridironState.BallMoby = mobySpawn(MOBY_ID_BETA_BOX, 0x100);
-	Moby * moby = GridironState.BallMoby;
-	DPRINTF("ball moby: %08X\n", (u32)ball);
-	DPRINTF("box moby: %08X\n", (u32)GridironState.BallMoby);
-	if (moby)
-	{
-		vector_copy(moby->Position, BallSpawnPoint);
-		moby->UNK_30 = 0xFF;
-		moby->UNK_31 = 0x01;
-		moby->RenderDistance = 0x00FF;
-		moby->Opacity = 0x80;
-		moby->UNK_20[0] = 1;
-		moby->UNK_20[2] = 0x37;
-
-		moby->Scale = (float)0.02;
-		moby->UNK_38[0] = 2;
-		moby->UNK_38[1] = 2;
-		moby->UNK_34[0] = 0x10;
-		moby->PrimaryColor = 0xFFFF4040;
-		//moby->UNK_A8 = &boxUpdate;
-
-		// animation stuff
-		memcpy(&moby->AnimationPointer, &ball->AnimationPointer, 0x20);
-		moby->UNK_48 = 4;
-
-		moby->ModelPointer = ball->ModelPointer;
-		moby->CollisionPointer = ball->CollisionPointer;
-	}
+	GridironState.BallMoby = ballSpawn(BallSpawnPoint);
 
 	// disable flag pickup
 	*(u32*)0x00418910 = 0;
@@ -423,7 +422,7 @@ void initialize(void)
 	*(u32*)0x00417EB0 = 0;
 
 	// find and hide flags
-	moby = mobyGetFirst();
+	Moby * moby = mobyGetFirst();
 	while (moby)
 	{
 		switch (moby->MobyId)
@@ -477,6 +476,8 @@ void gameStart(void)
 	int gameTime = gameGetTime();
 	GameData * gameData = gameGetData();
 
+	dlPreUpdate();
+
 	// Ensure in game
 	if (!gameSettings)
 		return;
@@ -516,6 +517,8 @@ void gameStart(void)
 			GridironState.GameOver = 2;
 		}
 	}
+
+	dlPostUpdate();
 }
 
 /*
