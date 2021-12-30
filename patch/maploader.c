@@ -124,7 +124,7 @@ struct MapLoaderState
 //------------------------------------------------------------------------------
 int onSetMapOverride(void * connection, void * data)
 {
-    MapOverrideMessage *payload = (MapOverrideMessage*)data;
+	MapOverrideMessage *payload = (MapOverrideMessage*)data;
 
 	if (payload->MapId == 0)
 	{

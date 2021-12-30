@@ -72,6 +72,8 @@
 #define FRAME_SKIP_WRITE0				(*(u32*)0x004A9400)
 #define FRAME_SKIP						(*(u32*)0x0021E1D8)
 
+#define VOICE_UPDATE_FUNC				((u32*)0x00161e60)
+
 #define IS_PROGRESSIVE_SCAN					(*(int*)0x0021DE6C)
 
 #define EXCEPTION_DISPLAY_ADDR			(0x000E0000)
@@ -513,6 +515,30 @@ void patchKillStealing()
 }
 
 /*
+ * NAME :		patchVoiceUpdate
+ * 
+ * DESCRIPTION :
+ * 			Removes voice update logic.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void patchVoiceUpdate()
+{
+	// 
+	if (*VOICE_UPDATE_FUNC == 0x27BDFFB0)
+	{
+		*VOICE_UPDATE_FUNC = 0x03E00008;
+		*(VOICE_UPDATE_FUNC+1) = 0;
+	}
+}
+
+/*
  * NAME :		patchFrameSkip
  * 
  * DESCRIPTION :
@@ -937,7 +963,8 @@ void onGameStartMenuBack(long a0)
 	((void (*)(long))0x00560E30)(a0);
 
 	// open config
-	configMenuEnable();
+	if (netGetLobbyServerConnection())
+		configMenuEnable();
 }
 
 /*
@@ -1345,6 +1372,9 @@ int main (void)
 
 	// Patch kill stealing
 	patchKillStealing();
+
+	// Patch voice update
+	patchVoiceUpdate();
 
 	// config update
 	onConfigUpdate();
