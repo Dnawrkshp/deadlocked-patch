@@ -143,6 +143,7 @@ MenuElem_ListData_t dataCustomMaps = {
       "Hoven Gorge",
       "Hoverbike Race",
       "Launch Site",
+      "Marcadia Palace",
       "Metropolis MP",
       "Mining Facility SP",
       "Sarathos SP",
@@ -323,7 +324,9 @@ void downloadPatchSelectHandler(TabElem_t* tab, MenuElem_t* element)
   configMenuDisable();
 
   // send request
-  netSendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_REQUEST_PATCH, 0, (void*)element);
+  void * lobbyConnection = netGetLobbyServerConnection();
+  if (lobbyConnection)
+    netSendCustomAppMessage(lobbyConnection, CUSTOM_MSG_ID_CLIENT_REQUEST_PATCH, 0, (void*)element);
 }
 
 #endif
@@ -1036,7 +1039,7 @@ void onMenuUpdate(int inGame)
       configMenuDisable();
     }
   }
-  else if (!inGame && !mapsDownloadingModules())
+  else if (!inGame && !mapsDownloadingModules() && netGetLobbyServerConnection())
   {
     if (uiGetActive() == UI_ID_ONLINE_MAIN_MENU)
     {
@@ -1060,7 +1063,7 @@ void onConfigUpdate(void)
 
   // in staging, update game info
   GameSettings * gameSettings = gameGetSettings();
-  if (gameSettings && gameSettings->GameLoadStartTime < 0)
+  if (gameSettings && gameSettings->GameLoadStartTime < 0 && netGetLobbyServerConnection())
   {
     // 
     char * mapName = mapGetName(gameSettings->GameLevel);
@@ -1246,7 +1249,9 @@ void configTrySendGameConfig(void)
     memcpy(&gameConfigHostBackup, &gameConfig, sizeof(PatchGameConfig_t));
 
     // send
-    netSendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_USER_GAME_CONFIG, sizeof(PatchGameConfig_t), &gameConfig);
+    void * lobbyConnection = netGetLobbyServerConnection();
+    if (lobbyConnection)
+      netSendCustomAppMessage(lobbyConnection, CUSTOM_MSG_ID_CLIENT_USER_GAME_CONFIG, sizeof(PatchGameConfig_t), &gameConfig);
   }
 }
 
@@ -1259,7 +1264,9 @@ void configMenuDisable(void)
   isConfigMenuActive = 0;
 
   // send config to server for saving
-  netSendCustomAppMessage(netGetLobbyServerConnection(), CUSTOM_MSG_ID_CLIENT_USER_CONFIG, sizeof(PatchConfig_t), &config);
+  void * lobbyConnection = netGetLobbyServerConnection();
+  if (lobbyConnection)
+    netSendCustomAppMessage(lobbyConnection, CUSTOM_MSG_ID_CLIENT_USER_CONFIG, sizeof(PatchConfig_t), &config);
 
   // 
   configTrySendGameConfig();
