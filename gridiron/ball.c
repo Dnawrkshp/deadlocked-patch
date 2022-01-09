@@ -34,15 +34,17 @@
 #include "messageid.h"
 #include "include/ball.h"
 
-#define DRAG_COEFF (0.2)
-#define BOUNCINESS_COEFF (0.2)
-#define THROW_COEFF (0.2)
+#define DRAG_COEFF (0.1)
+#define BOUNCINESS_COEFF (0.5)
+#define THROW_COEFF (1.2)
+#define LIFETIME (25)
 
 typedef struct BallPVars
 {
   VECTOR Velocity;
   VECTOR StartPosition;
   Player * Carrier;
+  int DieTime;
 } BallPVars_t;
 
 VECTOR VECTOR_GRAVITY = { 0, 0, -0.005, 0 };
@@ -72,6 +74,8 @@ Moby * ballSpawn(VECTOR position)
 	{
     BallPVars_t * pvars = (BallPVars_t*)ball->PropertiesPointer;
     vector_copy(pvars->StartPosition, position);
+    pvars->DieTime = 0;
+
 		vector_copy(ball->Position, position);
 		ball->UNK_30 = 0xFF;
 		ball->UNK_31 = 0x01;
@@ -114,6 +118,7 @@ void ballThrow(Moby * ball)
   // remove carrier
   carrier->HeldMoby = NULL;
   pvars->Carrier = NULL;
+  pvars->DieTime = gameGetTime() + (TIME_SECOND * LIFETIME);
 
   // set velocity
   vector_copy(pvars->Velocity, carrier->Velocity);
@@ -152,12 +157,20 @@ void ballUpdate(Moby * ball)
   BallPVars_t * pvars = (BallPVars_t*)ball->PropertiesPointer;
   Player * carrier = pvars->Carrier;
 
+  // 
+  if (!carrier && pvars->DieTime && gameGetTime() > pvars->DieTime)
+  {
+    mobyDestroy(ball);
+    return;
+  }
+
   // detect drop
   if (carrier && carrier->HeldMoby != ball)
   {
     vector_copy(pvars->Velocity, carrier->Velocity);
     pvars->Carrier = NULL;
     carrier = NULL;
+    pvars->DieTime = gameGetTime() + (TIME_SECOND * LIFETIME);
   }
 
   // if not held do physics

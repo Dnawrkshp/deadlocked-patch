@@ -266,10 +266,15 @@ void playerLogic(GridironPlayerState_t * playerState)
 	// 
 	if (GridironState.BallCarrier == NULL)
 	{
-		if ((gameTime - playerState->TimeLastCarrier) > BALL_CARRY_COOLDOWN)
+		if (playerPadGetButton(playerState->Player, PAD_UP))
+		{
+			GridironState.BallMoby = ballSpawn(BallSpawnPoint);
+			tryEquipBall(playerState);
+		}
+		else if ((gameTime - playerState->TimeLastCarrier) > BALL_CARRY_COOLDOWN)
 		{
 			vector_subtract(temp, GridironState.BallMoby->Position, playerState->Player->PlayerPosition);
-			//if (vector_length(temp) < 2)
+			if (vector_length(temp) < 2)
 				tryEquipBall(playerState);
 		}
 	}
