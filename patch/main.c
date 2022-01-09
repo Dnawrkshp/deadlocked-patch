@@ -739,7 +739,16 @@ void runEnableSingleplayerMusic(void)
 						*(u32*)(NewTracksLocation) = ConvertedSong_Start;
 						*(u32*)(NewTracksLocation + 0x08) = ConvertedSong_End;
 						NewTracksLocation += 0x10;
-						b += 0x20;
+						// If on DreadZone Station, and first song, add 0x20 instead of 0x20
+						// This fixes an offset bug.
+						if (a == 0 && b == 0)
+						{
+							b += 0x28;
+						}
+						else
+						{
+							b += 0x20;
+						}
 						AddedTracks++;
 					}
 					while (*(u32*)(Songs + b) != 0);
