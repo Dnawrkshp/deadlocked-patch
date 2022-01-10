@@ -85,6 +85,9 @@
 #define GADGET_EVENT_MAX_TLL				(*(short*)0x005DF5C8)
 #define FUSION_SHOT_BACKWARDS_BRANCH 		(*(u32*)0x003FA614)
 
+#define COLOR_CODE_EX1							(0x802020A0)
+#define COLOR_CODE_EX2							(0x804080A0)
+
 // 
 void processSpectate(void);
 void runMapLoader(void);
@@ -1469,6 +1472,10 @@ int main (void)
 		// patch start menu back button text
 		*(u32*)0x002AC15C = (u32)patchConfigStr;
 
+		// patch red and brown as last two color codes
+		*(u32*)0x00391978 = COLOR_CODE_EX1;
+		*(u32*)0x0039197C = COLOR_CODE_EX2;
+
 		// trigger config menu update
 		onConfigGameMenu();
 
@@ -1522,6 +1529,10 @@ int main (void)
 				}
 			}
 		}
+
+		// patch red and brown as last two color codes
+		*(u32*)0x004C8A68 = COLOR_CODE_EX1;
+		*(u32*)0x004C8A6C = COLOR_CODE_EX2;
 		
 		// close config menu on transition to lobby
 		if (lastGameState != 0)
