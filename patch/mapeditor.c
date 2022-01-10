@@ -24,7 +24,7 @@ extern PatchConfig_t config;
 extern PatchGameConfig_t gameConfig;
 extern PatchGameConfig_t gameConfigHostBackup;
 
-int mapEditorState = 1;
+int mapEditorState = 0;
 int mapEditorRespawnState = 0;
 int mapEditorLastHighlighted = 0;
 
@@ -46,7 +46,7 @@ int isSpawnPointHill(int id)
   return 0;
 }
 
-void addSpawnPoint(SpawnPoint * sp)
+int addSpawnPoint(SpawnPoint * sp)
 {
   int * spTable = (int*)(*(u32*)0x0036DC58 + 0x1F8);
   int count = spawnPointGetCount();
@@ -70,6 +70,8 @@ void addSpawnPoint(SpawnPoint * sp)
     if (spTable[j] == i)
       break;
   }
+
+  return i;
 }
 
 void removeSpawnPoint(int id)
@@ -153,8 +155,8 @@ void mapEditorDo(void)
     drawRing(sp->M0, temp, 2.0, 1.0, color);
 
     // draw
-    temp[0] += cosf(sp->M1[15]) * 2.5;
-    temp[1] += sinf(sp->M1[15]) * 2.5;
+    temp[0] += cosf(sp->M1[14]) * 2.5;
+    temp[1] += sinf(sp->M1[14]) * 2.5;
     vector_subtract(temp2, temp, localPlayer->CameraPos);
     if (vector_innerproduct(temp2, localPlayer->CameraDir) > 0 && vector_length(temp2) < 100.0)
     {
@@ -232,14 +234,15 @@ void onMapEditorGameUpdate(void)
         1.0, 0, 0, 0,
         0, 1.0, 0, 0,
         0, 0, 1.0, 0,
-        0, 0, 0, localPlayer->PlayerYaw 
+        0, 0, localPlayer->PlayerYaw, 0
       }
     };
-    addSpawnPoint(&sp);
+    printf("added %d\n", addSpawnPoint(&sp));
   }
   else if (playerPadGetButtonDown(localPlayer, PAD_DOWN) > 0 && highlightedPoint >= 0)
   {
     // remove existing spawn point
+    printf("removing %d\n", highlightedPoint);
     removeSpawnPoint(highlightedPoint);
   }
 }
