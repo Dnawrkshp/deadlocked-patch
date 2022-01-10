@@ -97,6 +97,10 @@ void configMenuEnable(void);
 void configMenuDisable(void);
 void configTrySendGameConfig(void);
 
+#if MAPEDITOR
+void onMapEditorGameUpdate(void);
+#endif
+
 // 
 int hasInitialized = 0;
 int sentGameStart = 0;
@@ -1467,6 +1471,11 @@ int main (void)
 
 		// trigger config menu update
 		onConfigGameMenu();
+
+#if MAPEDITOR
+		// trigger map editor update
+		onMapEditorGameUpdate();
+#endif
 
 		lastGameState = 1;
 	}

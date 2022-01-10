@@ -78,6 +78,10 @@ void menuStateHandler_GameModeOverride(TabElem_t* tab, MenuElem_t* element, int*
 
 int menuStateHandler_SelectedGameModeOverride(MenuElem_ListData_t* listData, char value);
 
+#if MAPEDITOR
+void menuStateHandler_MapEditorSpawnPoints(TabElem_t* tab, MenuElem_t* element, int* state);
+#endif
+
 void tabDefaultStateHandler(TabElem_t* tab, int * state);
 void tabGameSettingsStateHandler(TabElem_t* tab, int * state);
 void tabCustomMapStateHandler(TabElem_t* tab, int * state);
@@ -268,11 +272,37 @@ MenuElem_t menuElementsCustomMap[] = {
   { "Install custom map modules", buttonActionHandler, menuStateHandler_InstallCustomMaps, mapsSelectHandler },
 };
 
+#if MAPEDITOR
+
+extern int mapEditorState;
+extern int mapEditorRespawnState;
+
+// map editor enabled list item
+MenuElem_ListData_t dataMapEditor = {
+    &mapEditorState,
+    NULL,
+    2,
+    {
+      "Off",
+      "Spawn Points",
+    }
+};
+
+// map editor tab menu items
+MenuElem_t menuElementsMapEditor[] = {
+  { "Enabled", listActionHandler, menuStateAlwaysEnabledHandler, &dataMapEditor },
+  { "Always Respawn", toggleActionHandler, menuStateHandler_MapEditorSpawnPoints, &mapEditorRespawnState },
+};
+#endif
+
 // tab items
 TabElem_t tabElements[] = {
   { "General", tabDefaultStateHandler, menuElementsGeneral, sizeof(menuElementsGeneral)/sizeof(MenuElem_t) },
   { "Game Settings", tabGameSettingsStateHandler, menuElementsGameSettings, sizeof(menuElementsGameSettings)/sizeof(MenuElem_t) },
-  { "Custom Maps", tabCustomMapStateHandler, menuElementsCustomMap, sizeof(menuElementsCustomMap)/sizeof(MenuElem_t) }
+  { "Custom Maps", tabCustomMapStateHandler, menuElementsCustomMap, sizeof(menuElementsCustomMap)/sizeof(MenuElem_t) },
+#if MAPEDITOR
+  { "Map Editor", tabDefaultStateHandler, menuElementsMapEditor, sizeof(menuElementsMapEditor)/sizeof(MenuElem_t) },
+#endif
 };
 
 const int tabsCount = sizeof(tabElements)/sizeof(TabElem_t);
@@ -329,6 +359,19 @@ void downloadPatchSelectHandler(TabElem_t* tab, MenuElem_t* element)
   void * lobbyConnection = netGetLobbyServerConnection();
   if (lobbyConnection)
     netSendCustomAppMessage(lobbyConnection, CUSTOM_MSG_ID_CLIENT_REQUEST_PATCH, 0, (void*)element);
+}
+
+#endif
+
+#ifdef MAPEDITOR
+
+// 
+void menuStateHandler_MapEditorSpawnPoints(TabElem_t* tab, MenuElem_t* element, int* state)
+{
+  if (mapEditorState == 1)
+    *state = ELEMENT_VISIBLE | ELEMENT_EDITABLE | ELEMENT_SELECTABLE;
+  else
+    *state = ELEMENT_HIDDEN;
 }
 
 #endif
