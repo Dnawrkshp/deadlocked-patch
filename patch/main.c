@@ -85,8 +85,8 @@
 #define GADGET_EVENT_MAX_TLL				(*(short*)0x005DF5C8)
 #define FUSION_SHOT_BACKWARDS_BRANCH 		(*(u32*)0x003FA614)
 
-#define COLOR_CODE_EX1							(0x802020A0)
-#define COLOR_CODE_EX2							(0x804080A0)
+#define COLOR_CODE_EX1							(0x802020E0)
+#define COLOR_CODE_EX2							(0x80A0A040)
 
 // 
 void processSpectate(void);
