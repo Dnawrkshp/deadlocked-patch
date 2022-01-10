@@ -86,7 +86,7 @@
 #define FUSION_SHOT_BACKWARDS_BRANCH 		(*(u32*)0x003FA614)
 
 #define COLOR_CODE_EX1							(0x802020E0)
-#define COLOR_CODE_EX2							(0x80A0A040)
+#define COLOR_CODE_EX2							(0x80E0E040)
 
 // 
 void processSpectate(void);
