@@ -88,6 +88,12 @@
 #define COLOR_CODE_EX1							(0x802020E0)
 #define COLOR_CODE_EX2							(0x80E0E040)
 
+#define GAME_UPDATE_SENDRATE				(5 * TIME_SECOND)
+
+
+#define GAME_SCOREBOARD_ARRAY               ((ScoreboardItem**)0x002FA04C)
+#define GAME_SCOREBOARD_ITEM_COUNT          (*(u32*)0x002F9FCC)
+
 // 
 void processSpectate(void);
 void runMapLoader(void);
@@ -124,6 +130,13 @@ typedef struct ChangeTeamRequest {
 	int PoolSize;
 	char Pool[GAME_MAX_PLAYERS];
 } ChangeTeamRequest_t;
+
+typedef struct UpdateGameStateRequest {
+	int TeamsEnabled;
+	short TeamScores[GAME_MAX_PLAYERS];
+	char ClientIds[GAME_MAX_PLAYERS];
+	char Teams[GAME_MAX_PLAYERS];
+} UpdateGameStateRequest_t;
 
 
 //
@@ -664,6 +677,70 @@ void patchStateUpdate(void)
 {
 	if (*(u32*)0x0060eb80 == 0x0C18784C)
 		*(u32*)0x0060eb80 = 0x0C000000 | ((u32)&patchStateUpdate_Hook >> 2);
+}
+
+/*
+ * NAME :		runSendGameUpdate
+ * 
+ * DESCRIPTION :
+ * 			Sends the current game info to the server.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void runSendGameUpdate(void)
+{
+	static int lastGameUpdate = 0;
+	GameSettings * gameSettings = gameGetSettings();
+	GameOptions * gameOptions = gameGetOptions();
+	int gameTime = gameGetTime();
+	int i;
+	void * connection = netGetLobbyServerConnection();
+	UpdateGameStateRequest_t state;
+
+	// skip if not online, in lobby, or the game host
+	if (!connection || !gameSettings || !gameAmIHost())
+	{
+		lastGameUpdate = -GAME_UPDATE_SENDRATE;
+		return;
+	}
+
+	// skip if time since last update is less than sendrate
+	if ((gameTime - lastGameUpdate) < GAME_UPDATE_SENDRATE)
+		return;
+
+	// update last sent time
+	lastGameUpdate = gameTime;
+
+	// construct
+	state.TeamsEnabled = gameOptions->GameFlags.MultiplayerGameFlags.Teamplay;
+
+	// copy over client ids
+	memcpy(state.ClientIds, gameSettings->PlayerClients, sizeof(state.ClientIds));
+
+	// 
+	memset(state.TeamScores, 0, sizeof(state.TeamScores));
+
+	if (gameIsIn())
+	{
+		for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+		{
+			ScoreboardItem * item = GAME_SCOREBOARD_ARRAY[i];
+			if (item)
+				state.TeamScores[item->TeamId] = item->Value;
+		}
+	}
+
+	// copy teams over
+	memcpy(state.Teams, gameSettings->PlayerTeams, sizeof(state.Teams));
+
+	// send
+	netSendCustomAppMessage(connection, CUSTOM_MSG_ID_CLIENT_SET_GAME_STATE, sizeof(UpdateGameStateRequest_t), &state);
 }
 
 /*
@@ -1391,6 +1468,9 @@ int main (void)
 
 	// Patch voice update
 	patchVoiceUpdate();
+
+	// 
+	runSendGameUpdate();
 
 	// config update
 	onConfigUpdate();

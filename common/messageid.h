@@ -90,6 +90,11 @@ enum CustomMessageId
      *
      */
     CUSTOM_MSG_ID_SEARCH_AND_DESTROY_SET_BOMB_OUTCOME = 13,
+
+    /*
+     *
+     */
+    CUSTOM_MSG_ID_CLIENT_SET_GAME_STATE = 14
 };
 
 #endif // _MESSAGEID_H_
