@@ -789,7 +789,7 @@ void onSetRoundOutcome(int outcome, int gameTime)
 			{
 				if (player->Player->Team == SNDState.DefenderTeamId)
 				{
-					player->Player->BlowupTimer = 1;
+					player->Player->timers.explodeTimer = 1;
 				}
 			}
 		}

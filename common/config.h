@@ -28,6 +28,7 @@ typedef struct PatchGameConfig
   char grBetterHills;
   char grHealthBars;
   char grNoNames;
+  char grNoInvTimer;
 } PatchGameConfig_t;
 
 enum CUSTOM_MAP_ID

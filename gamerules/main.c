@@ -350,6 +350,33 @@ void healthbarsHook(int nameX, int nameY, u32 nameColor, char * nameStr, int nam
 }
 
 /*
+ * NAME :		invTimerLogic
+ * 
+ * DESCRIPTION :
+ * 			Sets each player's invicibility timer to 0.
+ * 
+ * NOTES :
+ * 
+ * ARGS : 
+ * 
+ * RETURN :
+ * 
+ * AUTHOR :			Daniel "Dnawrkshp" Gerendasy
+ */
+void invTimerLogic(GameModule * module)
+{
+	int i;
+	Player ** players = playerGetAll();
+
+	for (i = 0; i < GAME_MAX_PLAYERS; ++i)
+	{
+		Player * p = players[i];
+		if (p)
+			p->timers.postHitInvinc = 0;
+	}
+}
+
+/*
  * NAME :		initialize
  * 
  * DESCRIPTION :
@@ -469,6 +496,9 @@ void gameStart(GameModule * module, PatchConfig_t * config, PatchGameConfig_t * 
 
 	if (gameConfig->grNoNames)
 		gameSettings->PlayerNamesOn = 0;
+
+	if (gameConfig->grNoInvTimer)
+		invTimerLogic(module);
 }
 
 /*

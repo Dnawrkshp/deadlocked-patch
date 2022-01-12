@@ -128,7 +128,7 @@ void processPlayer(Player * player)
 	PlayerGameStats * stats = gameGetPlayerStats();
 
 	// No respawn
-	player->RespawnTimer = 0x27;
+	player->timers.resurrectWait = 0x27;
 
 	// 
 
@@ -140,7 +140,7 @@ void processPlayer(Player * player)
 
 		player->Speed = 4.0;
 		player->DamageMultiplier = 1.001;
-		player->QuadTimer = 0x1000;
+		player->timers.damageMuliplierTimer = 0x1000;
 		
 		// Force wrench
 		if (player->WeaponHeldId != WEAPON_ID_WRENCH &&

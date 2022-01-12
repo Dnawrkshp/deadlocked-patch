@@ -250,6 +250,7 @@ MenuElem_t menuElementsGameSettings[] = {
 
   { "Game Rules", labelActionHandler, menuLabelStateHandler, (void*)LABELTYPE_HEADER },
   { "Better hills", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grBetterHills },
+  { "Damage cooldown", toggleInvertedActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grNoInvTimer },
   { "Half time", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grHalfTime },
   { "Healthbars", toggleActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grHealthBars },
   { "Healthboxes", toggleInvertedActionHandler, menuStateAlwaysEnabledHandler, &gameConfig.grNoHealthBoxes },
