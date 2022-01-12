@@ -488,9 +488,7 @@ int menuStateHandler_SelectedGameModeOverride(MenuElem_ListData_t* listData, cha
       case CUSTOM_MODE_INFECTED:
       case CUSTOM_MODE_GUN_GAME:
       case CUSTOM_MODE_INFINITE_CLIMBER:
-#if DEV
       case CUSTOM_MODE_1000_KILLS:
-#endif
       {
         if (gs->GameRules != GAMERULE_DM)
           return 0;
