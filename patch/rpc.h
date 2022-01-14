@@ -10,7 +10,7 @@
 #include <debug.h>
 
 
-#define USBSERV_BUFSIZE 	(1024 * 8)
+#define USBSERV_BUFSIZE 	(1024 * 4)
 
 /* IRX Modules and elf loader */
 

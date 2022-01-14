@@ -154,6 +154,7 @@ MenuElem_ListData_t dataCustomMaps = {
       "Mining Facility SP",
       "Sarathos SP",
       "Shaar SP",
+      "Shipment",
       "Spleef",
       "Torval SP",
       "Tyhrranosis",
